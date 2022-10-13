@@ -9,26 +9,31 @@ import (
 	"github.com/tkrop/testing/test"
 )
 
-type TestMap map[string]func(t *test.TestingT)
-type PermMap map[string]test.Expect
+// ExpectMap defines a map of permutation tests that are expected to either
+// fail or succeed to succeed depending on expressed expectation.
+type ExpectMap map[string]test.Expect
 
-// PermTest permutation test.
-type PermTest struct {
+// TestMap defines a map of test functions that is subject of the actual
+// permutation.
+type TestMap map[string]func(t *test.TestingT)
+
+// Test permutation test.
+type Test struct {
 	mocks *mock.Mocks
 	tests TestMap
 }
 
-// NewPermTest creates a new permutation test with given mock and given
+// NewTest creates a new permutation test with given mock and given
 // permutation test map.
-func NewPermTest(mocks *mock.Mocks, tests TestMap) *PermTest {
-	return &PermTest{
+func NewTest(mocks *mock.Mocks, tests TestMap) *Test {
+	return &Test{
 		mocks: mocks,
 		tests: tests,
 	}
 }
 
 // TestPerm tests a single permutation given by the string slice.
-func (p *PermTest) TestPerm(t *test.TestingT, perm []string) {
+func (p *Test) TestPerm(t *test.TestingT, perm []string) {
 	require.Equal(t, len(p.tests), len(perm),
 		"permutation needs to cover all tests")
 	for _, value := range perm {
@@ -37,7 +42,7 @@ func (p *PermTest) TestPerm(t *test.TestingT, perm []string) {
 }
 
 // Test executes a permutation test with given permutation and expected result.
-func (p *PermTest) Test(t *test.TestingT, perm []string, expect test.Expect) {
+func (p *Test) Test(t *test.TestingT, perm []string, expect test.Expect) {
 	switch expect {
 	case test.ExpectSuccess:
 		// Test proper usage of `WaitGroup` on non-failing validation.
@@ -50,11 +55,11 @@ func (p *PermTest) Test(t *test.TestingT, perm []string, expect test.Expect) {
 	}
 }
 
-// PermRemain calculate and add the missing permutations and add it with
+// Remain calculate and add the missing permutations and add it with
 // expected result to the given permmutation map.
-func PermRemain(perms PermMap, expect test.Expect) PermMap {
+func Remain(perms ExpectMap, expect test.Expect) ExpectMap {
 	for key := range perms {
-		PermSlice(strings.Split(key, "-"), func(perm []string) {
+		Slice(strings.Split(key, "-"), func(perm []string) {
 			key := strings.Join(perm, "-")
 			if _, ok := perms[key]; !ok {
 				perms[key] = expect
@@ -65,15 +70,15 @@ func PermRemain(perms PermMap, expect test.Expect) PermMap {
 	return perms
 }
 
-// PermSlice permutates the given slice starting at the position given by and
+// Slice permutates the given slice starting at the position given by and
 // call the `do` function on each permutation to collect the result. For a full
 // permutation the `index` must start with `0`.
-func PermSlice[T any](slice []T, do func([]T), index int) {
+func Slice[T any](slice []T, do func([]T), index int) {
 	if index <= len(slice) {
-		PermSlice(slice, do, index+1)
+		Slice(slice, do, index+1)
 		for offset := index + 1; offset < len(slice); offset++ {
 			slice[index], slice[offset] = slice[offset], slice[index]
-			PermSlice(slice, do, index+1)
+			Slice(slice, do, index+1)
 			slice[index], slice[offset] = slice[offset], slice[index]
 		}
 	} else {

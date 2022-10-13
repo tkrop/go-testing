@@ -11,10 +11,13 @@ import (
 )
 
 const (
+	// ExpectSuccess used to express that a test is supposed to succeed.
 	ExpectSuccess Expect = true
+	// ExpectFailure used to express that a test is supposed to fail.
 	ExpectFailure Expect = false
 )
 
+// Expect expresses an expection whether a test will succeed or fail.
 type Expect bool
 
 // TestingT is  a minimal testing abstraction of `testing.T` that supports

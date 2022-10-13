@@ -1,0 +1,4 @@
+build
+run
+
+mock_*_test.go
