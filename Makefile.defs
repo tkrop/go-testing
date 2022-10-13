@@ -1,0 +1,24 @@
+# Setup environment for all run-targets (to be modified)
+define run-setup
+  true
+endef
+
+# Define variables for all run-targets (to be modified)
+define run-vars
+
+endef
+
+# Define variables for local run-targets (to be modified)
+define run-vars-local
+
+endef
+
+# Define variables for image run-targets (to be modified)
+define run-vars-image
+
+endef
+
+# Define aws localstack setup (to be modified).
+define run-aws-setup
+  true
+endef
