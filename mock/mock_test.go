@@ -79,7 +79,6 @@ func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
 			},
 			"c": func(t *test.TestingT) { iface.CallA("c") },
 		})
-
 }
 
 func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
@@ -95,7 +94,6 @@ func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
 				assert.Equal(t, "e", iface.CallB("d"))
 			},
 		})
-
 }
 
 func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
@@ -113,7 +111,6 @@ func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
 			"e": func(t *test.TestingT) { iface.CallA("e") },
 			"f": func(t *test.TestingT) { iface.CallA("f") },
 		})
-
 }
 
 var testSetupParams = perm.ExpectMap{
@@ -132,8 +129,7 @@ var testSetupParams = perm.ExpectMap{
 }
 
 func TestSetup(t *testing.T) {
-	perms := perm.Remain(testSetupParams, test.ExpectSuccess)
-	for message, expect := range perms {
+	for message, expect := range testSetupParams.Remain(test.ExpectSuccess) {
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -163,8 +159,7 @@ var testChainParams = perm.ExpectMap{
 }
 
 func TestChain(t *testing.T) {
-	perms := perm.Remain(testChainParams, test.ExpectFailure)
-	for message, expect := range perms {
+	for message, expect := range testChainParams.Remain(test.ExpectFailure) {
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -199,8 +194,7 @@ var testSetupChainParams = perm.ExpectMap{
 }
 
 func TestSetupChain(t *testing.T) {
-	perms := perm.Remain(testSetupChainParams, test.ExpectFailure)
-	for message, expect := range perms {
+	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -230,8 +224,7 @@ func TestSetupChain(t *testing.T) {
 }
 
 func TestChainSetup(t *testing.T) {
-	perms := perm.Remain(testSetupChainParams, test.ExpectFailure)
-	for message, expect := range perms {
+	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -276,8 +269,7 @@ var testParallelChainParams = perm.ExpectMap{
 }
 
 func TestParallelChain(t *testing.T) {
-	perms := perm.Remain(testParallelChainParams, test.ExpectFailure)
-	for message, expect := range perms {
+	for message, expect := range testParallelChainParams.Remain(test.ExpectFailure) {
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -371,8 +363,7 @@ var testDetachParams = perm.ExpectMap{
 }
 
 func TestDetach(t *testing.T) {
-	perms := perm.Remain(testDetachParams, test.ExpectFailure)
-	for message, expect := range perms {
+	for message, expect := range testDetachParams.Remain(test.ExpectFailure) {
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
