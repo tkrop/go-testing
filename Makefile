@@ -173,7 +173,7 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: image image-build image-push docker docker-build docker-push
-.PHONY: run run-all run-native run-image run-docker run-clean
+.PHONY: run-native run-image run-docker run-clean
 .PHONY: $(addprefix run-, $(COMMANDS) db aws)
 .PHONY: $(addprefix run-lang-, $(COMMANDS))
 .PHONY: $(addprefix run-image-, $(COMMANDS))
