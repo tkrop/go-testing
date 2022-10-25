@@ -3,8 +3,8 @@
 This package provides a small framework to simplify permutation tests, i.e. a
 consistent test set where test conditions can be checked in all known orders
 with differing  outcome depending on the order. This is very handy option in
-combination with the [test isolation](test) framework to validated the
-[mock](mock) framework, but may be useful in other cases too.
+combination with the [test isolation](../test) framework to validated the
+[mock](../mock) framework, but may be useful in other cases too.
 
 
 ## Standard permutation pattern

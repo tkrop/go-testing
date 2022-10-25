@@ -1,37 +1,19 @@
+# === do not change this Makefile! ===
+# === extended via Makefile.{vars,defs,targets} ===
 #
-# This Makefile is majorly working by convention. You just have to setup the
-# variables in 'Makefile.vars' and structure your code according to the setup
-# convention:
+# This Makefile is majorly working by convention.
 #
-# 1. Place all commands as '<name>.go'-files in the 'cmd'-directory.
-# 2. Use the standard 'config' package to read configuration for all commands.
-# 3. Use a common 'Dockerfile' to install all commands into.
+# Please visit
 #
-# The Makefile also allows to call run the commands/services and run test via
-# 'make run/test-* -- [args]', e.g. 'make test-unit app/service' runs all the
-# unit tests in the directory 'app/service'.
+# https://github.bus.zalan.do/builder-knowledge/go-base/MAKEFILE.md
 #
-# To support 'run-*' commands, you need to setup the environment variables for
-# your designated runtime by defining the custom functions for setting it up
-# via 'run-setup', 'run-vars', 'run-vars-local', and 'run-vars-image' in
-# 'Makefile.defs'. Test are supposed to run with global defaults and should not
-# need more setup. The setup strongly depends on the command, but usual there
-# are common patterns in this that can be copied from other projects.
-#
-# To enable postgres database support you must add 'run-db' to TEST_DEPS and
-# RUN_DEPS as needed to 'Makefile.vars'. You can also override the default
-# setup via the DB_HOST, DB_PORT, DB_NAME, DB_USER, and DB_PASSWORD variables,
-# but this is optional. Note: when running test against a DB you usually have
-# to extend the default TEST_TIMEOUT of 10s to a more reasonable value.
-#
-# To enable AWS localstack support you have to add 'run-aws' to the TEST_DEPS
-# and RUN_DEPS. You may also provide a sensible setup of AWS services via the
-# AWS_SERVICES variable (default is 'sqs s3').
+# for more information and help.
 #
 # Note: You can discover make targets using the tab-completion of your shell.
 #
-
-# === do not change this Makefile! extended via Makefile.{vars,defs,targets} ===
+# Warning: The Makefile automatically installs a 'pre-commit' hook (overwritng
+# any pre-existing hook) that runs 'make lint test' before allowing to commit.
+#
 
 SHELL := /bin/bash
 
@@ -167,7 +149,7 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: update update-go update-deps update-make
 .PHONY: clean clean-init clean-build clean-run
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
-.PHONY: init init-tools init-packages init-sources
+.PHONY: init init-tools init-hooks init-packages init-sources
 .PHONY: test test-all test-unit test-clean test-upload test-cover
 .PHONY: lint lint-src lint-api format
 .PHONY: build build-native build-linux build-image build-docker
@@ -175,9 +157,8 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: image image-build image-push docker docker-build docker-push
 .PHONY: run-native run-image run-docker run-clean
 .PHONY: $(addprefix run-, $(COMMANDS) db aws)
-.PHONY: $(addprefix run-lang-, $(COMMANDS))
+.PHONY: $(addprefix run-go-, $(COMMANDS))
 .PHONY: $(addprefix run-image-, $(COMMANDS))
-.PHONY: $(addprefix run-docker-, $(COMMANDS))
 .PHONY: $(addprefix run-clean-, $(COMMANDS) db aws)
 
 
@@ -257,11 +238,15 @@ update-go:
 	sed -E -i "s/(cdp-runtime\/go)[0-9.-]*/\1-$(GOVERSION)/" delivery.yaml; \
 
 update-make:
-	@echo "update Makefile"; TEMPDIR=$$(mktemp -d); \
-	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git; ( \
-	  git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && \
-	  (cd $${TEMPDIR} && git show HEAD:Makefile > Makefile; cd -) \
-	); rm -rf $${DIRTEMP}; \
+	@TEMPDIR=$$(mktemp -d) && echo "update Makefile" &&  \
+	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
+	git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && ( \
+	  cd $${TEMPDIR}; \
+	    git show HEAD:Makefile > Makefile; \
+		git show HEAD:MAKEFILE.md > MAKEFILE.md; \
+	  cd - \
+	); cp $${TEMPDIR}/Makefile $${TEMPDIR}/MAKEFILE.md .; \
+	rm -rf $${TEMPDIR}; \
 
 update-make-would-be-better:
 	BASEREPO=git://github.bus.zalan.do/builder-knowledge/go-base.git; \
@@ -273,6 +258,7 @@ update-deps:
 	  go get -u && go mod tidy -compat=${GOVERSION} && \
 	  cd -; \
 	done; \
+
 
 # Bump version to prepare release of software.
 bump:
@@ -303,8 +289,8 @@ clean-build: clean-init
 	find . -name "mock_*_test.go" -exec rm -v {} \;; \
 
 clean-init:
-	@echo go version $(GOVERSION);
 	rm -vrf $(RUNDIR) $(BUILDIR);
+	rm -vrf .git/hooks/pre-commit;
 
 # Clean up all running container images.
 clean-run: $(addprefix clean-run-, $(COMMANDS) db aws)
@@ -312,7 +298,7 @@ $(addprefix clean-run-, $(COMMANDS) db aws): clean-run-%: run-clean-%
 
 
 # Initialize tooling and packages for building.
-init: clean-init init-tools init-packages
+init: clean-init init-tools init-hooks init-packages
 
 init-tools:
 	go install github.com/golang/mock/mockgen@latest;
@@ -320,6 +306,10 @@ init-tools:
 	go install github.com/zalando/zally/cli/zally@latest;
 	go install golang.org/x/tools/cmd/goimports@latest;
 	go mod tidy -compat=${GOVERSION};
+
+init-hooks: .git/hooks/pre-commit
+.git/hooks/pre-commit:
+	@echo -ne "#!/bin/sh\nmake lint test-unit" >$@; chmod 755 $@;
 
 init-packages:
 	go build ./...;
@@ -331,8 +321,8 @@ $(MOCKS): go.sum $(MOCK_SOURCES)
 
 
 test: test-all
-test-all: test-clean $(MOCKS) $(TEST_ALL)
-test-unit: test-clean $(MOCKS) $(TEST_UNIT)
+test-all: test-clean init-sources $(TEST_ALL)
+test-unit: test-clean init-sources $(TEST_UNIT)
 test-clean:
 	@if [ -f "$(TEST_ALL)" ]; then rm -v $(TEST_ALL); fi; \
 	 if [ -f "$(TEST_UNIT)" ]; then rm -v $(TEST_UNIT); fi;
@@ -351,18 +341,18 @@ else
   TESTARGS ?= ./...
 endif
 
-$(TEST_ALL): $(SOURCES) $(MOCKS) $(TEST_DEPS)
+$(TEST_ALL): $(SOURCES) init-sources $(TEST_DEPS)
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
 	go test $(TESTFLAGS) -timeout $(TEST_TIMEOUT) \
 	  -cover -coverprofile $@ $(TESTARGS);
-$(TEST_UNIT): $(SOURCES) $(MOCKS)
+$(TEST_UNIT): $(SOURCES) init-sources
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
 	go test $(TESTFLAGS) -timeout $(TEST_TIMEOUT) \
 	  -cover -coverprofile $@ -short $(TESTARGS);
 
 
 lint: $(TARGETS_LINT)
-lint-src:
+lint-src: init-sources
 	go vet $$(go list ./...);
 	golint -set_exit_status $$(go list ./...);
 	@GOIMPORT="$$(goimports -l -local "$(REPOSITORY)" \
@@ -384,8 +374,8 @@ format:
 
 
 # Setup container specific build flags
-BUILDOS ?= ${shell grep "^FROM [^ ]*$$" $(CONTAINER) | grep -v " as " | \
-	sed -e "s/.*\(alpine\|ubuntu\).*/\1/g"}
+BUILDOS ?= ${shell grep "^FROM [^ ]*$$" $(CONTAINER) 2>/dev/null | \
+	grep -v " as " | sed -e "s/.*\(alpine\|ubuntu\).*/\1/g"}
 BUILDARCH ?= amd64
 ifeq ($(BUILDOS),alpine)
   BUILDFLAGS ?= -v -mod=readonly
@@ -496,7 +486,7 @@ $(addprefix run-, $(COMMANDS)): run-%: build/% $(RUN_DEPS)
 	exit $${PIPESTATUS[0]};
 
 # Targets for running the provide commands via golang.
-$(addprefix run-lang-, $(COMMANDS)): run-lang-%: $(BUILDIR)/% $(RUN_DEPS)
+$(addprefix run-go-, $(COMMANDS)): run-go-%: $(BUILDIR)/% $(RUN_DEPS)
 	@mkdir -p $(RUNDIR) && $(call run-setup);
 	$(call run-vars) $(call run-vars-local) \
 	  go run cmd/$*/main.go $(RUNARGS) 2>&1 | \
@@ -528,13 +518,6 @@ $(addprefix run-clean-, $(COMMANDS) db aws): run-clean-%:
 	  echo "removed container $(IMAGE_ARTIFACT)-$*"; \
 	fi; \
 
-
-# Deprected docker targets - to be removed.
-docker: image
-docker-build: image-build
-docker-push: image-push
-$(addprefix run-docker-, $(COMMANDS)): run-docker-%: run-image-%
-build-docker: build-image
 
 # Include custom targets to extend scripts.
 ifneq ("$(wildcard Makefile.targets)","")

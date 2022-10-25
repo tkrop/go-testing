@@ -13,7 +13,7 @@ import (
 	"github.com/tkrop/testing/test"
 )
 
-//go:generate mockgen -package=mock -destination=mock_iface_test.go -source=mock_test.go  IFace
+//go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mock_test.go  IFace
 
 type IFace interface {
 	CallA(string)
@@ -23,7 +23,7 @@ type IFace interface {
 func CallA(input string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		mocks.WaitGroup().Add(1)
-		return mock.Get(mocks, mock.NewMockIFace).EXPECT().
+		return mock.Get(mocks, NewMockIFace).EXPECT().
 			CallA(input).Times(1).
 			Do(func(arg any) {
 				defer mocks.WaitGroup().Done()
@@ -34,7 +34,7 @@ func CallA(input string) mock.SetupFunc {
 func CallB(input string, output string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		mocks.WaitGroup().Add(1)
-		return mock.Get(mocks, mock.NewMockIFace).EXPECT().
+		return mock.Get(mocks, NewMockIFace).EXPECT().
 			CallB(input).Return(output).Times(1).
 			Do(func(arg any) {
 				defer mocks.WaitGroup().Done()
@@ -44,7 +44,7 @@ func CallB(input string, output string) mock.SetupFunc {
 
 func NoCall() mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, mock.NewMockIFace).EXPECT()
+		return mock.Get(mocks, NewMockIFace).EXPECT()
 	}
 }
 
@@ -67,7 +67,7 @@ func MockValidate(
 }
 
 func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
-	iface := mock.Get(mocks, mock.NewMockIFace)
+	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
 			"a": func(t *test.TestingT) { iface.CallA("a") },
@@ -82,7 +82,7 @@ func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
 }
 
 func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
-	iface := mock.Get(mocks, mock.NewMockIFace)
+	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
 			"a": func(t *test.TestingT) { iface.CallA("a") },
@@ -97,7 +97,7 @@ func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
 }
 
 func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
-	iface := mock.Get(mocks, mock.NewMockIFace)
+	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
 			"a": func(t *test.TestingT) { iface.CallA("a") },
@@ -392,15 +392,15 @@ var testPanicParams = map[string]struct {
 }{
 	"setup": {
 		setup:       mock.Setup(NoCall()),
-		expectError: mock.ErrNoCall(mock.NewMockIFace(nil).EXPECT()),
+		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"chain": {
 		setup:       mock.Chain(NoCall()),
-		expectError: mock.ErrNoCall(mock.NewMockIFace(nil).EXPECT()),
+		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"parallel": {
 		setup:       mock.Parallel(NoCall()),
-		expectError: mock.ErrNoCall(mock.NewMockIFace(nil).EXPECT()),
+		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"detach": {
 		setup:       mock.Detach(4, NoCall()),
@@ -408,7 +408,7 @@ var testPanicParams = map[string]struct {
 	},
 	"sub": {
 		setup:       mock.Sub(0, 0, NoCall()),
-		expectError: mock.ErrNoCall(mock.NewMockIFace(nil).EXPECT()),
+		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"sub-head": {
 		setup:       mock.Sub(0, 0, mock.Detach(mock.Head, NoCall())),
