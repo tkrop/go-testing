@@ -1,9 +1,10 @@
 # Usage patterns of testing/mock
 
 This package contains a small extension library to handle mock call setup in a
-standardized way. Unfortunately, we had to sacrifice type-safety to allow for
-chaining mock calls in an arbitrary way during setup. Anyhow, in tests runtime
-validation is likely a sufficient strategy.
+standardized, highly reusable way. Unfortunately, we had to sacrifice a bit of
+type-safety to allow for chaining mock calls in an arbitrary way during setup.
+Anyhow, the offered in runtime validation is a sufficient strategy to cover
+for the missing type-safty.
 
 
 ## Generic mock setup pattern
@@ -133,14 +134,14 @@ var testUnitCallParams = map[string]struct {
     }
     "nested chain mock setup": {
         mockSetup: mock.Chain(
-               ServiceCallA(...),
+            ServiceCallA(...),
             mock.Chain(
                 ServiceCallA(...),
                 ServiceCallB(...),
                 ...
             ),
-               ServiceCallB(...),
-               ...
+            ServiceCallB(...),
+            ...
         )
     }
     "parallel chain mock setup": {
