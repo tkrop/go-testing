@@ -1,74 +1,128 @@
-package test_test
+package test
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/tkrop/testing/mock"
-	"github.com/tkrop/testing/perm"
-	"github.com/tkrop/testing/test"
 )
 
-//go:generate mockgen -package=test_test -destination=mock_iface_test.go -source=testing_test.go  IFace
+var testRunParams = map[string]struct {
+	expect Expect
+	test   func(*TestingT)
+}{
+	"run success": {
+		test: InRun(ExpectSuccess,
+			func(t *TestingT) {}),
+		expect: ExpectSuccess,
+	},
 
-type IFace interface {
-	CallA(string)
+	"run success with errorf": {
+		test: InRun(ExpectSuccess,
+			func(t *TestingT) { t.Errorf("fail") }),
+		expect: ExpectFailure,
+	},
+
+	"run success with fatalf": {
+		test: InRun(ExpectSuccess,
+			func(t *TestingT) { t.Fatalf("fail") }),
+		expect: ExpectFailure,
+	},
+
+	"run success with failnow": {
+		test: InRun(ExpectSuccess,
+			func(t *TestingT) { t.FailNow() }),
+		expect: ExpectFailure,
+	},
+
+	"run failure with errorf": {
+		test: InRun(ExpectFailure,
+			func(t *TestingT) { t.Errorf("fail") }),
+		expect: ExpectSuccess,
+	},
+
+	"run failure with fatalf": {
+		test: InRun(ExpectFailure,
+			func(t *TestingT) { t.Fatalf("fail") }),
+		expect: ExpectSuccess,
+	},
+
+	"run failure with failnow": {
+		test: InRun(ExpectFailure,
+			func(t *TestingT) { t.FailNow() }),
+		expect: ExpectSuccess,
+	},
+
+	"in success": {
+		test:   InSuccess(func(t *TestingT) {}),
+		expect: ExpectSuccess,
+	},
+
+	"in success with errorf": {
+		test: InSuccess(
+			func(t *TestingT) { t.Errorf("fail") }),
+		expect: ExpectFailure,
+	},
+
+	"in success with fatalf": {
+		test: InSuccess(
+			func(t *TestingT) { t.Fatalf("fail") }),
+		expect: ExpectFailure,
+	},
+
+	"in success with failnow": {
+		test: InSuccess(
+			func(t *TestingT) { t.FailNow() }),
+		expect: ExpectFailure,
+	},
+
+	"in failure with errorf": {
+		test: InFailure(
+			func(t *TestingT) { t.Errorf("fail") }),
+		expect: ExpectSuccess,
+	},
+
+	"in failure with fatalf": {
+		test: InFailure(
+			func(t *TestingT) { t.Fatalf("fail") }),
+		expect: ExpectSuccess,
+	},
+
+	"in failure with failnow": {
+		test: InFailure(
+			func(t *TestingT) { t.FailNow() }),
+		expect: ExpectSuccess,
+	},
 }
 
-func CallA(input string) mock.SetupFunc {
-	return func(mocks *mock.Mocks) any {
-		mocks.WaitGroup().Add(1)
-		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Times(1).
-			Do(func(arg any) {
-				defer mocks.WaitGroup().Done()
-			})
+func TestRun(t *testing.T) {
+	for message, param := range testRunParams {
+		t.Run(message, Run(param.expect, func(t *TestingT) {
+			require.NotEmpty(t, message)
+
+			// Given
+
+			// When
+			param.test(t)
+
+			// Then
+		}))
 	}
 }
 
-func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
-	iface := mock.Get(mocks, NewMockIFace)
-	return perm.NewTest(mocks,
-		perm.TestMap{
-			"a": func(t *test.TestingT) { iface.CallA("a") },
-			"b": func(t *test.TestingT) { iface.CallA("b") },
-			"c": func(t *test.TestingT) { iface.CallA("c") },
-		})
-}
+func TestOther(t *testing.T) {
+	for message, param := range testRunParams {
+		switch param.expect {
+		case ExpectSuccess:
+			t.Run(message, Success(func(t *TestingT) {
+				require.NotEmpty(t, message)
+				param.test(t)
+			}))
 
-func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
-	return mock.NewMock(t).Expect(mockSetup)
-}
-
-var testTestParams = perm.ExpectMap{
-	"b-a-c": test.ExpectSuccess,
-	"a-b-c": test.ExpectSuccess,
-	"a-c-b": test.ExpectSuccess,
-}
-
-func TestTest(t *testing.T) {
-	for message, expect := range testTestParams.Remain(test.ExpectFailure) {
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
-
-			perm := strings.Split(message, "-")
-			mockSetup := mock.Chain(
-				CallA("a"),
-				mock.Setup(
-					CallA("b"),
-				),
-				CallA("c"),
-			)
-			mock := MockSetup(t, mockSetup)
-
-			// When
-			test := SetupPermTestABC(mock)
-
-			// Then
-			test.Test(t, perm, expect)
-		}))
+		case ExpectFailure:
+			t.Run(message, Failure(func(t *TestingT) {
+				require.NotEmpty(t, message)
+				param.test(t)
+			}))
+		}
 	}
 }

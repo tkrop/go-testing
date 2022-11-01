@@ -54,6 +54,7 @@ func TestTest(t *testing.T) {
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
+			// Given
 			perm := strings.Split(message, "-")
 			mockSetup := mock.Chain(
 				CallA("a"),
