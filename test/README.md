@@ -35,15 +35,9 @@ func TestSetupChain(t *testing.T) {
 
 ## Isolation pattner for simple tests
 
-Besides, providing `Run(Exepct, func(*test.TestingT)) func(*testing.T)` for
-parameterized test, the package contains two further methods for isolation in
-simpler test situations:
+Besides, providing `test.Run(Exepct, func(*test.TestingT)) func(*testing.T)`
+optimized for parameterized test, the package contains two further methods for
+isolation in simpler cases:
 
-* `Failure(*testing.T, func(*test.TestingT) {})`, and
-* `Success(*testing.T, func(*test.TestingT) {})`.
-
-In more generic situations you can also use the base framework:
-
-```go
-  NewTestingT(*testing.T, test.Expect).test(func(*testing.T){})`
-```
+* `Failure(func(*test.TestingT) {}) func(*testing.T)`, and
+* `Success(func(*test.TestingT) {}) func(*testing.T)`.

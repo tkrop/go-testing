@@ -63,6 +63,17 @@ using `mocks.WaitGroup().Add(<times>)` and notifying the occurrence by calling
 match via `Do(<func>)`. The test waits for the detached *goroutines* to finish
 by calling `mocks.WaitGroup().Wait()`.
 
+**Note:** Waiting in a test has the disadvantage that it wait until the test
+timeout, iff not all mock calls are consumed. In this case the test output is
+not providing much help. This also happens in case of an unexpected mock call,
+that stops execution of the tested go-routine. To compensate for this,
+asynchronous tests need to run in an isolated environment that unlocks the
+waiting test in case of fatal errors.
+
+```go
+// TODO: add example
+```
+
 A static series of mock service calls can now simply expressed by chaining the
 mock service calls as follows using `mock.Chain` and while defining a new mock
 call setup function:
