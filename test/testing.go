@@ -2,12 +2,15 @@ package test
 
 import (
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/tkrop/testing/mock"
 )
 
 const (
@@ -34,6 +37,7 @@ type Test interface {
 type TestingT struct {
 	Test
 	t      Test
+	wg     mock.WaitGroup
 	expect Expect
 	failed bool
 }
@@ -42,6 +46,11 @@ type TestingT struct {
 // context.
 func NewTestingT(t Test, expect Expect) *TestingT {
 	return &TestingT{t: t, expect: expect}
+}
+
+// WaitGroup add wait group to unlock in case of a failure.
+func (m *TestingT) WaitGroup(wg mock.WaitGroup) {
+	m.wg = wg
 }
 
 // Name implements a delegate handling for `testing.T.Name`.
@@ -54,6 +63,14 @@ func (m *TestingT) Helper() {
 	m.t.Helper()
 }
 
+// Unlock unlock wait group of test by consuming the wait group counter
+// completely.
+func (m *TestingT) Unlock() {
+	if m.wg != nil {
+		m.wg.Add(math.MinInt)
+	}
+}
+
 // FailNow implements a detached failure handling for `testing.T.FailNow`.
 func (m *TestingT) FailNow() {
 	m.t.Helper()
@@ -61,6 +78,7 @@ func (m *TestingT) FailNow() {
 	if m.expect == ExpectSuccess {
 		m.t.FailNow()
 	}
+	m.Unlock()
 	runtime.Goexit()
 }
 
@@ -80,10 +98,11 @@ func (m *TestingT) Fatalf(format string, args ...any) {
 	if m.expect == ExpectSuccess {
 		m.t.Fatalf(format, args...)
 	}
+	m.Unlock()
 	runtime.Goexit()
 }
 
-// test execution the test function in a safe detached environment and check
+// test executes the test function in a safe detached environment and check
 // the failure state after the test function has finished. If the test result
 // is not according to expectation, a failure is created in the parent test
 // context.

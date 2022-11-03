@@ -1,9 +1,12 @@
 package test
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/tkrop/testing/mock"
 )
 
 var testRunParams = map[string]struct {
@@ -100,11 +103,15 @@ func TestRun(t *testing.T) {
 			require.NotEmpty(t, message)
 
 			// Given
+			wg := mock.NewMock(t).WaitGroup()
+			t.WaitGroup(wg)
+			go func() { wg.Add(1); wg.Wait() }()
 
 			// When
 			param.test(t)
 
 			// Then
+			wg.Add(math.MinInt)
 		}))
 	}
 }

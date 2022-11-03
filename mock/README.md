@@ -67,11 +67,29 @@ by calling `mocks.WaitGroup().Wait()`.
 timeout, iff not all mock calls are consumed. In this case the test output is
 not providing much help. This also happens in case of an unexpected mock call,
 that stops execution of the tested go-routine. To compensate for this,
-asynchronous tests need to run in an isolated environment that unlocks the
-waiting test in case of fatal errors.
+asynchronous tests need to run in an isolated [test environment](../test) that
+unlocks the waiting test function in case of fatal errors and failures.
 
 ```go
-// TODO: add example
+func TestRun(t *testing.T) {
+	for message, param := range testRunParams {
+		t.Run(message, test.Success(func(t *TestingT) {
+			require.NotEmpty(t, message)
+
+			// Given
+            ...
+            wg := mocks.WaitGroup()
+			t.WaitGroup(wg)	
+
+			// When
+            ...
+            wg.Wait()
+
+			// Then
+		}))
+	}
+}
+
 ```
 
 A static series of mock service calls can now simply expressed by chaining the
