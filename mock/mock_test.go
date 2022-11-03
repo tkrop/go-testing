@@ -1,6 +1,7 @@
 package mock_test
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -506,4 +507,19 @@ func TestGetSubSlice(t *testing.T) {
 			assert.Equal(t, param.expectSlice, slice)
 		})
 	}
+}
+
+func TestLenientWaitGroup(t *testing.T) {
+	// Given
+	defer func() { recover() }()
+	mocks := MockSetup(t, nil)
+
+	// When
+	mocks.WaitGroup().Add(3)
+	mocks.WaitGroup().Done()
+	mocks.WaitGroup().Add(math.MinInt)
+	mocks.WaitGroup().Done()
+
+	// Then
+	mocks.WaitGroup().Wait()
 }
