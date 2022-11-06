@@ -20,12 +20,9 @@ type IFace interface {
 
 func CallA(input string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
-		mocks.WaitGroup().Add(1)
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Times(1).
-			Do(func(arg any) {
-				defer mocks.WaitGroup().Done()
-			})
+			CallA(input).Times(mocks.Times(1)).
+			Do(mocks.GetDone(1))
 	}
 }
 

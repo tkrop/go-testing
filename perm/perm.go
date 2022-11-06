@@ -47,7 +47,7 @@ func (p *Test) Test(t *test.TestingT, perm []string, expect test.Expect) {
 	case test.ExpectSuccess:
 		// Test proper usage of `WaitGroup` on non-failing validation.
 		p.TestPerm(t, perm)
-		p.mocks.WaitGroup().Wait()
+		p.mocks.Wait()
 	case test.ExpectFailure:
 		// we need to execute failing test synchronous, since we setup full
 		// permutations instead of stopping setup on first failing mock calls.

@@ -41,55 +41,39 @@ future.
 ```go
 func ServiceCall(input..., output..., error) mock.SetupFunc {
     return func(mocks *Mocks) any {
-        mocks.WaitGroup().Add(1)
         return Get(mocks, NewServiceMock).EXPECT().
-            ServiceCall(input...).Return(output..., error).Times(1).
-            Do(func(input... interface{}) {
-                defer mocks.WaitGroup().Done()
-            })
-
+            ServiceCall(input...).Return(output..., error).
+			Times(mocks.Times(1)).Do(mocks.GetDone(<#input-args>))
     }
 }
 ```
 
 For simplicity the pattern combines regular as well as error behavior and is
-prepared to handle tests with detached *goroutines*, however, this code can
-be left out for further simplification.
+prepared to handle tests with detached *goroutines*, i.e. functions that are
+spawned by the system-under-test without waiting for their result.
 
-For detached *goroutines*, i.e. functions that do not communicate with the
-test, the mock handler provides a `WaitGroup` to registers expected mock calls
-using `mocks.WaitGroup().Add(<times>)` and notifying the occurrence by calling
-`mocks.WaitGroup().Done()` in as a mock callback function registered for the
-match via `Do(<func>)`. The test waits for the detached *goroutines* to finish
-by calling `mocks.WaitGroup().Wait()`.
+The mock handler therefore provides a `WaitGroup` and automatically registers
+the expected mock calls via `mock.Times(<#>)` and notifies the completion via
+`Do(mocks.GetDone(<#input-args>))`. The test needs to wait for the detached
+*goroutines* to finish by calling `mocks.Wait()` before checking whether mock
+calls are completely consumed.
 
-**Note:** Waiting in a test has the disadvantage that it wait until the test
-timeout, iff not all mock calls are consumed. In this case the test output is
-not providing much help. This also happens in case of an unexpected mock call,
-that stops execution of the tested go-routine. To compensate for this,
-asynchronous tests need to run in an isolated [test environment](../test) that
-unlocks the waiting test function in case of fatal errors and failures.
+**Note:** Since waiting for mock calls can take unitl the test timeout appears
+in case of test failures, you need to tests using `mocks.Wait()` in an isolated
+[test environment](../test) that unlocks the waiting test in case of failures
+and fatal errors using:
 
 ```go
-func TestRun(t *testing.T) {
-	for message, param := range testRunParams {
-		t.Run(message, test.Success(func(t *TestingT) {
-			require.NotEmpty(t, message)
+test.Success(func(t *TestingT) {
+    // Given
+    ...
 
-			// Given
-            ...
-            wg := mocks.WaitGroup()
-			t.WaitGroup(wg)	
+    // When
+    ...
+    mocks.Wait()
 
-			// When
-            ...
-            wg.Wait()
-
-			// Then
-		}))
-	}
-}
-
+    // Then
+})
 ```
 
 A static series of mock service calls can now simply expressed by chaining the
@@ -193,13 +177,15 @@ var testUnitCallParams = map[string]struct {
 }
 ```
 
-This test parameter setup can now be use for a parameterized unit test using
-the following common pattern:
+This test parameter setup can now be use for all parameterized unit test using
+the following common pattern, that includes the optional `mocks.Wait()` for
+detached *goroutines* as well as the isoated [test environment](../test) to
+unlocks the waiting test in case of failures:
 
 ```go
 func TestUnitCall(t *testing.T) {
     for message, param := range testUnitCallParams {
-        t.Run(message, func(t *testing.T) {
+        t.Run(message, test.Success(func(t *testing.T) {
             require.NotEmpty(t, message)
 
             //Given
@@ -208,7 +194,7 @@ func TestUnitCall(t *testing.T) {
             //When
             result, err := unit.UnitCall(...)
 
-            mock.WaitGroup().Wait()
+            mocks.Wait()
 
             //Then
             if param.expectError != nil {
@@ -217,7 +203,7 @@ func TestUnitCall(t *testing.T) {
                 require.NoError(t, err)
             }
             assert.Equal(t, param.expect*, result)
-        })
+        }))
     }
 }
 ```
