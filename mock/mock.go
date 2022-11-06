@@ -3,9 +3,10 @@ package mock
 import (
 	"fmt"
 	"reflect"
-	"sync"
 
 	"github.com/golang/mock/gomock"
+
+	"github.com/tkrop/testing/sync"
 )
 
 // DetachMode defines the mode for detaching mock calls.
@@ -64,58 +65,6 @@ type (
 	detachBoth any
 )
 
-// WaitGroup interface of a wait group as provided by `sync.WaitGroup`.
-type WaitGroup interface {
-	// Add increments or decrements the wait counter by the given delta.
-	Add(delta int)
-	// Done decrements the wait counter by exactly one.
-	Done()
-	// Wait waits until the wait counter has returned to zero.
-	Wait()
-}
-
-// LenientWaitGroup implements a lenient wait group for testing purposes based
-// on a `sync.WaitGroup` and an atomic integer to sliently prevent panics when
-// breaking the barrier premature.
-type LenientWaitGroup struct {
-	wg sync.WaitGroup
-}
-
-// Add increments or decrements the wait group counter leniently by the delta,
-// i.e. it does not fail, if the wait group counter is already consumed.
-func (wg *LenientWaitGroup) Add(delta int) {
-	if delta > 0 {
-		wg.wg.Add(delta)
-	} else {
-		defer func() {
-			if err := recover(); err != nil &&
-				err.(string) == "sync: negative WaitGroup counter" {
-				wg.wg.Add(1)
-			}
-		}()
-		for d := delta; d < 0; d++ {
-			wg.wg.Done()
-		}
-	}
-}
-
-// Done decrements the wait group counter leniently by one, i.e. it does not
-// fail, if the wait group counter is already consumed.
-func (wg *LenientWaitGroup) Done() {
-	defer func() {
-		if err := recover(); err != nil &&
-			err.(string) == "sync: negative WaitGroup counter" {
-			wg.wg.Add(1)
-		}
-	}()
-	wg.wg.Done()
-}
-
-// Wait waits until the work group counter is completely consumed.
-func (wg *LenientWaitGroup) Wait() {
-	wg.wg.Wait()
-}
-
 // SetupFunc common mock setup function signature.
 type SetupFunc func(*Mocks) any
 
@@ -124,18 +73,18 @@ type Mocks struct {
 	// The mock controller used.
 	ctrl *Controller
 	// The lenient wait group.
-	wg *LenientWaitGroup
+	wg sync.WaitGroup
 	// The map of mock singletons.
 	mocks map[reflect.Type]any
 }
 
 // NewMock creates a new mock handler using given test reporter (`*testing.T`).
 func NewMock(t gomock.TestReporter) *Mocks {
-	return &Mocks{
+	return (&Mocks{
 		ctrl:  gomock.NewController(t),
-		wg:    &LenientWaitGroup{},
+		wg:    sync.NewLenientWaitGroup(),
 		mocks: map[reflect.Type]any{},
-	}
+	}).syncWith(t)
 }
 
 // Expect configures the mock handler to expect the given mock function calls.
@@ -146,11 +95,88 @@ func (mocks *Mocks) Expect(fncalls SetupFunc) *Mocks {
 	return mocks
 }
 
-// WaitGroup returns the `WaitGroup` of the mock handler to wait at when the
-// tests comprises mock calls in detached `go-routines`.
-func (mocks *Mocks) WaitGroup() WaitGroup {
-	return mocks.wg
+// syncWith used to synchronize the waitgroup of the mock setup with the wait
+// group of the given test reporter. This function is called automatically on
+// mock creation and therefore does not need to be called on the same reporter
+// again.
+func (mocks *Mocks) syncWith(t gomock.TestReporter) *Mocks {
+	if s, ok := t.(sync.Synchronizer); ok {
+		s.WaitGroup(mocks.wg)
+	}
+	return mocks
 }
+
+// Wait waits for all mock calls registered via `mocks.Times(<#>)` to be
+// consumed before testing continuing. This can be used to support testing of
+// detached `go-routines` using isolated test environments.
+func (mocks *Mocks) Wait() {
+	mocks.wg.Wait()
+}
+
+// Times is adding creating the expectation that exactly the given number of
+// mock calls setups are consumed via `gomock.Do`.
+func (mocks *Mocks) Times(num int) int {
+	mocks.wg.Add(num)
+	return num
+}
+
+// GetDone is a convenience method for providing a standardized notification
+// function call with the given number of arguments for `gomock.Do` to signal
+// that a mock call setup was consumed.
+func (mocks *Mocks) GetDone(numargs int) any {
+	switch numargs {
+	case 0:
+		return func() { defer mocks.wg.Done() }
+	case 1:
+		return func(any) { defer mocks.wg.Done() }
+	case 2:
+		return func(any, any) { defer mocks.wg.Done() }
+	case 3:
+		return func(any, any, any) { defer mocks.wg.Done() }
+	case 4:
+		return func(any, any, any, any) { defer mocks.wg.Done() }
+	case 5:
+		return func(any, any, any, any, any) { defer mocks.wg.Done() }
+	case 6:
+		return func(any, any, any, any, any, any) {
+			defer mocks.wg.Done()
+		}
+	case 7:
+		return func(any, any, any, any, any, any, any) {
+			defer mocks.wg.Done()
+		}
+	case 8:
+		return func(any, any, any, any, any, any, any, any) {
+			defer mocks.wg.Done()
+		}
+	case 9:
+		return func(any, any, any, any, any, any, any, any, any) {
+			defer mocks.wg.Done()
+		}
+	default:
+		panic(fmt.Sprintf("argument number not supported: %d", numargs))
+	}
+}
+
+// TODO: Reconsider this apporach. Seems not to be helpful yet.
+//
+// Mock defines an advanced mock setup function for exactly one mock call setup
+// by resolving the singleton mock instance and handing it over to the provided
+// function for calling the mock method and providing the return values. The
+// created function automatically sets up the wait group for advanced testing
+// strategies.
+// func Mock[T any](
+// 	creator func(*Controller) *T, caller func(*T) *gomock.Call,
+// ) SetupFunc {
+// 	return func(mocks *Mocks) any {
+// 		call := caller(Get(mocks, creator)).
+// 			Times(mocks.Times(1))
+// 		value := reflect.ValueOf(call).Elem()
+// 		field := value.FieldByName("methodType")
+// 		ftype := *(*reflect.Type)(unsafe.Pointer(field.UnsafeAddr()))
+// 		return call.Do(mocks.Done(ftype.NumIn()))
+// 	}
+// }
 
 // Get resolves the actual mock from the mock handler by providing the
 // constructor function generated by `gomock` to create a new mock.

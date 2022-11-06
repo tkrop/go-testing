@@ -1,7 +1,6 @@
 package mock_test
 
 import (
-	"math"
 	"strings"
 	"testing"
 
@@ -23,23 +22,17 @@ type IFace interface {
 
 func CallA(input string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
-		mocks.WaitGroup().Add(1)
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Times(1).
-			Do(func(arg any) {
-				defer mocks.WaitGroup().Done()
-			})
+			CallA(input).Times(mocks.Times(1)).
+			Do(mocks.GetDone(1))
 	}
 }
 
 func CallB(input string, output string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
-		mocks.WaitGroup().Add(1)
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallB(input).Return(output).Times(1).
-			Do(func(arg any) {
-				defer mocks.WaitGroup().Done()
-			})
+			CallB(input).Return(output).
+			Times(mocks.Times(1)).Do(mocks.GetDone(1))
 	}
 }
 
@@ -63,7 +56,7 @@ func MockValidate(
 	} else {
 		// Test proper usage of `WaitGroup` on non-failing validation.
 		validate(t, mocks)
-		mocks.WaitGroup().Wait()
+		mocks.Wait()
 	}
 }
 
@@ -441,7 +434,7 @@ func TestPanic(t *testing.T) {
 
 			// Then
 			require.Fail(t, "not paniced")
-			mock.WaitGroup().Wait()
+			mock.Wait()
 		})
 	}
 }
@@ -509,17 +502,76 @@ func TestGetSubSlice(t *testing.T) {
 	}
 }
 
-func TestLenientWaitGroup(t *testing.T) {
-	// Given
-	defer func() { recover() }()
-	mocks := MockSetup(t, nil)
+var testGetDoneParams = map[string]struct {
+	numargs int
+	panic   bool
+}{
+	"test 0 args":  {numargs: 0},
+	"test 1 args":  {numargs: 1},
+	"test 2 args":  {numargs: 2},
+	"test 3 args":  {numargs: 3},
+	"test 4 args":  {numargs: 4},
+	"test 5 args":  {numargs: 5},
+	"test 6 args":  {numargs: 6},
+	"test 7 args":  {numargs: 7},
+	"test 8 args":  {numargs: 8},
+	"test 9 args":  {numargs: 9},
+	"test 10 args": {numargs: 10, panic: true},
+	"test 11 args": {numargs: 11, panic: true},
+}
 
-	// When
-	mocks.WaitGroup().Add(3)
-	mocks.WaitGroup().Done()
-	mocks.WaitGroup().Add(math.MinInt)
-	mocks.WaitGroup().Done()
+func TestGetDone(t *testing.T) {
+	for message, param := range testGetDoneParams {
+		t.Run(message, func(t *testing.T) {
+			require.NotEmpty(t, message)
 
-	// Then
-	mocks.WaitGroup().Wait()
+			// Given
+			mocks := MockSetup(t, nil)
+			mocks.Times(1)
+			if param.panic {
+				defer func() { recover() }()
+			}
+
+			// When
+			fncall := mocks.GetDone(param.numargs)
+			switch param.numargs {
+			case 0:
+				fncall.(func())()
+			case 1:
+				fncall.(func(any))(nil)
+			case 2:
+				fncall.(func(any, any))(nil, nil)
+			case 3:
+				fncall.(func(any, any, any))(nil, nil, nil)
+			case 4:
+				fncall.(func(any, any, any, any))(nil, nil, nil, nil)
+			case 5:
+				fncall.(func(
+					any, any, any, any, any,
+				))(nil, nil, nil, nil, nil)
+			case 6:
+				fncall.(func(
+					any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil)
+			case 7:
+				fncall.(func(
+					any, any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil, nil)
+			case 8:
+				fncall.(func(
+					any, any, any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil, nil, nil)
+			case 9:
+				fncall.(func(
+					any, any, any, any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			}
+
+			// Then
+			if param.panic {
+				assert.Fail(t, "not paniced on not supported argument number")
+			}
+			mocks.Wait()
+		})
+	}
 }

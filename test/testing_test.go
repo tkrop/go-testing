@@ -1,7 +1,6 @@
 package test
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -103,15 +102,17 @@ func TestRun(t *testing.T) {
 			require.NotEmpty(t, message)
 
 			// Given
-			wg := mock.NewMock(t).WaitGroup()
-			t.WaitGroup(wg)
-			go func() { wg.Add(1); wg.Wait() }()
+			mocks := mock.NewMock(t)
+			mocks.Times(1)
 
 			// When
-			param.test(t)
+			go func() {
+				param.test(t)
+				mocks.Times(-1)
+			}()
 
 			// Then
-			wg.Add(math.MinInt)
+			mocks.Wait()
 		}))
 	}
 }

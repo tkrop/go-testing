@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tkrop/testing/mock"
+	"github.com/tkrop/testing/sync"
 )
 
 const (
@@ -36,8 +35,9 @@ type Test interface {
 // for expected test failures.
 type TestingT struct {
 	Test
+	sync.Synchronizer
 	t      Test
-	wg     mock.WaitGroup
+	wg     sync.WaitGroup
 	expect Expect
 	failed bool
 }
@@ -49,7 +49,7 @@ func NewTestingT(t Test, expect Expect) *TestingT {
 }
 
 // WaitGroup add wait group to unlock in case of a failure.
-func (m *TestingT) WaitGroup(wg mock.WaitGroup) {
+func (m *TestingT) WaitGroup(wg sync.WaitGroup) {
 	m.wg = wg
 }
 
@@ -109,7 +109,7 @@ func (m *TestingT) Fatalf(format string, args ...any) {
 func (m *TestingT) test(test func(*TestingT)) *TestingT {
 	m.t.Helper()
 
-	wg := sync.WaitGroup{}
+	wg := sync.NewWaitGroup()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
