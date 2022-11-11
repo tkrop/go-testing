@@ -107,14 +107,37 @@ func (mocks *Mocks) syncWith(t gomock.TestReporter) *Mocks {
 }
 
 // Wait waits for all mock calls registered via `mocks.Times(<#>)` to be
-// consumed before testing continuing. This can be used to support testing of
-// detached `go-routines` using isolated test environments.
+// consumed before testing continuing. This method implements the `WaitGroup`
+// interface to support testing of detached `go-routines` in an isolated
+// [test](../test) environment.
 func (mocks *Mocks) Wait() {
 	mocks.wg.Wait()
 }
 
-// Times is adding creating the expectation that exactly the given number of
-// mock calls setups are consumed via `gomock.Do`.
+// TODO: not needed yet - optional extension.
+//
+// Add adds the given delta on the waiting group handling the expected or
+// consumed mock calls.  This method implements the `WaitGroup` interface to
+// support testing of detached `go-routines` in an isolated [test](../test)
+// environment.
+//
+// func (mocks *Mocks) Add(delta int) {
+// 	mocks.wg.Add(delta)
+// }
+
+// TODO: not needed yet - optional extension.
+//
+// Done removes exactly one expected mock call from the wait group handling the
+// expected or consumed mock calls. This method implements the `WaitGroup`
+// interface to support testing of detached `go-routines` in an isolated
+// [test](../test) environment.
+//
+// func (mocks *Mocks) Done() {
+// 	mocks.wg.Done()
+// }
+
+// Times is creating the expectation that exactly the given number of mock call
+// are consumed via `gomock.Do`.
 func (mocks *Mocks) Times(num int) int {
 	mocks.wg.Add(num)
 	return num
@@ -158,13 +181,21 @@ func (mocks *Mocks) GetDone(numargs int) any {
 	}
 }
 
-// TODO: Reconsider this apporach. Seems not to be helpful yet.
+// TODO: Reconsider this apporach. Seems not to be helpful yet. Test setup
+// functions would look as follows:
+//
+//	func GetTokenX(url string, err error) mock.SetupFunc {
+//	  return mock.Mock(NewMockTokenProvider, func(mock *MockTokenProvider) *gomock.Call {
+//	    return mock.EXPECT().GetToken(url).Return(token)
+//	  })
+//	}
 //
 // Mock defines an advanced mock setup function for exactly one mock call setup
 // by resolving the singleton mock instance and handing it over to the provided
 // function for calling the mock method and providing the return values. The
 // created function automatically sets up the wait group for advanced testing
 // strategies.
+//
 // func Mock[T any](
 // 	creator func(*Controller) *T, caller func(*T) *gomock.Call,
 // ) SetupFunc {
@@ -174,7 +205,7 @@ func (mocks *Mocks) GetDone(numargs int) any {
 // 		value := reflect.ValueOf(call).Elem()
 // 		field := value.FieldByName("methodType")
 // 		ftype := *(*reflect.Type)(unsafe.Pointer(field.UnsafeAddr()))
-// 		return call.Do(mocks.Done(ftype.NumIn()))
+// 		return call.Do(mocks.GetDone(ftype.NumIn()))
 // 	}
 // }
 

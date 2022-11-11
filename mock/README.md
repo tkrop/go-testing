@@ -186,8 +186,6 @@ unlocks the waiting test in case of failures:
 func TestUnitCall(t *testing.T) {
     for message, param := range testUnitCallParams {
         t.Run(message, test.Success(func(t *testing.T) {
-            require.NotEmpty(t, message)
-
             //Given
             unit, mocks := SetupTestUnit(t, param.mockSetup)
 
@@ -203,7 +201,55 @@ func TestUnitCall(t *testing.T) {
                 require.NoError(t, err)
             }
             assert.Equal(t, param.expect*, result)
-        }))
+        }, false))
     }
 }
 ```
+
+
+## Paralle parameterized test pattern
+
+Generally, the [test](../test) and [mock](.) framework supports parallel test
+execution, however, there are some general requirements for running tests in
+parallel:
+
+1. The tests *must not modify* environment variables dynamically.
+2. The tests *must not require* reserved service ports and open listeners.
+3. The tests *must not use* [monkey patching](https://github.com/bouk/monkey)
+   to modify commonly used functions,
+4. The tests *must not use* [gock](https://github.com/h2non/gock) for mocking
+   on HTTP transport level, and finally
+5. The tests *must not share* any other resources, e.g. objects or database
+   schemas, that need to be updated during the test execution.
+
+If this conditions hold, the general pattern provided above can be extened to
+support parallel test execution.
+
+```go
+func TestUnitCall(t *testing.T) {
+    t.Parallel()
+    for message, param := range testUnitCallParams {
+        message, param := message, param
+        t.Run(message, test.Success(func(t *testing.T) {
+            //Given
+            unit, mocks := SetupTestUnit(t, param.mockSetup)
+
+            //When
+            result, err := unit.UnitCall(...)
+
+            mocks.Wait()
+
+            //Then
+            if param.expectError != nil {
+                assert.Equal(t, param.expectError, err)
+            } else {
+                require.NoError(t, err)
+            }
+            assert.Equal(t, param.expect*, result)
+        }, true))
+    }
+}
+```
+
+**Note:** In the above pattern the setup for parallel tests hidden in the setup
+of the isolated [test](../test) environment.
