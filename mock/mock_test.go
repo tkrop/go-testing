@@ -47,7 +47,9 @@ func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
 }
 
 func MockValidate(
-	t *test.TestingT, mocks *mock.Mocks, validate func(*test.TestingT, *mock.Mocks), failing bool,
+	t *test.TestingT, mocks *mock.Mocks,
+	validate func(*test.TestingT, *mock.Mocks),
+	failing bool,
 ) {
 	if failing {
 		// we need to execute failing test synchronous, since we setup full
@@ -123,7 +125,9 @@ var testSetupParams = perm.ExpectMap{
 }
 
 func TestSetup(t *testing.T) {
+	t.Parallel()
 	for message, expect := range testSetupParams.Remain(test.ExpectSuccess) {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -144,7 +148,7 @@ func TestSetup(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, false))
 	}
 }
 
@@ -153,7 +157,9 @@ var testChainParams = perm.ExpectMap{
 }
 
 func TestChain(t *testing.T) {
+	t.Parallel()
 	for message, expect := range testChainParams.Remain(test.ExpectFailure) {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -174,7 +180,7 @@ func TestChain(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, false))
 	}
 }
 
@@ -188,7 +194,9 @@ var testSetupChainParams = perm.ExpectMap{
 }
 
 func TestSetupChain(t *testing.T) {
+	t.Parallel()
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -213,12 +221,14 @@ func TestSetupChain(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, false))
 	}
 }
 
 func TestChainSetup(t *testing.T) {
+	t.Parallel()
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -243,7 +253,7 @@ func TestChainSetup(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, false))
 	}
 }
 
@@ -263,7 +273,9 @@ var testParallelChainParams = perm.ExpectMap{
 }
 
 func TestParallelChain(t *testing.T) {
+	t.Parallel()
 	for message, expect := range testParallelChainParams.Remain(test.ExpectFailure) {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
 			require.NotEmpty(t, message)
 
@@ -290,7 +302,7 @@ func TestParallelChain(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, false))
 	}
 }
 
@@ -314,12 +326,12 @@ var testChainSubParams = perm.ExpectMap{
 }
 
 func TestChainSub(t *testing.T) {
+	t.Parallel()
 	perms := testChainSubParams
 	//	perms := PermRemain(testChainSubParams, test.ExpectFailure)
 	for message, expect := range perms {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
-
 			// Given
 			perm := strings.Split(message, "-")
 			mockSetup := mock.Chain(
@@ -341,7 +353,7 @@ func TestChainSub(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, false))
 	}
 }
 
@@ -357,10 +369,10 @@ var testDetachParams = perm.ExpectMap{
 }
 
 func TestDetach(t *testing.T) {
+	t.Parallel()
 	for message, expect := range testDetachParams.Remain(test.ExpectFailure) {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
-
 			// Given
 			perm := strings.Split(message, "-")
 			mockSetup := mock.Chain(
@@ -376,7 +388,7 @@ func TestDetach(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, false))
 	}
 }
 
@@ -419,10 +431,10 @@ var testPanicParams = map[string]struct {
 }
 
 func TestPanic(t *testing.T) {
+	t.Parallel()
 	for message, param := range testPanicParams {
+		message, param := message, param
 		t.Run(message, func(t *testing.T) {
-			require.NotEmpty(t, message)
-
 			// Given
 			defer func() {
 				err := recover()
@@ -487,12 +499,10 @@ var testGetSubSliceParams = map[string]struct {
 }
 
 func TestGetSubSlice(t *testing.T) {
+	t.Parallel()
 	for message, param := range testGetSubSliceParams {
+		message, param := message, param
 		t.Run(message, func(t *testing.T) {
-			require.NotEmpty(t, message)
-
-			// Given
-
 			// When
 			slice := mock.GetSubSlice(param.from, param.to, param.slice)
 
@@ -521,10 +531,10 @@ var testGetDoneParams = map[string]struct {
 }
 
 func TestGetDone(t *testing.T) {
+	t.Parallel()
 	for message, param := range testGetDoneParams {
+		message, param := message, param
 		t.Run(message, func(t *testing.T) {
-			require.NotEmpty(t, message)
-
 			// Given
 			mocks := MockSetup(t, nil)
 			mocks.Times(1)

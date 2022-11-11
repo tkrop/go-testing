@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 
 	"github.com/tkrop/testing/mock"
 	"github.com/tkrop/testing/perm"
@@ -47,10 +46,10 @@ var testTestParams = perm.ExpectMap{
 }
 
 func TestTest(t *testing.T) {
+	t.Parallel()
 	for message, expect := range testTestParams.Remain(test.ExpectFailure) {
+		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
-
 			// Given
 			perm := strings.Split(message, "-")
 			mockSetup := mock.Chain(
@@ -67,6 +66,6 @@ func TestTest(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
+		}, true))
 	}
 }

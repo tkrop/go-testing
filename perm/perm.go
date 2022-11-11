@@ -7,6 +7,7 @@ import (
 
 	"github.com/tkrop/testing/mock"
 	"github.com/tkrop/testing/test"
+	"github.com/tkrop/testing/utils/slices"
 )
 
 // ExpectMap defines a map of permutation tests that are expected to either
@@ -58,30 +59,22 @@ func (p *Test) Test(t *test.TestingT, perm []string, expect test.Expect) {
 // Remain calculate and add the missing permutations and add it with
 // expected result to the given permmutation map.
 func (perms ExpectMap) Remain(expect test.Expect) ExpectMap {
-	for key := range perms {
-		Slice(strings.Split(key, "-"), func(perm []string) {
-			key := strings.Join(perm, "-")
-			if _, ok := perms[key]; !ok {
-				perms[key] = expect
-			}
-		}, 0)
-		break // we only need to permutate the first key.
+	cperms := ExpectMap{}
+	for key, value := range perms {
+		cperms[key] = value
 	}
-	return perms
-}
 
-// Slice permutates the given slice starting at the position given by and
-// call the `do` function on each permutation to collect the result. For a full
-// permutation the `index` must start with `0`.
-func Slice[T any](slice []T, do func([]T), index int) {
-	if index <= len(slice) {
-		Slice(slice, do, index+1)
-		for offset := index + 1; offset < len(slice); offset++ {
-			slice[index], slice[offset] = slice[offset], slice[index]
-			Slice(slice, do, index+1)
-			slice[index], slice[offset] = slice[offset], slice[index]
-		}
-	} else {
-		do(slice)
+	// we only need to permutate the first key.
+	for key := range cperms {
+		slices.Permute(strings.Split(key, "-"),
+			func(perm []string) {
+				key := strings.Join(perm, "-")
+				if _, ok := cperms[key]; !ok {
+					cperms[key] = expect
+				}
+			}, 0)
+		break
 	}
+
+	return cperms
 }

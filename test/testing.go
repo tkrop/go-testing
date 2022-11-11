@@ -1,15 +1,17 @@
 package test
 
 import (
-	"fmt"
 	"math"
 	"runtime"
+	gosync "sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/tkrop/testing/sync"
+	"github.com/tkrop/testing/utils/slices"
 )
 
 const (
@@ -30,36 +32,61 @@ type Test interface {
 	Name() string
 }
 
+// Cleanuper defines an interface to add a custom mehtod that is called after
+// the test execution to cleanup the test environment.
+type Cleanuper interface {
+	Cleanup(f func())
+}
+
 // TestingT is  a minimal testing abstraction of `testing.T` that supports
-// `testiy` and `gomock`. It can be used as drop in replacement to check
-// for expected test failures.
+// `testiy` and `gomock`. It can be used as drop in replacement to check for
+// expected test failures.
 type TestingT struct {
 	Test
 	sync.Synchronizer
-	t      Test
-	wg     sync.WaitGroup
-	expect Expect
-	failed bool
+	t        Test
+	wg       sync.WaitGroup
+	mu       gosync.Mutex
+	failed   atomic.Bool
+	cleanups []func()
+	expect   Expect
 }
 
 // NewTestingT creates a new minimal test context based on the given `go-test`
 // context.
 func NewTestingT(t Test, expect Expect) *TestingT {
+	if tx, ok := t.(*TestingT); ok {
+		return &TestingT{t: tx, wg: tx.wg, expect: expect}
+	}
 	return &TestingT{t: t, expect: expect}
 }
 
-// WaitGroup add wait group to unlock in case of a failure.
+// Cleanup is a function called to setup test cleanup after execution. This
+// method is allowing `gomock` to register its `finish` method that reports the
+// missing mock calls.
+func (m *TestingT) Cleanup(cleanup func()) {
+	m.mu.Lock()
+	m.cleanups = append(m.cleanups, cleanup)
+	m.mu.Unlock()
+}
+
+// WaitGroup adds wait group to unlock in case of a failure.
 func (m *TestingT) WaitGroup(wg sync.WaitGroup) {
 	m.wg = wg
 }
 
-// Name implements a delegate handling for `testing.T.Name`.
+// Name provides the test name. Implementation is a pure a delegate function
+// for `testing.T.Name`.
 func (m *TestingT) Name() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	return m.t.Name()
 }
 
 // Helper implements a delegate handling for `testing.T.Helper`.
 func (m *TestingT) Helper() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.t.Helper()
 }
 
@@ -73,19 +100,19 @@ func (m *TestingT) Unlock() {
 
 // FailNow implements a detached failure handling for `testing.T.FailNow`.
 func (m *TestingT) FailNow() {
-	m.t.Helper()
-	m.failed = true
+	m.Helper()
+	m.failed.Store(true)
+	defer m.Unlock()
 	if m.expect == ExpectSuccess {
 		m.t.FailNow()
 	}
-	m.Unlock()
 	runtime.Goexit()
 }
 
 // Errorf implements a detached failure handling for `testing.T.Errorf`.
 func (m *TestingT) Errorf(format string, args ...any) {
-	m.t.Helper()
-	m.failed = true
+	m.Helper()
+	m.failed.Store(true)
 	if m.expect == ExpectSuccess {
 		m.t.Errorf(format, args...)
 	}
@@ -93,12 +120,12 @@ func (m *TestingT) Errorf(format string, args ...any) {
 
 // Fatalf implements a detached failure handling for `testing.T.Fatelf`.
 func (m *TestingT) Fatalf(format string, args ...any) {
-	m.t.Helper()
-	m.failed = true
+	m.Helper()
+	m.failed.Store(true)
+	defer m.Unlock()
 	if m.expect == ExpectSuccess {
 		m.t.Fatalf(format, args...)
 	}
-	m.Unlock()
 	runtime.Goexit()
 }
 
@@ -107,8 +134,15 @@ func (m *TestingT) Fatalf(format string, args ...any) {
 // is not according to expectation, a failure is created in the parent test
 // context.
 func (m *TestingT) test(test func(*TestingT)) *TestingT {
-	m.t.Helper()
+	m.Helper()
 
+	// register cleanup handlers.
+	m.Cleanup(func() { m.finish() })
+	if c, ok := m.t.(Cleanuper); ok {
+		c.Cleanup(func() { m.cleanup() })
+	}
+
+	// execute test function.
 	wg := sync.NewWaitGroup()
 	wg.Add(1)
 	go func() {
@@ -117,22 +151,46 @@ func (m *TestingT) test(test func(*TestingT)) *TestingT {
 	}()
 	wg.Wait()
 
+	return m
+}
+
+// cleanup runs the cleanup methods registered on the isolated test environment.
+func (m *TestingT) cleanup() {
+	m.mu.Lock()
+	cleanups := slices.Reverse(m.cleanups)
+	m.mu.Unlock()
+
+	for _, cleanup := range cleanups {
+		cleanup()
+	}
+}
+
+// finish evaluates the final result of the test function in relation to the
+// provided expectation.
+func (m *TestingT) finish() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	switch m.expect {
 	case ExpectSuccess:
-		require.False(m.t, m.failed,
-			fmt.Sprintf("Expected test %s to succeed", m.t.Name()))
+		if m.failed.Load() {
+			m.t.Errorf("Expected test to succeed but it failed: %s", m.t.Name())
+		}
 	case ExpectFailure:
-		require.True(m.t, m.failed,
-			fmt.Sprintf("Expected test %s to fail", m.t.Name()))
+		if !m.failed.Load() {
+			m.t.Errorf("Expected test to fail but it succeeded: %s", m.t.Name())
+		}
 	}
-	return m
 }
 
 // Run creates an isolated test environment for the given test function with
 // given expectation. When executed via `t.Run()` it checks whether the result
 // is matching the expection.
-func Run(expect Expect, test func(*TestingT)) func(*testing.T) {
+func Run(expect Expect, test func(*TestingT), parallel bool) func(*testing.T) {
 	return func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		NewTestingT(t, expect).test(test)
 	}
 }
@@ -140,8 +198,11 @@ func Run(expect Expect, test func(*TestingT)) func(*testing.T) {
 // Failure creates an isolaged test environment for the given test function
 // and expects the given test function to fail when executed via `t.Run()`. If
 // the function fails, the failure is intercepted and the test succeeds.
-func Failure(test func(*TestingT)) func(*testing.T) {
+func Failure(test func(*TestingT), parallel bool) func(*testing.T) {
 	return func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		NewTestingT(t, ExpectFailure).test(test)
 	}
 }
@@ -149,8 +210,11 @@ func Failure(test func(*TestingT)) func(*testing.T) {
 // Success creates an isolated test environment for the given test function
 // and expects the test to succeed as usually when executed via `t.Run()`. If
 // the test failes the result is propagated to the surrounding test.
-func Success(test func(*TestingT)) func(*testing.T) {
+func Success(test func(*TestingT), parallel bool) func(*testing.T) {
 	return func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		NewTestingT(t, ExpectSuccess).test(test)
 	}
 }

@@ -69,5 +69,11 @@ func (wg *LenientWaitGroup) Done() {
 
 // Wait waits until the work group counter is completely consumed.
 func (wg *LenientWaitGroup) Wait() {
+	defer func() {
+		if err := recover(); err != nil &&
+			err.(string) != "sync: WaitGroup is reused before previous Wait has returned" {
+			panic(err)
+		}
+	}()
 	wg.wg.Wait()
 }
