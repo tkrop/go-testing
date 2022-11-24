@@ -129,17 +129,23 @@ func (m *TestingT) Fatalf(format string, args ...any) {
 	runtime.Goexit()
 }
 
-// test executes the test function in a safe detached environment and check
+// Run executes the test function in a safe detached environment and check
 // the failure state after the test function has finished. If the test result
 // is not according to expectation, a failure is created in the parent test
 // context.
-func (m *TestingT) test(test func(*TestingT)) *TestingT {
+func (m *TestingT) Run(test func(*TestingT)) *TestingT {
 	m.Helper()
 
 	// register cleanup handlers.
-	m.Cleanup(func() { m.finish() })
+	m.Cleanup(func() {
+		m.Helper()
+		m.finish()
+	})
 	if c, ok := m.t.(Cleanuper); ok {
-		c.Cleanup(func() { m.cleanup() })
+		c.Cleanup(func() {
+			m.Helper()
+			m.cleanup()
+		})
 	}
 
 	// execute test function.
@@ -191,7 +197,7 @@ func Run(expect Expect, test func(*TestingT), parallel bool) func(*testing.T) {
 		if parallel {
 			t.Parallel()
 		}
-		NewTestingT(t, expect).test(test)
+		NewTestingT(t, expect).Run(test)
 	}
 }
 
@@ -203,7 +209,7 @@ func Failure(test func(*TestingT), parallel bool) func(*testing.T) {
 		if parallel {
 			t.Parallel()
 		}
-		NewTestingT(t, ExpectFailure).test(test)
+		NewTestingT(t, ExpectFailure).Run(test)
 	}
 }
 
@@ -215,7 +221,7 @@ func Success(test func(*TestingT), parallel bool) func(*testing.T) {
 		if parallel {
 			t.Parallel()
 		}
-		NewTestingT(t, ExpectSuccess).test(test)
+		NewTestingT(t, ExpectSuccess).Run(test)
 	}
 }
 
@@ -224,7 +230,7 @@ func Success(test func(*TestingT), parallel bool) func(*testing.T) {
 // is matching the expection.
 func InRun(expect Expect, test func(*TestingT)) func(*TestingT) {
 	return func(t *TestingT) {
-		NewTestingT(t, expect).test(test)
+		NewTestingT(t, expect).Run(test)
 	}
 }
 
@@ -233,7 +239,7 @@ func InRun(expect Expect, test func(*TestingT)) func(*TestingT) {
 // the failure is intercepted and the test succeeds.
 func InFailure(test func(*TestingT)) func(*TestingT) {
 	return func(t *TestingT) {
-		NewTestingT(t, ExpectFailure).test(test)
+		NewTestingT(t, ExpectFailure).Run(test)
 	}
 }
 
@@ -242,6 +248,6 @@ func InFailure(test func(*TestingT)) func(*TestingT) {
 // the test failes the result is propagated to the surrounding test.
 func InSuccess(test func(*TestingT)) func(*TestingT) {
 	return func(t *TestingT) {
-		NewTestingT(t, ExpectSuccess).test(test)
+		NewTestingT(t, ExpectSuccess).Run(test)
 	}
 }

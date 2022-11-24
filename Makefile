@@ -334,12 +334,31 @@ test-cover:
 	  go tool cover -html=$(TEST_UNIT); \
 	fi; \
 
+
+define testcase
+    for ARG in $(RUNARGS); do \
+      if [ -z "$${PACKAGES}" ]; then PACKAGES="$${ARG%%/*}"; \
+      else PACKAGES="$${PACKAGES}\n$${ARG%%/*}"; fi; \
+	  if [ -z "$${TESTCASE}" ]; then TESTCASES="-run $${ARG#*/}"; \
+	  else TESTCASES="$${TESTCASES} -run $${ARG#*/}"; fi; \
+    done; \
+    echo -en "$${PACKAGES}" | sort -u | sed "s/^/.\//"; \
+    echo "$${TESTCASES}"
+endef
+
 TESTFLAGS ?= -race -mod=readonly -count=1
-ifneq ($(RUNARGS),)
-  TESTARGS ?= $(addprefix ./,$(RUNARGS))
-else
-  TESTARGS ?= ./...
-endif
+TESTARGS ?= $(shell \
+  if [[ "$(RUNARGS)" == *_test.go ]]; then \
+	find $$(dirname $(RUNARGS) | sort -u) -maxdepth 1 -a -name "*.go" -a \
+	  ! -name "*_test.go" -o -name "common_test.go" -o -name "mock_*_test.go" | \
+	  sed -e "s/^/.\//"; \
+    echo $(addprefix ./,$(RUNARGS)); \
+  elif [[ "$(RUNARGS)" == [a-z_-/]*/* ]]; then \
+    echo "$(shell $(testcase))"; \
+  elif [ -n "$(RUNARGS)" ]; then \
+    echo $(addprefix ./,$(RUNARGS)); \
+  else echo "./..."; fi \
+)
 
 $(TEST_ALL): $(SOURCES) init-sources $(TEST_DEPS)
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;

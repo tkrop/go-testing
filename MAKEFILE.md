@@ -50,6 +50,13 @@ make test-unit   # executes only unit tests by setting the short flag
 make test-cover  # opens the test coverage report in the browser
 ```
 
+In addition, it is possible to restrict test target execution to packages,
+files and test cases as follows:
+
+* For a single package use `make test-(unit|all) <package> ...`).
+* For a single test file (`make test[-(unit|all) <package>/<file>_test.go ...`).
+* For a single test case (`make test[-(unit|all) <package>/<test-name> ...`).
+
 
 ### Linter targets
 
