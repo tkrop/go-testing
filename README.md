@@ -1,8 +1,8 @@
 # Testing
 
 The testing projects contains a couple of small opinionated extensions for
-[Golang](https://go.dev/) and [Gomock](https://github.com/golang/mock) to
-simplify and enable complicated unit and component tests.
+[Golang][go] and [Gomock][gomock] to simplify and enable complicated unit and
+component tests.
 
 * [mock](mock) provides the means to setup a simple chain or a complex network
   of expected mock calls with minimal effort. This makes it easy to extend the
@@ -12,6 +12,10 @@ simplify and enable complicated unit and component tests.
   and safely check whether a test fails as expected. This is primarily very
   handy to validate a test framework as provided by the [mock](mock) package
   but may be handy in other cases too.
+
+* [gock](gock) provides a drop-in extension for [Gock][gock] consisting of a
+  controller and a mock storage that allows to run tests isolated. This allows
+  to parallelize simple test and parameterized tests.
 
 * [perm](perm) provides a small framework to simplify permutation tests, i.e.
   a consistent test set where conditions can be checked in all known orders
@@ -33,3 +37,7 @@ versioning for changes.
 If you like to contribute, please create an issue and/or pull request with a
 proper description of your proposal or contribution. I will review it and
 provide feedback on it.
+
+[go]: https://go.dev/ "Golang"
+[gomock]: https://github.com/golang/mock "GoMock"
+[gock]: https://github.com/h2non/gock "Gock"
