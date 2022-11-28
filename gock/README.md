@@ -69,5 +69,32 @@ this is not advised, since it will destroy the test isolation that is goal of
 this wrapper framework. In this case you should use
 [gock][gock] directly.
 
+
+## Integration with `mock`-framework
+
+The `Gock`-controller framework supports a simple integration with the
+[mock](../mock) framework for [gomock][gomock]: it simply provides constructor
+that accepts the `gomock`-controller. Using constructor, it is possible to
+create the usual setup methods similar as described in
+[mock](../mock#generic-mock-service-call-pattern).
+
+```go
+func GockCall(
+	url, path string, input..., status int, output..., error,
+) mock.SetupFunc {
+    return func(mocks *Mocks) any {
+        mock.Get(mocks, gock.NewGock).New(url).Get(path).Times(1).
+			Reply(status)...
+		return nil
+    }
+}
+```
+
+**Note:** While this already nicely integrates the mock controller creation,
+call setup, and validation, it currently provides no support for call order
+validation as [GoMock][gomock] supports it.
+
+
+[gomock]: https://github.com/golang/mock "GoMock"
 [gock]: https://github.com/h2non/gock "Gock"
 [resty]: https://github.com/go-resty/resty "Resty"

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/h2non/gock.v1"
 
@@ -46,7 +47,7 @@ func TestController(t *testing.T) {
 
 			// Given
 			tt := test.NewTestingT(t, param.expectMatch)
-			ctrl := NewControler(tt)
+			ctrl := NewGock(gomock.NewController(tt))
 			ctrl.MockStore.Matcher = NewFooMatcher()
 			ctrl.New("http://foo.com").Get("/bar").Times(1).Reply(200)
 			client := &http.Client{}

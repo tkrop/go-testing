@@ -3,6 +3,7 @@ package gock
 import (
 	"net/http"
 
+	"github.com/golang/mock/gomock"
 	gock "gopkg.in/h2non/gock.v1"
 
 	"github.com/tkrop/testing/test"
@@ -40,8 +41,17 @@ type Controller struct {
 	MockStore *MockStore
 }
 
-// NewControler creates a new HTTP request/response mock controller.
-func NewControler(t test.Test) *Controller {
+// NewGock creates a new HTTP request/response mock controller from the given
+// go mock controller.
+func NewGock(ctrl *gomock.Controller) *Controller {
+	if t, ok := ctrl.T.(test.Test); ok {
+		return NewController(t)
+	}
+	panic("gock not supported by test setup")
+}
+
+// NewController creates a new HTTP request/response mock controller.
+func NewController(t test.Test) *Controller {
 	ctrl := &Controller{
 		t:         t,
 		MockStore: NewStore(gock.NewMatcher()),
