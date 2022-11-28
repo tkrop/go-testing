@@ -41,7 +41,7 @@ future.
 ```go
 func ServiceCall(input..., output..., error) mock.SetupFunc {
     return func(mocks *Mocks) any {
-        return Get(mocks, NewServiceMock).EXPECT().
+        return mock.Get(mocks, NewServiceMock).EXPECT().
             ServiceCall(input...).Return(output..., error).
 			Times(mocks.Times(1)).Do(mocks.GetDone(<#input-args>))
     }
@@ -215,10 +215,10 @@ parallel:
 
 1. The tests *must not modify* environment variables dynamically.
 2. The tests *must not require* reserved service ports and open listeners.
-3. The tests *must not use* [monkey patching](https://github.com/bouk/monkey)
-   to modify commonly used functions,
-4. The tests *must not use* [gock](https://github.com/h2non/gock) for mocking
-   on HTTP transport level, and finally
+3. The tests *must not use* [Gock][gock] for mocking on HTTP transport level
+   (please use the internal [gock](../gock)-controller package),
+4. The tests *must not use* [monkey patching][monkey] to modify commonly used
+   functions, e.g. `time.Now()`, and finaly
 5. The tests *must not share* any other resources, e.g. objects or database
    schemas, that need to be updated during the test execution.
 
@@ -253,3 +253,6 @@ func TestUnitCall(t *testing.T) {
 
 **Note:** In the above pattern the setup for parallel tests hidden in the setup
 of the isolated [test](../test) environment.
+
+[gock]: https://github.com/h2non/gock "Gock"
+[monkey]: https://github.com/bouk/monkey "Monkey Patching"
