@@ -7,7 +7,7 @@ on testing it does not support the networking and observation features of
 is mainly compatible with.
 
 
-## Migration from Gock to Tock
+## Migration from Gock
 
 Migration from [Gock][gock] to this package is straigt forward. You can just
 add the controller creation as at the begin of your test giving it the name

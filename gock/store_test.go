@@ -203,6 +203,7 @@ var testMatchParams = map[string]struct {
 
 func TestMatch(t *testing.T) {
 	t.Parallel()
+
 	for message, param := range testMatchParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {

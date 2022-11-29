@@ -144,6 +144,7 @@ func Call(t *TestingT, mocks *mock.Mocks, expect Expect, test func(*TestingT)) {
 
 func TestRun(t *testing.T) {
 	t.Parallel()
+
 	for message, param := range testRunParams {
 		message, param := message, param
 		t.Run(message, Run(param.expect, func(t *TestingT) {
@@ -161,6 +162,7 @@ func TestRun(t *testing.T) {
 
 func TestOther(t *testing.T) {
 	t.Parallel()
+
 	for message, param := range testRunParams {
 		message, param := message, param
 		switch param.expect {

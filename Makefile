@@ -324,8 +324,8 @@ test: test-all
 test-all: test-clean init-sources $(TEST_ALL)
 test-unit: test-clean init-sources $(TEST_UNIT)
 test-clean:
-	@if [ -f "$(TEST_ALL)" ]; then rm -v $(TEST_ALL); fi; \
-	 if [ -f "$(TEST_UNIT)" ]; then rm -v $(TEST_UNIT); fi;
+	@if [ -f "$(TEST_ALL)" ]; then rm -vf $(TEST_ALL); fi; \
+	 if [ -f "$(TEST_UNIT)" ]; then rm -vf $(TEST_UNIT); fi;
 test-upload:
 test-cover:
 	@if [ "$(TEST_ALL)" -nt "$(TEST_UNIT)" ]; then \
@@ -335,30 +335,34 @@ test-cover:
 	fi; \
 
 
-define testcase
-    for ARG in $(RUNARGS); do \
-      if [ -z "$${PACKAGES}" ]; then PACKAGES="$${ARG%%/*}"; \
-      else PACKAGES="$${PACKAGES}\n$${ARG%%/*}"; fi; \
-	  if [ -z "$${TESTCASE}" ]; then TESTCASES="-run $${ARG#*/}"; \
-	  else TESTCASES="$${TESTCASES} -run $${ARG#*/}"; fi; \
-    done; \
-    echo -en "$${PACKAGES}" | sort -u | sed "s/^/.\//"; \
-    echo "$${TESTCASES}"
+define testargs
+  if [ -n "$(RUNARGS)" ]; then ARGS=($(RUNARGS)); \
+    if [[ -f "$${ARGS[0]}" && ! -d "$${ARGS[0]}" && \
+			 "$${ARGS[0]}" == *_test.go ]]; then \
+	  find $$(dirname $(RUNARGS) | sort -u) \
+		-maxdepth 1 -a -name "*.go" -a ! -name "*_test.go" \
+		-o -name "common_test.go" -o -name "mock_*_test.go" | \
+		sed -e "s/^/.\//"; \
+	  echo $(addprefix ./,$(RUNARGS)); \
+	elif [[ -d "$${ARGS[0]}" && ! -f "$${ARGS[0]}" ]]; then \
+	  echo $(addprefix ./,$(RUNARGS)); \
+	elif [[ ! -f "$${ARGS[0]}" && ! -d "$${ARGS[0]}" ]]; then \
+	  for ARG in $${ARGS[0]}; do \
+		if [ -z "$${PACKAGES}" ]; then PACKAGES="$${ARG%/*}"; \
+		else PACKAGES="$${PACKAGES}\n$${ARG%/*}"; fi; \
+		if [ -z "$${TESTCASE}" ]; then TESTCASES="-run $${ARG##*/}"; \
+		else TESTCASES="$${TESTCASES} -run $${ARG##*/}"; fi; \
+	  done; \
+	  echo -en "$${PACKAGES}" | sort -u | sed "s/^/.\//"; \
+	  echo "$${TESTCASES}"; \
+	else
+	  echo "warning: invalid test parameters [$${ARGS[@]}]" > /dev/stderr;
+	fi;\
+  else echo "./..."; fi
 endef
 
 TESTFLAGS ?= -race -mod=readonly -count=1
-TESTARGS ?= $(shell \
-  if [[ "$(RUNARGS)" == *_test.go ]]; then \
-	find $$(dirname $(RUNARGS) | sort -u) -maxdepth 1 -a -name "*.go" -a \
-	  ! -name "*_test.go" -o -name "common_test.go" -o -name "mock_*_test.go" | \
-	  sed -e "s/^/.\//"; \
-    echo $(addprefix ./,$(RUNARGS)); \
-  elif [[ "$(RUNARGS)" == [a-z_-/]*/* ]]; then \
-    echo "$(shell $(testcase))"; \
-  elif [ -n "$(RUNARGS)" ]; then \
-    echo $(addprefix ./,$(RUNARGS)); \
-  else echo "./..."; fi \
-)
+TESTARGS ?= $(shell $(testargs))
 
 $(TEST_ALL): $(SOURCES) init-sources $(TEST_DEPS)
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
