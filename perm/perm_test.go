@@ -47,6 +47,7 @@ var testTestParams = perm.ExpectMap{
 
 func TestTest(t *testing.T) {
 	t.Parallel()
+
 	for message, expect := range testTestParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {

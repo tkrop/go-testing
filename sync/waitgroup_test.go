@@ -8,8 +8,10 @@ import (
 )
 
 func TestWaitGroup(t *testing.T) {
-	defer func() { recover() }()
+	t.Parallel()
+
 	// Given
+	defer func() { recover() }()
 	wg := NewWaitGroup()
 
 	// When
@@ -23,6 +25,8 @@ func TestWaitGroup(t *testing.T) {
 }
 
 func TestLenientWaitGroup(t *testing.T) {
+	t.Parallel()
+
 	// Given
 	wg := NewLenientWaitGroup()
 

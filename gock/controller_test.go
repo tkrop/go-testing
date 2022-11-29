@@ -40,6 +40,7 @@ var testControllerParams = map[string]struct {
 
 func TestController(t *testing.T) {
 	t.Parallel()
+
 	for message, param := range testControllerParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {

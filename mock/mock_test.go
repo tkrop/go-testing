@@ -126,6 +126,7 @@ var testSetupParams = perm.ExpectMap{
 
 func TestSetup(t *testing.T) {
 	t.Parallel()
+
 	for message, expect := range testSetupParams.Remain(test.ExpectSuccess) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
@@ -158,6 +159,7 @@ var testChainParams = perm.ExpectMap{
 
 func TestChain(t *testing.T) {
 	t.Parallel()
+
 	for message, expect := range testChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
@@ -195,6 +197,7 @@ var testSetupChainParams = perm.ExpectMap{
 
 func TestSetupChain(t *testing.T) {
 	t.Parallel()
+
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
@@ -227,6 +230,7 @@ func TestSetupChain(t *testing.T) {
 
 func TestChainSetup(t *testing.T) {
 	t.Parallel()
+
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
@@ -274,6 +278,7 @@ var testParallelChainParams = perm.ExpectMap{
 
 func TestParallelChain(t *testing.T) {
 	t.Parallel()
+
 	for message, expect := range testParallelChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
@@ -327,6 +332,7 @@ var testChainSubParams = perm.ExpectMap{
 
 func TestChainSub(t *testing.T) {
 	t.Parallel()
+
 	perms := testChainSubParams
 	//	perms := PermRemain(testChainSubParams, test.ExpectFailure)
 	for message, expect := range perms {
@@ -370,6 +376,7 @@ var testDetachParams = perm.ExpectMap{
 
 func TestDetach(t *testing.T) {
 	t.Parallel()
+
 	for message, expect := range testDetachParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
@@ -432,6 +439,7 @@ var testPanicParams = map[string]struct {
 
 func TestPanic(t *testing.T) {
 	t.Parallel()
+
 	for message, param := range testPanicParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
@@ -500,6 +508,7 @@ var testGetSubSliceParams = map[string]struct {
 
 func TestGetSubSlice(t *testing.T) {
 	t.Parallel()
+
 	for message, param := range testGetSubSliceParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
@@ -532,6 +541,7 @@ var testGetDoneParams = map[string]struct {
 
 func TestGetDone(t *testing.T) {
 	t.Parallel()
+
 	for message, param := range testGetDoneParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
