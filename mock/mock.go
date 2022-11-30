@@ -137,45 +137,50 @@ func (mocks *Mocks) Wait() {
 // }
 
 // Times is creating the expectation that exactly the given number of mock call
-// are consumed via `gomock.Do`.
+// are consumed. This call is best provided as input for `Times`.
 func (mocks *Mocks) Times(num int) int {
 	mocks.wg.Add(num)
 	return num
 }
 
 // GetDone is a convenience method for providing a standardized notification
-// function call with the given number of arguments for `gomock.Do` to signal
-// that a mock call setup was consumed.
+// function call with the given number of arguments for `Do` to signal that a
+// mock call setup was consumed.
 func (mocks *Mocks) GetDone(numargs int) any {
+	return mocks.GetFunc(numargs, func() { mocks.wg.Done() })
+}
+
+// GetPanic is a convenience method for providing a customized notification
+// function call with the given number of arguments for `Do` to signal that a
+// mock call setup was consumed and as result paniced.
+func (mocks *Mocks) GetPanic(numargs int, reason string) any {
+	return mocks.GetFunc(numargs, func() { mocks.wg.Done(); panic(reason) })
+}
+
+// GetFunc is a convenience method for providing a customized function call
+// with the given number of arguments for `Do`.
+func (mocks *Mocks) GetFunc(numargs int, fn func()) any {
 	switch numargs {
 	case 0:
-		return func() { defer mocks.wg.Done() }
+		return func() { fn() }
 	case 1:
-		return func(any) { defer mocks.wg.Done() }
+		return func(any) { fn() }
 	case 2:
-		return func(any, any) { defer mocks.wg.Done() }
+		return func(any, any) { fn() }
 	case 3:
-		return func(any, any, any) { defer mocks.wg.Done() }
+		return func(any, any, any) { fn() }
 	case 4:
-		return func(any, any, any, any) { defer mocks.wg.Done() }
+		return func(any, any, any, any) { fn() }
 	case 5:
-		return func(any, any, any, any, any) { defer mocks.wg.Done() }
+		return func(any, any, any, any, any) { fn() }
 	case 6:
-		return func(any, any, any, any, any, any) {
-			defer mocks.wg.Done()
-		}
+		return func(any, any, any, any, any, any) { fn() }
 	case 7:
-		return func(any, any, any, any, any, any, any) {
-			defer mocks.wg.Done()
-		}
+		return func(any, any, any, any, any, any, any) { fn() }
 	case 8:
-		return func(any, any, any, any, any, any, any, any) {
-			defer mocks.wg.Done()
-		}
+		return func(any, any, any, any, any, any, any, any) { fn() }
 	case 9:
-		return func(any, any, any, any, any, any, any, any, any) {
-			defer mocks.wg.Done()
-		}
+		return func(any, any, any, any, any, any, any, any, any) { fn() }
 	default:
 		panic(fmt.Sprintf("argument number not supported: %d", numargs))
 	}
