@@ -91,6 +91,9 @@ func ServiceCallChain(input..., output..., error) mock.SetupFunc {
 }
 ```
 
+**Note:** As a special test case it is possible to `panic` as mock a result by
+using `Do(mocks.GetPanic(<#input-args>,<reason>))`.
+
 
 ## Generic mock ordering patterns
 

@@ -1,6 +1,7 @@
 package mock_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -521,34 +522,34 @@ func TestGetSubSlice(t *testing.T) {
 	}
 }
 
-var testGetDoneParams = map[string]struct {
+var testGetFuncParams = map[string]struct {
 	numargs int
-	panic   bool
+	exist   bool
 }{
-	"test 0 args":  {numargs: 0},
-	"test 1 args":  {numargs: 1},
-	"test 2 args":  {numargs: 2},
-	"test 3 args":  {numargs: 3},
-	"test 4 args":  {numargs: 4},
-	"test 5 args":  {numargs: 5},
-	"test 6 args":  {numargs: 6},
-	"test 7 args":  {numargs: 7},
-	"test 8 args":  {numargs: 8},
-	"test 9 args":  {numargs: 9},
-	"test 10 args": {numargs: 10, panic: true},
-	"test 11 args": {numargs: 11, panic: true},
+	"test 0 args":  {numargs: 0, exist: true},
+	"test 1 args":  {numargs: 1, exist: true},
+	"test 2 args":  {numargs: 2, exist: true},
+	"test 3 args":  {numargs: 3, exist: true},
+	"test 4 args":  {numargs: 4, exist: true},
+	"test 5 args":  {numargs: 5, exist: true},
+	"test 6 args":  {numargs: 6, exist: true},
+	"test 7 args":  {numargs: 7, exist: true},
+	"test 8 args":  {numargs: 8, exist: true},
+	"test 9 args":  {numargs: 9, exist: true},
+	"test 10 args": {numargs: 10},
+	"test 11 args": {numargs: 11},
 }
 
 func TestGetDone(t *testing.T) {
 	t.Parallel()
 
-	for message, param := range testGetDoneParams {
+	for message, param := range testGetFuncParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
 			// Given
 			mocks := MockSetup(t, nil)
 			mocks.Times(1)
-			if param.panic {
+			if !param.exist {
 				defer func() { recover() }()
 			}
 
@@ -588,10 +589,73 @@ func TestGetDone(t *testing.T) {
 			}
 
 			// Then
-			if param.panic {
+			mocks.Wait()
+			if !param.exist {
 				assert.Fail(t, "not paniced on not supported argument number")
 			}
-			mocks.Wait()
+		})
+	}
+}
+
+func TestGetPanic(t *testing.T) {
+	t.Parallel()
+
+	for message, param := range testGetFuncParams {
+		message, param := message, param
+		t.Run(message, func(t *testing.T) {
+			// Given
+			mocks := MockSetup(t, nil)
+			mocks.Times(1)
+			defer func() {
+				reason := recover()
+				// Then
+				if param.exist {
+					require.Equal(t, "panic-test", reason)
+					mocks.Wait()
+				} else {
+					assert.Equal(t, fmt.Sprintf(
+						"argument number not supported: %d",
+						param.numargs), reason)
+				}
+			}()
+
+			// When
+			fncall := mocks.GetPanic(param.numargs, "panic-test")
+			switch param.numargs {
+			case 0:
+				fncall.(func())()
+			case 1:
+				fncall.(func(any))(nil)
+			case 2:
+				fncall.(func(any, any))(nil, nil)
+			case 3:
+				fncall.(func(any, any, any))(nil, nil, nil)
+			case 4:
+				fncall.(func(any, any, any, any))(nil, nil, nil, nil)
+			case 5:
+				fncall.(func(
+					any, any, any, any, any,
+				))(nil, nil, nil, nil, nil)
+			case 6:
+				fncall.(func(
+					any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil)
+			case 7:
+				fncall.(func(
+					any, any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil, nil)
+			case 8:
+				fncall.(func(
+					any, any, any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil, nil, nil)
+			case 9:
+				fncall.(func(
+					any, any, any, any, any, any, any, any, any,
+				))(nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			}
+
+			// Then
+			assert.Fail(t, "not paniced on not supported argument number")
 		})
 	}
 }
