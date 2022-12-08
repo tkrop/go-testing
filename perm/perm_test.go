@@ -29,9 +29,9 @@ func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
-			"a": func(t *test.TestingT) { iface.CallA("a") },
-			"b": func(t *test.TestingT) { iface.CallA("b") },
-			"c": func(t *test.TestingT) { iface.CallA("c") },
+			"a": func(*test.TestingT) { iface.CallA("a") },
+			"b": func(*test.TestingT) { iface.CallA("b") },
+			"c": func(*test.TestingT) { iface.CallA("c") },
 		})
 }
 
@@ -51,6 +51,8 @@ func TestTest(t *testing.T) {
 	for message, expect := range testTestParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+			t.Parallel()
+
 			// Given
 			perm := strings.Split(message, "-")
 			mockSetup := mock.Chain(
@@ -67,6 +69,6 @@ func TestTest(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, true))
+		}))
 	}
 }

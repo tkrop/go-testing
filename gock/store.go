@@ -16,7 +16,7 @@ type MockStore struct {
 	Matcher *gock.MockMatcher
 }
 
-// NewStore creates a new mock registry for HTTP request/respone mocks. If nil
+// NewStore creates a new mock registry for HTTP request/response mocks. If nil
 // is provided as matcher the default matcher is used.
 func NewStore(matcher *gock.MockMatcher) *MockStore {
 	if matcher != nil {

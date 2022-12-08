@@ -65,7 +65,8 @@ as well as with fixing the linter problems - if possible.
 
 ```bash
 make lint      # short cut to execute 'lint-src lint-api'
-make lint-src  # lints the go-source code excluding generated code
+make lint-all  # lints the go-source code using all linters
+make lint-src  # lints the go-source code using selected rules
 make lint-api  # lints the api specifications in '/zalando-apis'
 make format    # formats the code to fix some linter violations
 ```

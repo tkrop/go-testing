@@ -3,8 +3,6 @@ package test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/tkrop/testing/mock"
 )
 
@@ -148,6 +146,8 @@ func TestRun(t *testing.T) {
 	for message, param := range testRunParams {
 		message, param := message, param
 		t.Run(message, Run(param.expect, func(t *TestingT) {
+			t.Parallel()
+
 			// Given
 			mocks := mock.NewMock(t).Expect(CallA("a"))
 
@@ -156,7 +156,7 @@ func TestRun(t *testing.T) {
 
 			// Then
 			mocks.Wait()
-		}, true))
+		}))
 	}
 }
 
@@ -168,7 +168,7 @@ func TestOther(t *testing.T) {
 		switch param.expect {
 		case ExpectSuccess:
 			t.Run(message, Success(func(t *TestingT) {
-				require.NotEmpty(t, message)
+				t.Parallel()
 
 				// Given
 				mocks := mock.NewMock(t).Expect(CallA("a"))
@@ -178,11 +178,11 @@ func TestOther(t *testing.T) {
 
 				// Then
 				mocks.Wait()
-			}, true))
+			}))
 
 		case ExpectFailure:
 			t.Run(message, Failure(func(t *TestingT) {
-				require.NotEmpty(t, message)
+				t.Parallel()
 
 				// Given
 				mocks := mock.NewMock(t).Expect(CallA("a"))
@@ -192,7 +192,7 @@ func TestOther(t *testing.T) {
 
 				// Then
 				mocks.Wait()
-			}, true))
+			}))
 		}
 	}
 }
