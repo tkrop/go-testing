@@ -34,7 +34,7 @@ func NewFooMatcher() *gock.MockMatcher {
 // case of a transport error. This method is used for validating tests that are
 // replacing the transport against the error `RoundTripper` via
 // `NewErrorRoundTripper`.
-func NewRoundTrippertError(method string, URL string, err error) error {
+func NewRoundTrippertError(method string, _url string, err error) error {
 	op := cases.Title(language.Und).String(method)
-	return &url.Error{Op: op, URL: URL, Err: err}
+	return &url.Error{Op: op, URL: _url, Err: err}
 }

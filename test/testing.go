@@ -21,7 +21,7 @@ const (
 	ExpectFailure Expect = false
 )
 
-// Expect expresses an expection whether a test will succeed or fail.
+// Expect expresses an expectation whether a test will succeed or fail.
 type Expect bool
 
 // Test is a minimal interface for abstracting methods on `testing.T` in a
@@ -29,6 +29,7 @@ type Expect bool
 type Test interface {
 	gomock.TestHelper
 	require.TestingT
+	Parallel()
 	Name() string
 }
 
@@ -59,6 +60,10 @@ func NewTestingT(t Test, expect Expect) *TestingT {
 		return &TestingT{t: tx, wg: tx.wg, expect: expect}
 	}
 	return &TestingT{t: t, expect: expect}
+}
+
+func (m *TestingT) Parallel() {
+	m.t.Parallel()
 }
 
 // Cleanup is a function called to setup test cleanup after execution. This
@@ -191,12 +196,9 @@ func (m *TestingT) finish() {
 
 // Run creates an isolated test environment for the given test function with
 // given expectation. When executed via `t.Run()` it checks whether the result
-// is matching the expection.
-func Run(expect Expect, test func(*TestingT), parallel bool) func(*testing.T) {
+// is matching the expectation.
+func Run(expect Expect, test func(*TestingT)) func(*testing.T) {
 	return func(t *testing.T) {
-		if parallel {
-			t.Parallel()
-		}
 		NewTestingT(t, expect).Run(test)
 	}
 }
@@ -204,11 +206,8 @@ func Run(expect Expect, test func(*TestingT), parallel bool) func(*testing.T) {
 // Failure creates an isolaged test environment for the given test function
 // and expects the given test function to fail when executed via `t.Run()`. If
 // the function fails, the failure is intercepted and the test succeeds.
-func Failure(test func(*TestingT), parallel bool) func(*testing.T) {
+func Failure(test func(*TestingT)) func(*testing.T) {
 	return func(t *testing.T) {
-		if parallel {
-			t.Parallel()
-		}
 		NewTestingT(t, ExpectFailure).Run(test)
 	}
 }
@@ -216,18 +215,15 @@ func Failure(test func(*TestingT), parallel bool) func(*testing.T) {
 // Success creates an isolated test environment for the given test function
 // and expects the test to succeed as usually when executed via `t.Run()`. If
 // the test failes the result is propagated to the surrounding test.
-func Success(test func(*TestingT), parallel bool) func(*testing.T) {
+func Success(test func(*TestingT)) func(*testing.T) {
 	return func(t *testing.T) {
-		if parallel {
-			t.Parallel()
-		}
 		NewTestingT(t, ExpectSuccess).Run(test)
 	}
 }
 
 // InRun creates an isolated test environment for the given test function with
 // given expectation. When executed via `t.Run()` it checks whether the result
-// is matching the expection.
+// is matching the expectation.
 func InRun(expect Expect, test func(*TestingT)) func(*TestingT) {
 	return func(t *TestingT) {
 		NewTestingT(t, expect).Run(test)

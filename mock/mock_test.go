@@ -67,14 +67,14 @@ func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
-			"a": func(t *test.TestingT) { iface.CallA("a") },
+			"a": func(*test.TestingT) { iface.CallA("a") },
 			"b1": func(t *test.TestingT) {
 				assert.Equal(t, "c", iface.CallB("b"))
 			},
 			"b2": func(t *test.TestingT) {
 				assert.Equal(t, "d", iface.CallB("b"))
 			},
-			"c": func(t *test.TestingT) { iface.CallA("c") },
+			"c": func(*test.TestingT) { iface.CallA("c") },
 		})
 }
 
@@ -82,8 +82,8 @@ func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
-			"a": func(t *test.TestingT) { iface.CallA("a") },
-			"b": func(t *test.TestingT) { iface.CallA("b") },
+			"a": func(*test.TestingT) { iface.CallA("a") },
+			"b": func(*test.TestingT) { iface.CallA("b") },
 			"c": func(t *test.TestingT) {
 				assert.Equal(t, "d", iface.CallB("c"))
 			},
@@ -97,16 +97,16 @@ func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
-			"a": func(t *test.TestingT) { iface.CallA("a") },
-			"b": func(t *test.TestingT) { iface.CallA("b") },
+			"a": func(*test.TestingT) { iface.CallA("a") },
+			"b": func(*test.TestingT) { iface.CallA("b") },
 			"c": func(t *test.TestingT) {
 				assert.Equal(t, "d", iface.CallB("c"))
 			},
 			"d": func(t *test.TestingT) {
 				assert.Equal(t, "e", iface.CallB("d"))
 			},
-			"e": func(t *test.TestingT) { iface.CallA("e") },
-			"f": func(t *test.TestingT) { iface.CallA("f") },
+			"e": func(*test.TestingT) { iface.CallA("e") },
+			"f": func(*test.TestingT) { iface.CallA("f") },
 		})
 }
 
@@ -131,7 +131,7 @@ func TestSetup(t *testing.T) {
 	for message, expect := range testSetupParams.Remain(test.ExpectSuccess) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
+			t.Parallel()
 
 			// Given
 			perm := strings.Split(message, "-")
@@ -150,7 +150,7 @@ func TestSetup(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, false))
+		}))
 	}
 }
 
@@ -164,7 +164,7 @@ func TestChain(t *testing.T) {
 	for message, expect := range testChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
+			t.Parallel()
 
 			// Given
 			perm := strings.Split(message, "-")
@@ -183,7 +183,7 @@ func TestChain(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, false))
+		}))
 	}
 }
 
@@ -202,7 +202,7 @@ func TestSetupChain(t *testing.T) {
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
+			t.Parallel()
 
 			// Given
 			perm := strings.Split(message, "-")
@@ -225,7 +225,7 @@ func TestSetupChain(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, false))
+		}))
 	}
 }
 
@@ -235,7 +235,7 @@ func TestChainSetup(t *testing.T) {
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
+			t.Parallel()
 
 			// Given
 			perm := strings.Split(message, "-")
@@ -258,7 +258,7 @@ func TestChainSetup(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, false))
+		}))
 	}
 }
 
@@ -283,7 +283,7 @@ func TestParallelChain(t *testing.T) {
 	for message, expect := range testParallelChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
-			require.NotEmpty(t, message)
+			t.Parallel()
 
 			// Given
 			perm := strings.Split(message, "-")
@@ -308,7 +308,7 @@ func TestParallelChain(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, false))
+		}))
 	}
 }
 
@@ -339,6 +339,8 @@ func TestChainSub(t *testing.T) {
 	for message, expect := range perms {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+			t.Parallel()
+
 			// Given
 			perm := strings.Split(message, "-")
 			mockSetup := mock.Chain(
@@ -360,7 +362,7 @@ func TestChainSub(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, false))
+		}))
 	}
 }
 
@@ -381,6 +383,8 @@ func TestDetach(t *testing.T) {
 	for message, expect := range testDetachParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
 		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+			t.Parallel()
+
 			// Given
 			perm := strings.Split(message, "-")
 			mockSetup := mock.Chain(
@@ -396,7 +400,7 @@ func TestDetach(t *testing.T) {
 
 			// Then
 			test.Test(t, perm, expect)
-		}, false))
+		}))
 	}
 }
 
@@ -444,6 +448,8 @@ func TestPanic(t *testing.T) {
 	for message, param := range testPanicParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
+			t.Parallel()
+
 			// Given
 			defer func() {
 				err := recover()
@@ -513,6 +519,8 @@ func TestGetSubSlice(t *testing.T) {
 	for message, param := range testGetSubSliceParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
+			t.Parallel()
+
 			// When
 			slice := mock.GetSubSlice(param.from, param.to, param.slice)
 
@@ -546,6 +554,8 @@ func TestGetDone(t *testing.T) {
 	for message, param := range testGetFuncParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
+			t.Parallel()
+
 			// Given
 			mocks := MockSetup(t, nil)
 			mocks.Times(1)
@@ -554,39 +564,7 @@ func TestGetDone(t *testing.T) {
 			}
 
 			// When
-			fncall := mocks.GetDone(param.numargs)
-			switch param.numargs {
-			case 0:
-				fncall.(func())()
-			case 1:
-				fncall.(func(any))(nil)
-			case 2:
-				fncall.(func(any, any))(nil, nil)
-			case 3:
-				fncall.(func(any, any, any))(nil, nil, nil)
-			case 4:
-				fncall.(func(any, any, any, any))(nil, nil, nil, nil)
-			case 5:
-				fncall.(func(
-					any, any, any, any, any,
-				))(nil, nil, nil, nil, nil)
-			case 6:
-				fncall.(func(
-					any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil)
-			case 7:
-				fncall.(func(
-					any, any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil, nil)
-			case 8:
-				fncall.(func(
-					any, any, any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil, nil, nil)
-			case 9:
-				fncall.(func(
-					any, any, any, any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil, nil, nil, nil)
-			}
+			call(mocks.GetDone(param.numargs), param.numargs)
 
 			// Then
 			mocks.Wait()
@@ -603,6 +581,8 @@ func TestGetPanic(t *testing.T) {
 	for message, param := range testGetFuncParams {
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
+			t.Parallel()
+
 			// Given
 			mocks := MockSetup(t, nil)
 			mocks.Times(1)
@@ -620,42 +600,47 @@ func TestGetPanic(t *testing.T) {
 			}()
 
 			// When
-			fncall := mocks.GetPanic(param.numargs, "panic-test")
-			switch param.numargs {
-			case 0:
-				fncall.(func())()
-			case 1:
-				fncall.(func(any))(nil)
-			case 2:
-				fncall.(func(any, any))(nil, nil)
-			case 3:
-				fncall.(func(any, any, any))(nil, nil, nil)
-			case 4:
-				fncall.(func(any, any, any, any))(nil, nil, nil, nil)
-			case 5:
-				fncall.(func(
-					any, any, any, any, any,
-				))(nil, nil, nil, nil, nil)
-			case 6:
-				fncall.(func(
-					any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil)
-			case 7:
-				fncall.(func(
-					any, any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil, nil)
-			case 8:
-				fncall.(func(
-					any, any, any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil, nil, nil)
-			case 9:
-				fncall.(func(
-					any, any, any, any, any, any, any, any, any,
-				))(nil, nil, nil, nil, nil, nil, nil, nil, nil)
-			}
+			call(mocks.GetPanic(param.numargs, "panic-test"), param.numargs)
 
 			// Then
 			assert.Fail(t, "not paniced on not supported argument number")
 		})
+	}
+}
+
+func call(fncall any, args int) {
+	switch args {
+	case 0:
+		fncall.(func())()
+	case 1:
+		fncall.(func(any))(nil)
+	case 2:
+		fncall.(func(any, any))(nil, nil)
+	case 3:
+		fncall.(func(any, any, any))(nil, nil, nil)
+	case 4:
+		fncall.(func(any, any, any, any))(nil, nil, nil, nil)
+	case 5:
+		fncall.(func(
+			any, any, any, any, any,
+		))(nil, nil, nil, nil, nil)
+	case 6:
+		fncall.(func(
+			any, any, any, any, any, any,
+		))(nil, nil, nil, nil, nil, nil)
+	case 7:
+		fncall.(func(
+			any, any, any, any, any, any, any,
+		))(nil, nil, nil, nil, nil, nil, nil)
+	case 8:
+		fncall.(func(
+			any, any, any, any, any, any, any, any,
+		))(nil, nil, nil, nil, nil, nil, nil, nil)
+	case 9:
+		fncall.(func(
+			any, any, any, any, any, any, any, any, any,
+		))(nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	default:
+		panic("not supported")
 	}
 }

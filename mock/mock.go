@@ -43,9 +43,9 @@ func (m DetachMode) String() string {
 }
 
 type (
-	// Call alias for `gomock.Call`
+	// Call alias for `gomock.Call`.
 	Call = gomock.Call
-	// Controller alias for `gomock.Controller`
+	// Controller alias for `gomock.Controller`.
 	Controller = gomock.Controller
 
 	// chain is the type to signal that mock calls must and will be orders in a
@@ -186,7 +186,7 @@ func (mocks *Mocks) GetFunc(numargs int, fn func()) any {
 	}
 }
 
-// TODO: Reconsider this apporach. Seems not to be helpful yet. Test setup
+// TODO: Reconsider this approach. Seems not to be helpful yet. Test setup
 // functions would look as follows:
 //
 //	func GetTokenX(url string, err error) mock.SetupFunc {
@@ -275,7 +275,7 @@ func Parallel(fncalls ...func(*Mocks) any) func(*Mocks) any {
 }
 
 // Detach detach given mock call setup using given detach mode. It is possible
-// to detach the mock call from the preceeding mock calls (`Head`), from the
+// to detach the mock call from the preceding mock calls (`Head`), from the
 // succeeding mock calls (`Tail`), or from both as used in `Setup`.
 func Detach(mode DetachMode, fncall func(*Mocks) any) func(*Mocks) any {
 	return func(mocks *Mocks) any {
@@ -302,7 +302,7 @@ func Detach(mode DetachMode, fncall func(*Mocks) any) func(*Mocks) any {
 func Sub(from, to int, fncall func(*Mocks) any) func(*Mocks) any {
 	return func(mocks *Mocks) any {
 		calls := fncall(mocks)
-		switch calls := any(calls).(type) {
+		switch calls := calls.(type) {
 		case *Call:
 			inOrder([]*Call{}, calls)
 			return GetSubSlice(from, to, []any{calls})
@@ -357,13 +357,13 @@ func getPos[T any](pos int, calls []T) int {
 	return len - 1
 }
 
-// chainCalls joins arbitray slices, single mock calls, and parallel mock calls
+// chainCalls joins arbitrary slices, single mock calls, and parallel mock calls
 // into a single mock call slice and slice of mock slices. If the provided mock
 // calls do not contain mock calls or slices of them, the join fails with a
 // `panic`.
 func chainCalls(calls []chain, more ...any) []chain {
 	for _, call := range more {
-		switch call := any(call).(type) {
+		switch call := call.(type) {
 		case *Call:
 			calls = append(calls, call)
 		case []chain:
@@ -388,7 +388,7 @@ func chainCalls(calls []chain, more ...any) []chain {
 // predecessor and return the mock call as next anchor. The created order
 // depends on the actual type of the mock call (slice).
 func inOrder(anchors []*Call, call any) []*Call {
-	switch call := any(call).(type) {
+	switch call := call.(type) {
 	case *Call:
 		return inOrderCall(anchors, call)
 	case []parallel:

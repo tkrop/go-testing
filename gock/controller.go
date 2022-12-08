@@ -91,7 +91,7 @@ func (ctrl *Controller) RestoreClient(client *http.Client) {
 // RoundTrip receives HTTP requests and matches them against the registered
 // HTTP request/response mocks. If a match is found it is used to construct the
 // response, else the request is tracked as unmatched. If networing is enabled,
-// the orginal transport is used to handle the request to .
+// the original transport is used to handle the request to .
 //
 // This method implements the `http.RoundTripper` interface and is used by
 // attaching the controller to a `http.client` via `SetTransport`.

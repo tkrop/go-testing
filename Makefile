@@ -42,6 +42,13 @@ REPOSITORY ?= $(shell git remote get-url origin | \
 TEAM ?= $(shell cat .zappr.yaml | grep "X-Zalando-Team" | \
 	sed "s/.*: *\([a-z-]*\).*/\1/")
 
+TOOLS ?= github.com/golang/mock/mockgen@latest \
+	github.com/zalando/zally/cli/zally@latest \
+	github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
+	mvdan.cc/gofumpt@latest \
+	github.com/daixiang0/gci@latest \
+	golang.org/x/tools/cmd/goimports@latest \
+	golang.org/x/lint/golint@latest \
 
 IMAGE_PUSH ?= test
 IMAGE_VERSION ?= snapshot
@@ -147,11 +154,11 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 # Setup phony make targets to always be executed.
 .PHONY: all cdp bump release
 .PHONY: update update-go update-deps update-make
-.PHONY: clean clean-init clean-build clean-run
+.PHONY: clean clean-init clean-build clean-tools clean-run
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
 .PHONY: test test-all test-unit test-clean test-upload test-cover
-.PHONY: lint lint-src lint-api format
+.PHONY: lint lint-all lint-src lint-api format
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: image image-build image-push docker docker-build docker-push
@@ -292,6 +299,12 @@ clean-init:
 	rm -vrf $(RUNDIR) $(BUILDIR);
 	rm -vrf .git/hooks/pre-commit;
 
+clean-tools:
+	@for TOOL in $(TOOLS); do \
+	  echo "go clean -i $${TOOL%%@*}"; \
+	  go clean -i $${TOOL%%@*} 2>/dev/null || true; \
+	done; \
+
 # Clean up all running container images.
 clean-run: $(addprefix clean-run-, $(COMMANDS) db aws)
 $(addprefix clean-run-, $(COMMANDS) db aws): clean-run-%: run-clean-%
@@ -301,10 +314,10 @@ $(addprefix clean-run-, $(COMMANDS) db aws): clean-run-%: run-clean-%
 init: clean-init init-tools init-hooks init-packages
 
 init-tools:
-	go install github.com/golang/mock/mockgen@latest;
-	go install golang.org/x/lint/golint@latest;
-	go install github.com/zalando/zally/cli/zally@latest;
-	go install golang.org/x/tools/cmd/goimports@latest;
+	@for TOOL in $(TOOLS); do \
+	  echo "go install $${TOOL}"; \
+	  go install $${TOOL} || exit -1; \
+	done; \
 	go mod tidy -compat=${GOVERSION};
 
 init-hooks: .git/hooks/pre-commit
@@ -374,26 +387,46 @@ $(TEST_UNIT): $(SOURCES) init-sources
 	  -cover -coverprofile $@ -short $(TESTARGS);
 
 
+COMMA := ,
+SPACE := $(null) #
+
+# exclude only deprecated.
+LINT_ALL_DISABLE = $(subst $(SPACE),$(COMMA),$(strip \
+	nosnakecase scopelint golint ifshort varcheck structcheck \
+	interfacer deadcode maligned exhaustivestruct rowserrcheck \
+	sqlclosecheck structcheck wastedassign))
+
+# do not use: nlreturn varnamelen tagliatelle gochecknoglobals exhaustruct
+# may use: predeclared forcetypeassert nonamedreturns ireturn gomnd contextcheck
+# to consider: noctx cyclop exhaustive gocritic wrapcheck testpackage
+# to consider (with restriction): gci wsl lll funlen errcheck paralleltest bodyclose
+# to use (with restriction): goerr113 errorlint (warning) gosec godox
+
+# include selected.
+LINT_SRC_DISABLE = $(subst $(SPACE),$(COMMA),$(strip errcheck))
+LINT_SRC_ENABLE = $(subst $(SPACE),$(COMMA),$(strip \
+	goimports gofumpt gofmt godot whitespace misspell dupword \
+	tparallel thelper dupl nestif unconvert unparam))
+
 lint: $(TARGETS_LINT)
+lint-all: init-sources
+	golangci-lint run --enable-all --disable $(LINT_ALL_DISABLE) ./...;
 lint-src: init-sources
-	go vet $$(go list ./...);
-	golint -set_exit_status $$(go list ./...);
-	@GOIMPORT="$$(goimports -l -local "$(REPOSITORY)" \
-	    $$(find . -name "*.go" ! -name "mock_*_test.go"))"; \
-	if [ -n "$${GOIMPORT}" ]; then \
-	  echo -e "Error: Sources are not formatted correctly:"; \
-	  echo -e "$${GOIMPORT}\n\tTo fix run: make format"; false; \
-	fi;
+	golangci-lint run --disable $(LINT_SRC_DISABLE) \
+	  --enable $(LINT_SRC_ENABLE) ./...;
 lint-api:
 	@ARGS=("--linter-service" "https://infrastructure-api-linter.zalandoapis.com"); \
 	if command -v ztoken > /dev/null; then ARGS+=("--token" "$$(ztoken)"); fi; \
-	for APISPEC in $$(find zalando-apis -name "*.yaml" > /dev/null 2>&1); do \
+	for APISPEC in $$(find zalando-apis -name "*.yaml" 2>/dev/null); do \
 	  echo "check API: zally \"$${APISPEC}\""; \
 	  zally "$${ARGS[@]}" lint "$${APISPEC}" || exit 1; \
 	done;
 
 format:
 	goimports -w -local "$(REPOSITORY)" $$(find . -name "*.go" ! -name "mock_*_test.go")
+#	gci --write --local "$(REPOSITORY)" $$(find . -name "*.go" ! -name "mock_*_test.go")
+	gofumpt -w  $$(find . -name "*.go" ! -name "mock_*_test.go")
+	gofmt -w  $$(find . -name "*.go" ! -name "mock_*_test.go")
 
 
 # Setup container specific build flags
