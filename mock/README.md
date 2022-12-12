@@ -134,8 +134,9 @@ common use cases:
 ```go
 var testUnitCallParams = map[string]struct {
     mockSetup    mock.SetupFunc
-    ...
-    expect*      *model.*
+    input*...    *model.*
+    expect       test.Expect
+    expect*...   *model.*
     expectError  error
 }{
     "single mock setup": {
@@ -191,28 +192,29 @@ func TestUnitCall(t *testing.T) {
 
 for message, param := range testUnitCallParams {
         message, param := message, param
-        t.Run(message, test.Success(func(t test.Test) {
+        t.Run(message, test.Expect(param.expect, func(t test.Test) {
             t.Parallel()
 
-            //Given
+            // Given
             unit, mocks := SetupTestUnit(t, param.mockSetup)
 
-            //When
-            result, err := unit.UnitCall(...)
+            // When
+            result, err := unit.UnitCall(param.input*, ...)
 
             mocks.Wait()
 
-            //Then
+            // Then
             if param.expectError != nil {
                 assert.Equal(t, param.expectError, err)
             } else {
                 require.NoError(t, err)
             }
             assert.Equal(t, param.expect*, result)
+            ...
         }))
     }
 }
 ```
 
-**Note:** See [Parallel parameterized tests](..#parallel-parameterized-tests)
+**Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
 for more information on requirements in parallel parameterized tests.

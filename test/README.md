@@ -50,7 +50,7 @@ As well as similar set of methods for sub-isolation test cases, i.e.
 * `test.Failure(func(test.Test) {}) func(test.Test)`, and
 * `test.Success(func(test.Test) {}) func(test.Test)`.
 
-**Note:** See [Parallel parameterized tests](..#parallel-parameterized-tests)
+**Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
 for more information on requirements in parallel parameterized tests.
 
 [gomock]: https://github.com/golang/mock "GoMock"
