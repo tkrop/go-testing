@@ -16,6 +16,6 @@ jobs:
       run: make cdp
 
     - name: Send coverage 
-      uses: codecov/codecov-action@v1
+      uses: shogo82148/actions-goveralls@v1
       with:
-        files: ./build/test-all.cover
+        path-to-profile: ./build/test-all.cover
