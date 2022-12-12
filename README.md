@@ -1,8 +1,8 @@
-[![Godoc][godoc-image]][godoc-url]
-[![Report][report-image]][report-url]
-[![Tests][tests-image]][tests-url]
-[![Coverage][coverage-image]][coverage-url]
-[![Sponsor][sponsor-image]][sponsor-url]
+[![Build](https://github.com/tkrop/testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/testing/actions/workflows/go.yaml)
+[![Coverage](https://coveralls.io/repos/github/tkrop/testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/testing?branch=main)
+[![Report](https://goreportcard.com/badge/github.com/tkrop/testing)](https://goreportcard.com/badge/github.com/tkrop/testing)
+[![Docs](https://pkg.go.dev/badge/github.com/tkrop/testing.svg)](https://pkg.go.dev/github.com/tkrop/testing)
+
 
 # Testing
 
@@ -44,7 +44,7 @@ func TestUnitCall(t *testing.T) {
 	t.Parallel()
 
 	for message, param := range testParams {
-    // ensures copying parameters for the lambda
+		// ensures copying parameters for the lambda
 		message, param := message, param
 		t.Run(message, func(t *testing.T) {
 			t.Parallel()
