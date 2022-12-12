@@ -45,10 +45,9 @@ TEAM ?= $(shell cat .zappr.yaml | grep "X-Zalando-Team" | \
 TOOLS ?= github.com/golang/mock/mockgen@latest \
 	github.com/zalando/zally/cli/zally@latest \
 	github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
+	golang.org/x/tools/cmd/goimports@latest \
 	mvdan.cc/gofumpt@latest \
 	github.com/daixiang0/gci@latest \
-	golang.org/x/tools/cmd/goimports@latest \
-	golang.org/x/lint/golint@latest \
 
 IMAGE_PUSH ?= test
 IMAGE_VERSION ?= snapshot
@@ -158,7 +157,7 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
 .PHONY: test test-all test-unit test-clean test-upload test-cover
-.PHONY: lint lint-all lint-src lint-api format
+.PHONY: lint lint-all lint-src lint- lint-list lint-warn lint-api format
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: image image-build image-push docker docker-build docker-push
@@ -390,30 +389,43 @@ $(TEST_UNIT): $(SOURCES) init-sources
 COMMA := ,
 SPACE := $(null) #
 
-# exclude only deprecated.
-LINT_ALL_DISABLE = $(subst $(SPACE),$(COMMA),$(strip \
-	nosnakecase scopelint golint ifshort varcheck structcheck \
-	interfacer deadcode maligned exhaustivestruct rowserrcheck \
-	sqlclosecheck structcheck wastedassign))
+# do not use: nlreturn varnamelen tagliatelle gochecknoglobals gochecknoinits
+# exhaustruct ireturn nonamedreturns
 
-# do not use: nlreturn varnamelen tagliatelle gochecknoglobals exhaustruct
-# may use: predeclared forcetypeassert nonamedreturns ireturn gomnd contextcheck
-# to consider: noctx cyclop exhaustive gocritic wrapcheck testpackage
-# to consider (with restriction): gci wsl lll funlen errcheck paralleltest bodyclose
-# to use (with restriction): goerr113 errorlint (warning) gosec godox
+LINTERS_DISABLED ?= errcheck
+LINTERS_ENABLED ?= goimports gofumpt gofmt goheader decorder :gci \
+	godot whitespace misspell dupword goprintffuncname \
+	tenv tparallel thelper testableexamples :testpackage \
+	dupl dogsled depguard gomodguard gomoddirectives importas \
+	maintidx makezero nakedret prealloc :predeclared interfacebloat grouper \
+	nestif ineffassign reassign asasalint :forcetypeassert usestdlibvars \
+	errchkjson errname :errorlint :forbidigo nosprintfhostport \
+	nilerr nilnil nolintlint promlinter revive :bodyclose \
+	gocognit :gocritic gocyclo :cyclo :funlen :lll :wsl \
+	govet goconst gosimple :gomnd unconvert unparam unused \
+	:contextcheck containedctx :noctx execinquery :exhaustive exportloopref \
+	asciicheck bidichk durationcheck loggercheck staticcheck stylecheck \
+	typecheck :wrapcheck :errcheck
 
-# include selected.
-LINT_SRC_DISABLE = $(subst $(SPACE),$(COMMA),$(strip errcheck))
-LINT_SRC_ENABLE = $(subst $(SPACE),$(COMMA),$(strip \
-	goimports gofumpt gofmt godot whitespace misspell dupword \
-	tparallel thelper dupl nestif unconvert unparam))
+LINTERS_WARNING ?= godox :errorlint :goerr113 gosec
+
+LINT_DISABLE ?= $(subst $(SPACE),$(COMMA),$(strip \
+	$(filter-out :%,$(LINTERS_DISABLED))))
+LINT_ENABLE ?= $(subst $(SPACE),$(COMMA),$(strip \
+	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_ENABLED)))))
+LINT_WARN ?= $(subst $(SPACE),$(COMMA),$(strip \
+	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_WARNING)))))
 
 lint: $(TARGETS_LINT)
 lint-all: init-sources
-	golangci-lint run --enable-all --disable $(LINT_ALL_DISABLE) ./...;
+	golangci-lint run --enable-all --disable $(LINT_DISABLE) ./...;
 lint-src: init-sources
-	golangci-lint run --disable $(LINT_SRC_DISABLE) \
-	  --enable $(LINT_SRC_ENABLE) ./...;
+	golangci-lint run --enable $(LINT_ENABLE) --disable $(LINT_DISABLE) ./...;
+lint-list:
+	golangci-lint linters --enable $(LINT_ENABLE) --disable $(LINT_DISABLE);
+lint-warn: init-sources
+	golangci-lint run --diable-all --enable $(LINT_WARN),$(LINT_ENABLE) \
+	  --disable $(LINT_DISABLE) ./... || true;
 lint-api:
 	@ARGS=("--linter-service" "https://infrastructure-api-linter.zalandoapis.com"); \
 	if command -v ztoken > /dev/null; then ARGS+=("--token" "$$(ztoken)"); fi; \

@@ -64,11 +64,12 @@ The [Makefile](Makefile) supports different targets that can help with linting
 as well as with fixing the linter problems - if possible.
 
 ```bash
-make lint      # short cut to execute 'lint-src lint-api'
-make lint-all  # lints the go-source code using all linters
-make lint-src  # lints the go-source code using selected rules
-make lint-api  # lints the api specifications in '/zalando-apis'
-make format    # formats the code to fix some linter violations
+make lint       # short cut to execute 'lint-src lint-api'
+make lint-all   # lints the go-code using all linters
+make lint-src   # lints the go-code using selected default linters
+make lint-warn  # lints the go-code using selected warning linters
+make lint-api   # lints the api specifications in '/zalando-apis'
+make format     # formats the code to fix selected linter violations
 ```
 
 

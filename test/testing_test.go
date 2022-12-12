@@ -31,104 +31,104 @@ func CallB(input string, output string) mock.SetupFunc {
 
 var testRunParams = map[string]struct {
 	expect Expect
-	test   func(*TestingT)
+	test   func(Test)
 }{
 	"run success": {
 		test: InRun(ExpectSuccess,
-			func(t *TestingT) {}),
+			func(Test) {}),
 		expect: ExpectSuccess,
 	},
 
 	"run success with errorf": {
 		test: InRun(ExpectSuccess,
-			func(t *TestingT) { t.Errorf("fail") }),
+			func(t Test) { t.Errorf("fail") }),
 		expect: ExpectFailure,
 	},
 
 	"run success with fatalf": {
 		test: InRun(ExpectSuccess,
-			func(t *TestingT) { t.Fatalf("fail") }),
+			func(t Test) { t.Fatalf("fail") }),
 		expect: ExpectFailure,
 	},
 
 	"run success with failnow": {
 		test: InRun(ExpectSuccess,
-			func(t *TestingT) { t.FailNow() }),
+			func(t Test) { t.FailNow() }),
 		expect: ExpectFailure,
 	},
 
 	"run failure": {
 		test: InRun(ExpectFailure,
-			func(t *TestingT) {}),
+			func(t Test) {}),
 		expect: ExpectFailure,
 	},
 
 	"run failure with errorf": {
 		test: InRun(ExpectFailure,
-			func(t *TestingT) { t.Errorf("fail") }),
+			func(t Test) { t.Errorf("fail") }),
 		expect: ExpectSuccess,
 	},
 
 	"run failure with fatalf": {
 		test: InRun(ExpectFailure,
-			func(t *TestingT) { t.Fatalf("fail") }),
+			func(t Test) { t.Fatalf("fail") }),
 		expect: ExpectFailure,
 	},
 
 	"run failure with failnow": {
 		test: InRun(ExpectFailure,
-			func(t *TestingT) { t.FailNow() }),
+			func(t Test) { t.FailNow() }),
 		expect: ExpectFailure,
 	},
 
 	"in success": {
-		test:   InSuccess(func(t *TestingT) {}),
+		test:   InSuccess(func(t Test) {}),
 		expect: ExpectSuccess,
 	},
 
 	"in success with errorf": {
 		test: InSuccess(
-			func(t *TestingT) { t.Errorf("fail") }),
+			func(t Test) { t.Errorf("fail") }),
 		expect: ExpectFailure,
 	},
 
 	"in success with fatalf": {
 		test: InSuccess(
-			func(t *TestingT) { t.Fatalf("fail") }),
+			func(t Test) { t.Fatalf("fail") }),
 		expect: ExpectFailure,
 	},
 
 	"in success with failnow": {
 		test: InSuccess(
-			func(t *TestingT) { t.FailNow() }),
+			func(t Test) { t.FailNow() }),
 		expect: ExpectFailure,
 	},
 
 	"in failure": {
-		test:   InFailure(func(t *TestingT) {}),
+		test:   InFailure(func(t Test) {}),
 		expect: ExpectFailure,
 	},
 
 	"in failure with errorf": {
 		test: InFailure(
-			func(t *TestingT) { t.Errorf("fail") }),
+			func(t Test) { t.Errorf("fail") }),
 		expect: ExpectSuccess,
 	},
 
 	"in failure with fatalf": {
 		test: InFailure(
-			func(t *TestingT) { t.Fatalf("fail") }),
+			func(t Test) { t.Fatalf("fail") }),
 		expect: ExpectFailure,
 	},
 
 	"in failure with failnow": {
 		test: InFailure(
-			func(t *TestingT) { t.FailNow() }),
+			func(t Test) { t.FailNow() }),
 		expect: ExpectFailure,
 	},
 }
 
-func Call(t *TestingT, mocks *mock.Mocks, expect Expect, test func(*TestingT)) {
+func Call(t Test, mocks *mock.Mocks, expect Expect, test func(Test)) {
 	test(t)
 	if expect == ExpectSuccess {
 		mock.Get(mocks, NewMockIFace).CallA("a")
@@ -145,7 +145,7 @@ func TestRun(t *testing.T) {
 
 	for message, param := range testRunParams {
 		message, param := message, param
-		t.Run(message, Run(param.expect, func(t *TestingT) {
+		t.Run(message, Run(param.expect, func(t Test) {
 			t.Parallel()
 
 			// Given
@@ -167,7 +167,7 @@ func TestOther(t *testing.T) {
 		message, param := message, param
 		switch param.expect {
 		case ExpectSuccess:
-			t.Run(message, Success(func(t *TestingT) {
+			t.Run(message, Success(func(t Test) {
 				t.Parallel()
 
 				// Given
@@ -181,7 +181,7 @@ func TestOther(t *testing.T) {
 			}))
 
 		case ExpectFailure:
-			t.Run(message, Failure(func(t *TestingT) {
+			t.Run(message, Failure(func(t Test) {
 				t.Parallel()
 
 				// Given

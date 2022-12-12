@@ -48,8 +48,8 @@ func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
 }
 
 func MockValidate(
-	t *test.TestingT, mocks *mock.Mocks,
-	validate func(*test.TestingT, *mock.Mocks),
+	t test.Test, mocks *mock.Mocks,
+	validate func(test.Test, *mock.Mocks),
 	failing bool,
 ) {
 	if failing {
@@ -67,14 +67,14 @@ func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
-			"a": func(*test.TestingT) { iface.CallA("a") },
-			"b1": func(t *test.TestingT) {
+			"a": func(test.Test) { iface.CallA("a") },
+			"b1": func(t test.Test) {
 				assert.Equal(t, "c", iface.CallB("b"))
 			},
-			"b2": func(t *test.TestingT) {
+			"b2": func(t test.Test) {
 				assert.Equal(t, "d", iface.CallB("b"))
 			},
-			"c": func(*test.TestingT) { iface.CallA("c") },
+			"c": func(test.Test) { iface.CallA("c") },
 		})
 }
 
@@ -82,12 +82,12 @@ func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
-			"a": func(*test.TestingT) { iface.CallA("a") },
-			"b": func(*test.TestingT) { iface.CallA("b") },
-			"c": func(t *test.TestingT) {
+			"a": func(test.Test) { iface.CallA("a") },
+			"b": func(test.Test) { iface.CallA("b") },
+			"c": func(t test.Test) {
 				assert.Equal(t, "d", iface.CallB("c"))
 			},
-			"d": func(t *test.TestingT) {
+			"d": func(t test.Test) {
 				assert.Equal(t, "e", iface.CallB("d"))
 			},
 		})
@@ -97,16 +97,16 @@ func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
-			"a": func(*test.TestingT) { iface.CallA("a") },
-			"b": func(*test.TestingT) { iface.CallA("b") },
-			"c": func(t *test.TestingT) {
+			"a": func(test.Test) { iface.CallA("a") },
+			"b": func(test.Test) { iface.CallA("b") },
+			"c": func(t test.Test) {
 				assert.Equal(t, "d", iface.CallB("c"))
 			},
-			"d": func(t *test.TestingT) {
+			"d": func(t test.Test) {
 				assert.Equal(t, "e", iface.CallB("d"))
 			},
-			"e": func(*test.TestingT) { iface.CallA("e") },
-			"f": func(*test.TestingT) { iface.CallA("f") },
+			"e": func(test.Test) { iface.CallA("e") },
+			"f": func(test.Test) { iface.CallA("f") },
 		})
 }
 
@@ -130,7 +130,7 @@ func TestSetup(t *testing.T) {
 
 	for message, expect := range testSetupParams.Remain(test.ExpectSuccess) {
 		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+		t.Run(message, test.Run(expect, func(t test.Test) {
 			t.Parallel()
 
 			// Given
@@ -163,7 +163,7 @@ func TestChain(t *testing.T) {
 
 	for message, expect := range testChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+		t.Run(message, test.Run(expect, func(t test.Test) {
 			t.Parallel()
 
 			// Given
@@ -201,7 +201,7 @@ func TestSetupChain(t *testing.T) {
 
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+		t.Run(message, test.Run(expect, func(t test.Test) {
 			t.Parallel()
 
 			// Given
@@ -234,7 +234,7 @@ func TestChainSetup(t *testing.T) {
 
 	for message, expect := range testSetupChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+		t.Run(message, test.Run(expect, func(t test.Test) {
 			t.Parallel()
 
 			// Given
@@ -282,7 +282,7 @@ func TestParallelChain(t *testing.T) {
 
 	for message, expect := range testParallelChainParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+		t.Run(message, test.Run(expect, func(t test.Test) {
 			t.Parallel()
 
 			// Given
@@ -335,10 +335,10 @@ func TestChainSub(t *testing.T) {
 	t.Parallel()
 
 	perms := testChainSubParams
-	//	perms := PermRemain(testChainSubParams, test.ExpectFailure)
+	// perms := testChainSubParams.Remain(test.ExpectSuccess)
 	for message, expect := range perms {
 		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+		t.Run(message, test.Run(expect, func(t test.Test) {
 			t.Parallel()
 
 			// Given
@@ -382,7 +382,7 @@ func TestDetach(t *testing.T) {
 
 	for message, expect := range testDetachParams.Remain(test.ExpectFailure) {
 		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t *test.TestingT) {
+		t.Run(message, test.Run(expect, func(t test.Test) {
 			t.Parallel()
 
 			// Given

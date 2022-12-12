@@ -62,6 +62,7 @@ func NewTestingT(t Test, expect Expect) *TestingT {
 	return &TestingT{t: t, expect: expect}
 }
 
+// Parallel delegates request to `testing.T.Parallel()`.
 func (m *TestingT) Parallel() {
 	m.t.Parallel()
 }
@@ -80,30 +81,29 @@ func (m *TestingT) WaitGroup(wg sync.WaitGroup) {
 	m.wg = wg
 }
 
-// Name provides the test name. Implementation is a pure a delegate function
-// for `testing.T.Name`.
+// Name provides the test name by delegating the request to `testing.T.Name()`.
 func (m *TestingT) Name() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.t.Name()
 }
 
-// Helper implements a delegate handling for `testing.T.Helper`.
+// Helper delegates request to `testing.T.Helper()`.
 func (m *TestingT) Helper() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.t.Helper()
 }
 
-// Unlock unlock wait group of test by consuming the wait group counter
-// completely.
+// Unlock unlocks the wait group of the test by consuming the wait group
+// counter completely.
 func (m *TestingT) Unlock() {
 	if m.wg != nil {
 		m.wg.Add(math.MinInt)
 	}
 }
 
-// FailNow implements a detached failure handling for `testing.T.FailNow`.
+// FailNow provides the detached failure handling for `testing.T.FailNow()`.
 func (m *TestingT) FailNow() {
 	m.Helper()
 	m.failed.Store(true)
@@ -114,7 +114,7 @@ func (m *TestingT) FailNow() {
 	runtime.Goexit()
 }
 
-// Errorf implements a detached failure handling for `testing.T.Errorf`.
+// Errorf provides the detached failure handling for `testing.T.Errorf()`.
 func (m *TestingT) Errorf(format string, args ...any) {
 	m.Helper()
 	m.failed.Store(true)
@@ -123,7 +123,7 @@ func (m *TestingT) Errorf(format string, args ...any) {
 	}
 }
 
-// Fatalf implements a detached failure handling for `testing.T.Fatelf`.
+// Fatalf provides the detached failure handling for `testing.T.Fatelf()`.
 func (m *TestingT) Fatalf(format string, args ...any) {
 	m.Helper()
 	m.failed.Store(true)
@@ -138,7 +138,7 @@ func (m *TestingT) Fatalf(format string, args ...any) {
 // the failure state after the test function has finished. If the test result
 // is not according to expectation, a failure is created in the parent test
 // context.
-func (m *TestingT) Run(test func(*TestingT)) *TestingT {
+func (m *TestingT) Run(test func(Test)) Test {
 	m.Helper()
 
 	// register cleanup handlers.
@@ -197,7 +197,7 @@ func (m *TestingT) finish() {
 // Run creates an isolated test environment for the given test function with
 // given expectation. When executed via `t.Run()` it checks whether the result
 // is matching the expectation.
-func Run(expect Expect, test func(*TestingT)) func(*testing.T) {
+func Run(expect Expect, test func(Test)) func(*testing.T) {
 	return func(t *testing.T) {
 		NewTestingT(t, expect).Run(test)
 	}
@@ -206,7 +206,7 @@ func Run(expect Expect, test func(*TestingT)) func(*testing.T) {
 // Failure creates an isolaged test environment for the given test function
 // and expects the given test function to fail when executed via `t.Run()`. If
 // the function fails, the failure is intercepted and the test succeeds.
-func Failure(test func(*TestingT)) func(*testing.T) {
+func Failure(test func(Test)) func(*testing.T) {
 	return func(t *testing.T) {
 		NewTestingT(t, ExpectFailure).Run(test)
 	}
@@ -215,7 +215,7 @@ func Failure(test func(*TestingT)) func(*testing.T) {
 // Success creates an isolated test environment for the given test function
 // and expects the test to succeed as usually when executed via `t.Run()`. If
 // the test failes the result is propagated to the surrounding test.
-func Success(test func(*TestingT)) func(*testing.T) {
+func Success(test func(Test)) func(*testing.T) {
 	return func(t *testing.T) {
 		NewTestingT(t, ExpectSuccess).Run(test)
 	}
@@ -224,8 +224,8 @@ func Success(test func(*TestingT)) func(*testing.T) {
 // InRun creates an isolated test environment for the given test function with
 // given expectation. When executed via `t.Run()` it checks whether the result
 // is matching the expectation.
-func InRun(expect Expect, test func(*TestingT)) func(*TestingT) {
-	return func(t *TestingT) {
+func InRun(expect Expect, test func(Test)) func(Test) {
+	return func(t Test) {
 		NewTestingT(t, expect).Run(test)
 	}
 }
@@ -233,8 +233,8 @@ func InRun(expect Expect, test func(*TestingT)) func(*TestingT) {
 // InFailure creates an isolaged test environment for the given test function
 // and expects the test to fail when executed via `t.Run()`. If the test fails,
 // the failure is intercepted and the test succeeds.
-func InFailure(test func(*TestingT)) func(*TestingT) {
-	return func(t *TestingT) {
+func InFailure(test func(Test)) func(Test) {
+	return func(t Test) {
 		NewTestingT(t, ExpectFailure).Run(test)
 	}
 }
@@ -242,8 +242,8 @@ func InFailure(test func(*TestingT)) func(*TestingT) {
 // InSuccess creates an isolated test environment for the given test function
 // and expects the test to succeed as usually when executed via `t.Run()`. If
 // the test failes the result is propagated to the surrounding test.
-func InSuccess(test func(*TestingT)) func(*TestingT) {
-	return func(t *TestingT) {
+func InSuccess(test func(Test)) func(Test) {
+	return func(t Test) {
 		NewTestingT(t, ExpectSuccess).Run(test)
 	}
 }

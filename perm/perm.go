@@ -16,7 +16,7 @@ type ExpectMap map[string]test.Expect
 
 // TestMap defines a map of test functions that is subject of the actual
 // permutation.
-type TestMap map[string]func(t *test.TestingT)
+type TestMap map[string]func(t test.Test)
 
 // Test permutation test.
 type Test struct {
@@ -34,7 +34,7 @@ func NewTest(mocks *mock.Mocks, tests TestMap) *Test {
 }
 
 // TestPerm tests a single permutation given by the string slice.
-func (p *Test) TestPerm(t *test.TestingT, perm []string) {
+func (p *Test) TestPerm(t test.Test, perm []string) {
 	require.Equal(t, len(p.tests), len(perm),
 		"permutation needs to cover all tests")
 	for _, value := range perm {
@@ -43,7 +43,7 @@ func (p *Test) TestPerm(t *test.TestingT, perm []string) {
 }
 
 // Test executes a permutation test with given permutation and expected result.
-func (p *Test) Test(t *test.TestingT, perm []string, expect test.Expect) {
+func (p *Test) Test(t test.Test, perm []string, expect test.Expect) {
 	switch expect {
 	case test.ExpectSuccess:
 		// Test proper usage of `WaitGroup` on non-failing validation.
