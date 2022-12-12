@@ -1,8 +1,14 @@
+[![Godoc][godoc-image]][godoc-url]
+[![Report][report-image]][report-url]
+[![Tests][tests-image]][tests-url]
+[![Coverage][coverage-image]][coverage-url]
+[![Sponsor][sponsor-image]][sponsor-url]
+
 # Testing
 
 The testing projects contains a couple of small opinionated extensions for
-[Golang][go] and [Gomock][gomock] to simplify and enable complicated unit and
-component tests.
+[Golang][go], [Gomock][gomock], and [Gock][gock] to enable simple isolated
+parameterized parallel unit and component tests as a standard test pattern.
 
 * [mock](mock) provides the means to setup a simple chain or a complex network
   of expected mock calls with minimal effort. This makes it easy to extend the
@@ -23,7 +29,53 @@ component tests.
   to validated the [mock](mock) framework, but may be useful in other cases
   too.
 
- Please see the documentation of the sub-packages for more details.
+Please see the documentation of the sub-packages for more details.
+
+
+## Parallel parameterized tests
+
+Unless you have a very unique multistep test case, we advise to allways use
+the parameterized parallel test pattern outlined below, that well integrate
+with the [isolation](test#isolated-parameterized-parallel-test-pattern) and
+[mocking](mock) features provided by this framework.
+
+```go
+func TestUnitCall(t *testing.T) {
+	t.Parallel()
+
+	for message, param := range testParams {
+    // ensures copying parameters for the lambda
+		message, param := message, param
+		t.Run(message, func(t *testing.T) {
+			t.Parallel()
+
+			// Given
+
+			// When
+
+			// Then
+		}))
+	}
+}
+```
+
+Running tests in parallel not only makes test faster, but also helps to detect
+race conditions that else randomly appear in production  when running tests
+with `go test -race`.
+
+**Note:** there are some general requirements for running test in parallel:
+
+1. Tests *must not modify* environment variables dynamically.
+2. Tests *must not require* reserved service ports and open listeners.
+3. Tests *must not share* resources, e.g. objects or database schemas, that
+   are updated during execution of any parallel test.
+4. Tests *must not use* [monkey patching][monkey] to modify commonly used
+   functions, e.g. `time.Now()`, and finally
+5. Tests *must not use* [Gock][gock] for mocking HTTP responses on transport
+   level, instead use the [gock](gock)-controller provided by this framework.
+
+If this conditions hold, the general pattern provided above can be used to
+support parallel test execution.
 
 # Terms of Usage
 
@@ -41,3 +93,4 @@ provide feedback on it.
 [go]: https://go.dev/ "Golang"
 [gomock]: https://github.com/golang/mock "GoMock"
 [gock]: https://github.com/h2non/gock "Gock"
+[monkey]: https://github.com/bouk/monkey "Monkey Patching"

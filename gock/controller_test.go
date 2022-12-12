@@ -73,7 +73,7 @@ func TestController(t *testing.T) {
 			} else {
 				assert.False(t, ctrl.MockStore.IsDone(), "mock not done")
 			}
-			tt.Run(func(t *test.TestingT) {
+			tt.Run(func(t test.Test) {
 				ctrl.cleanup()
 			})
 		})

@@ -181,59 +181,19 @@ var testUnitCallParams = map[string]struct {
 ```
 
 This test parameter setup can now be use for all parameterized unit test using
-the following common pattern, that includes the optional `mocks.Wait()` for
+the following common parallel pattern, that includes `mocks.Wait()` to handle
 detached *goroutines* as well as the isoated [test environment](../test) to
-unlocks the waiting test in case of failures:
-
-```go
-func TestUnitCall(t *testing.T) {
-    for message, param := range testUnitCallParams {
-        t.Run(message, test.Success(func(t *testing.T) {
-            //Given
-            unit, mocks := SetupTestUnit(t, param.mockSetup)
-
-            //When
-            result, err := unit.UnitCall(...)
-
-            mocks.Wait()
-
-            //Then
-            if param.expectError != nil {
-                assert.Equal(t, param.expectError, err)
-            } else {
-                require.NoError(t, err)
-            }
-            assert.Equal(t, param.expect*, result)
-        }, false))
-    }
-}
-```
-
-
-## Paralle parameterized test pattern
-
-Generally, the [test](../test) and [mock](.) framework supports parallel test
-execution, however, there are some general requirements for running tests in
-parallel:
-
-1. The tests *must not modify* environment variables dynamically.
-2. The tests *must not require* reserved service ports and open listeners.
-3. The tests *must not use* [Gock][gock] for mocking on HTTP transport level
-   (please use the internal [gock](../gock)-controller package),
-4. The tests *must not use* [monkey patching][monkey] to modify commonly used
-   functions, e.g. `time.Now()`, and finaly
-5. The tests *must not share* any other resources, e.g. objects or database
-   schemas, that need to be updated during the test execution.
-
-If this conditions hold, the general pattern provided above can be extened to
-support parallel test execution.
+unlocks the waiting group in case of failures:
 
 ```go
 func TestUnitCall(t *testing.T) {
     t.Parallel()
-    for message, param := range testUnitCallParams {
+
+for message, param := range testUnitCallParams {
         message, param := message, param
-        t.Run(message, test.Success(func(t *testing.T) {
+        t.Run(message, test.Success(func(t test.Test) {
+            t.Parallel()
+
             //Given
             unit, mocks := SetupTestUnit(t, param.mockSetup)
 
@@ -249,13 +209,10 @@ func TestUnitCall(t *testing.T) {
                 require.NoError(t, err)
             }
             assert.Equal(t, param.expect*, result)
-        }, true))
+        }))
     }
 }
 ```
 
-**Note:** In the above pattern the setup for parallel tests hidden in the setup
-of the isolated [test](../test) environment.
-
-[gock]: https://github.com/h2non/gock "Gock"
-[monkey]: https://github.com/bouk/monkey "Monkey Patching"
+**Note:** See [Parallel parameterized tests](..#parallel-parameterized-tests)
+for more information on requirements in parallel parameterized tests.

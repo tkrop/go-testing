@@ -1,0 +1,21 @@
+name: Go
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ^1.19
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build and tests
+      run: make cdp
+
+    - name: Send coverage 
+      uses: codecov/codecov-action@v1
+      with:
+        files: ./build/test-all.cover
