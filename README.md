@@ -2,6 +2,7 @@
 [![Coverage](https://coveralls.io/repos/github/tkrop/testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/testing?branch=main)
 [![Report](https://goreportcard.com/badge/github.com/tkrop/testing)](https://goreportcard.com/badge/github.com/tkrop/testing)
 [![Docs](https://pkg.go.dev/badge/github.com/tkrop/testing.svg)](https://pkg.go.dev/github.com/tkrop/testing)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
 
 
 # Testing
@@ -94,3 +95,7 @@ provide feedback on it.
 [gomock]: https://github.com/golang/mock "GoMock"
 [gock]: https://github.com/h2non/gock "Gock"
 [monkey]: https://github.com/bouk/monkey "Monkey Patching"
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_large)
