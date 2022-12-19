@@ -1,10 +1,12 @@
-package sync
+package sync_test
 
 import (
 	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/tkrop/testing/sync"
 )
 
 func TestWaitGroup(t *testing.T) {
@@ -12,7 +14,7 @@ func TestWaitGroup(t *testing.T) {
 
 	// Given
 	defer func() { recover() }()
-	wg := NewWaitGroup()
+	wg := sync.NewWaitGroup()
 
 	// When
 	wg.Add(3)
@@ -28,7 +30,7 @@ func TestLenientWaitGroup(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	wg := NewLenientWaitGroup()
+	wg := sync.NewLenientWaitGroup()
 
 	// When
 	wg.Add(3)

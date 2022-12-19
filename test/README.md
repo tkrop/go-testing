@@ -6,51 +6,85 @@ to validate a test framework as provided by the [mock](../mock) package but may
 be handy in other cases too.
 
 
-## Isolated parameterized parallel test pattern
+## Isolated parameterized parallel test runner
 
-The `test` framework allows to isolate a test by calling the system under test
-via `test.Run(test.ExpectFailure, func(t test.Test) {})` to create a wrapper.
-The wrapper ensures that errors are intercepted and handled as defined by the
-test expections, i.e. either `ExpectFailure` or `ExpectSuccess`.
+The `test` framework supports to run isolated, parameterized, parallel tests
+using a lean test runner. The runner can be instantiated with a single test
+parameter set (`New`), a slice of test parameter sets (`Slice`), or a map of
+test case name to test parameter sets (`Map` - preferred pattern). The test is
+started by `Run` that accepts a simple test function as input, using a
+`test.Test` interface, that is compatible with most tools, e.g.
+[Gomock][gomock].
 
-To enable this we have defined a test interface `test.Test` that is compatible
-with the requirements of most tools, e.g. [Gomock][gomock].
 
-The main pattern for parameterized unit test looks as follows:
+```go
+func TestUnit(t *testing.T) {
+	test.New|Slice|Map(t, testParams).
+	    Run(func(t test.Test, param UnitParams){
+            // Given
+
+            // When
+
+            // Then
+	    })
+}
+```
+
+This creates and starts a lean test wrapper using a common interface, that
+isolates test execution and intercepts all failures (including panics), to
+either forward or suppress them. The result is controlled by providing a test
+parameter of type `test.Expect` (name `expect`) that supports `Failure` (false)
+and `Success` (true - default).
+
+Similar a test case name can be provided using type `test.Name` (name `name` -
+default value `unknown-%d`) or as key using a test case name to parameter set
+mapping.
+
+
+**Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
+for more information on requirements in parallel parameterized tests.
+
+## Manual isolated test wrapper setup
+
+If the above pattern is not sufficient, you can create your own customized
+parameterized, parallel, isolated test wrapper using the basic abstraction
+`test.Run(test.Success|Failure, func (t test.Test) {})`:
 
 ```go
 func TestUnitCall(t *testing.T) {
 	t.Parallel()
 
-	for message, param := range testParams {
-		message, param := message, param
-		t.Run(message, test.Run(param.expect, func(t test.Test) {
+	for name, param := range testParams {
+		name, param := name, param
+		t.Run(name, test.Run(param.expect, func(t test.Test) {
 			t.Parallel()
 
-			// Given
+            // Given
 
-			// When
+            // When
 
-			// Then
+            // Then
 		}))
 	}
 }
 ```
 
-Besides, `test.Run(Exepct, func(test.Test)) func(*testing.T)` optimized for
-parameterized test, the package provides two further methods for isolation in
-simpler test cases:
+Or the interface of the underlying `test.Tester`:
 
-* `test.Failure(func(test.Test) {}) func(*testing.T)`, and
-* `test.Success(func(test.Test) {}) func(*testing.T)`.
+```go
+func TestUnitCall(t *testing.T) {
+	t.Parallel()
 
-As well as similar set of methods for sub-isolation test cases, i.e.
+	test.Tester(t, test.Success).Run(func(t test.Test){
+        // Given
 
-* `test.Run(Exepct, func(test.Test)) func(test.Test)`,
-* `test.Failure(func(test.Test) {}) func(test.Test)`, and
-* `test.Success(func(test.Test) {}) func(test.Test)`.
+        // When
 
-**Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
-for more information on requirements in parallel parameterized tests.
+        // Then
+	})
+}
+```
+
+But this should usually be unnecessary.
 
 [gomock]: https://github.com/golang/mock "GoMock"

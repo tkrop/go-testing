@@ -25,13 +25,16 @@ func CallA(input string) mock.SetupFunc {
 	}
 }
 
-func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
+func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
 	iface := mock.Get(mocks, NewMockIFace)
 	return perm.NewTest(mocks,
 		perm.TestMap{
 			"a": func(test.Test) { iface.CallA("a") },
 			"b": func(test.Test) { iface.CallA("b") },
 			"c": func(test.Test) { iface.CallA("c") },
+			"d": func(test.Test) { iface.CallA("d") },
+			"e": func(test.Test) { iface.CallA("e") },
+			"f": func(test.Test) { iface.CallA("f") },
 		})
 }
 
@@ -39,36 +42,38 @@ func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
 	return mock.NewMock(t).Expect(mockSetup)
 }
 
-var testTestParams = perm.ExpectMap{
-	"b-a-c": test.ExpectSuccess,
-	"a-b-c": test.ExpectSuccess,
-	"a-c-b": test.ExpectSuccess,
+var testPermTestParams = perm.ExpectMap{
+	"b-a-c-d-e-f": test.Success,
+	"a-b-c-d-e-f": test.Success,
+	"a-c-b-d-e-f": test.Success,
+	"a-c-d-b-e-f": test.Success,
+	"a-c-d-e-b-f": test.Success,
+	"a-c-d-e-f-b": test.Success,
 }
 
-func TestTest(t *testing.T) {
-	t.Parallel()
-
-	for message, expect := range testTestParams.Remain(test.ExpectFailure) {
-		message, expect := message, expect
-		t.Run(message, test.Run(expect, func(t test.Test) {
-			t.Parallel()
-
+func TestPermTest(t *testing.T) {
+	test.Map(t, testPermTestParams.Remain(test.Failure)).
+		Run(func(t test.Test, expect test.Expect) {
 			// Given
-			perm := strings.Split(message, "-")
+			name := strings.Split(t.Name(), "/")[1]
+			perm := strings.Split(name, "-")
+
 			mockSetup := mock.Chain(
 				CallA("a"),
 				mock.Setup(
 					CallA("b"),
 				),
 				CallA("c"),
+				CallA("d"),
+				CallA("e"),
+				CallA("f"),
 			)
 			mock := MockSetup(t, mockSetup)
 
 			// When
-			test := SetupPermTestABC(mock)
+			test := SetupPermTestABCDEF(mock)
 
 			// Then
 			test.Test(t, perm, expect)
-		}))
-	}
+		})
 }

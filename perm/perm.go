@@ -45,11 +45,11 @@ func (p *Test) TestPerm(t test.Test, perm []string) {
 // Test executes a permutation test with given permutation and expected result.
 func (p *Test) Test(t test.Test, perm []string, expect test.Expect) {
 	switch expect {
-	case test.ExpectSuccess:
+	case test.Success:
 		// Test proper usage of `WaitGroup` on non-failing validation.
 		p.TestPerm(t, perm)
 		p.mocks.Wait()
-	case test.ExpectFailure:
+	case test.Failure:
 		// we need to execute failing test synchronous, since we setup full
 		// permutations instead of stopping setup on first failing mock calls.
 		p.TestPerm(t, perm)
@@ -66,7 +66,7 @@ func (perms ExpectMap) Remain(expect test.Expect) ExpectMap {
 
 	// we only need to permutate the first key.
 	for key := range cperms {
-		slices.Permute(strings.Split(key, "-"),
+		slices.PermuteDo(strings.Split(key, "-"),
 			func(perm []string) {
 				key := strings.Join(perm, "-")
 				if _, ok := cperms[key]; !ok {

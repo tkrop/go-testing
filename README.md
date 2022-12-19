@@ -9,20 +9,26 @@
 
 # Testing framework
 
-This `testing` framework contains a couple of small opinionated extensions for
-[Golang][go], [Gomock][gomock], and [Gock][gock] to enable isolated parallel
-parameterized unit and component tests using a common unified pattern to setup
-strongly validated mock request and response chains that work across detached
-`go`-routines and various error scenarios.
+Goal of the `testing` framework is to provide simple and efficient tools to for
+writing effective unit and component tests in [Go][go].
+
+To accomplish this, the `testing` framework contains a couple of opinionated 
+small extensions for [testing][testing], [Gomock][gomock], and [Gock][gock] to
+enable isolated, parallel, parameterized tests using a common pattern to setup
+strongly validating mock request and response chains that work across detached
+`go` routines and various error scenarios.
 
 ```go
-var testUnitCallParams = map[string]struct {
+type UnitParams struct {
     mockSetup    mock.SetupFunc
     input*...    *model.*
     expect       test.Expect
     expect*...   *model.*
     expectError  error
-}{
+    // TODO: expectPanic  error
+}
+
+var testUnitParams = map[string]UnitParams {
     "success" {
         mockSetup: mock.Chain(
             CallMockA(input..., output...), ...
@@ -32,41 +38,36 @@ var testUnitCallParams = map[string]struct {
     }
 }
 
-func TestUnitCall(t *testing.T) {
-    t.Parallel()
+func TestUnit(t *testing.T) {
+    test.Map(t, testParams).
+        Run(func(t test.Test, param UnitParams){
 
-    for message, param := range testParams {
-        // ensures copying parameters
-        message, param := message, param
-        t.Run(message, test.Run(param.expect, func(t test.Test) {
-            t.Parallel()
+        // Given
+        mocks := mock.NewMock(t).Expect(param.mockSetup)
+        // TODO: defer test.Recover(param.expectPanic)
 
-            // Given
-            mocks := mock.NewMock(t).Expect(param.mockSetup)
+        unit := NewUnitService(
+            mock.Get(mocks, NewServiceMock), ...
+        )
 
-            unit := NewUnitService(
-                mock.Get(mocks, NewServiceMock), ...
-            )
+        // When
+        result, err := unit.call(param.input*...)
 
-            // When
-            result, err := unit.call(param.input*...)
+        mocks.Wait()
 
-            mocks.Wait()
-
-            // Then
-            if param.expectError != nil {
-                assert.Equal(t, param.expectError, err)
-            } else {
-                require.NoError(t, err)
-            }
-            assert.Equal(t, param.expect*, result)
-        }))
-    }
+        // Then
+        if param.expectError != nil {
+            assert.Equal(t, param.expectError, err)
+        } else {
+            require.NoError(t, err)
+        }
+        assert.Equal(t, param.expect*, result)
+    })
 }
 ```
 
 The core idea of the [mock](mock)/[gock](gock) packages is to provide a short
-pragmatic domain language for defining mock request and response that enforce
+pragmatic domain language for defining mock requests with response that enforce
 validation, while the [test](test) package provides the building blocks for
 test isolation.
 
@@ -74,10 +75,11 @@ test isolation.
 ## Why parameterized test?
 
 Parameterized test are an efficient way to setup a high number of related test
-cases that allow to cover the system under test in black box mode from feature
-perspective. With the right tools and concepts - as provided by this `testing`
-framework, parameterized test allow to cover all success and failure paths of
-a system under test.
+cases cover the system under test in a black box mode from feature perspective.
+With the right tools and concepts - as provided by this `testing` framework,
+parameterized test allow to cover all success and failure paths of a system
+under test as outlined above.
+
 
 ## Why parallel tests?
 
@@ -90,13 +92,12 @@ needed to write parallel tests.
 
 ## Why isolation of tests?
 
-Test isolation is a precondition to have stable running test - especially
-run in parallel. Isolation must happen from to input perspective, i.e. the
-outcome of a test must not be affected by any previous running test, but
-also from output perspective, i.e. it must not affect nay later running
-test. This is often complicated since many tools and practices break the
-test isolation (see [requirements for parallel isolated
-tests](#requirements-for-parallel-isolated-tests).
+Test isolation is a precondition to have stable running test - especially run
+in parallel. Isolation must happen from input perspective, i.e. the outcome of
+a test must not be affected by any previous running test, but also from output
+perspective, i.e. it must not affect any later running test. This is often
+complicated since many tools, patterns, and practices break the test isolation
+(see [requirements for parallel isolated tests](#requirements-for-parallel-isolated-tests).
 
 
 ## Why strong validation?
@@ -179,6 +180,7 @@ provide feedback on it.
 
 
 [go]: https://go.dev/ "Golang"
+[testing]: https://pkg.go.dev/testing "Go Testing"
 [gomock]: https://github.com/golang/mock "GoMock"
 [gock]: https://github.com/h2non/gock "Gock"
 [monkey]: https://github.com/bouk/monkey "Monkey Patching"

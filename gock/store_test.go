@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/tkrop/testing/test"
 )
 
 func TestStoreRegister(t *testing.T) {
@@ -176,11 +178,13 @@ func TestStoreFlush(t *testing.T) {
 	assert.False(t, store.Exists(mock2), "mock2 exists not")
 }
 
-var testMatchParams = map[string]struct {
+type MatchParams struct {
 	url         string
 	expectMatch bool
 	expectError error
-}{
+}
+
+var testMatchParams = map[string]MatchParams{
 	"match with bar": {
 		url:         "http://foo.com/bar",
 		expectMatch: true,
@@ -202,13 +206,8 @@ var testMatchParams = map[string]struct {
 }
 
 func TestMatch(t *testing.T) {
-	t.Parallel()
-
-	for message, param := range testMatchParams {
-		message, param := message, param
-		t.Run(message, func(t *testing.T) {
-			t.Parallel()
-
+	test.Map(t, testMatchParams).
+		Run(func(t test.Test, param MatchParams) {
 			// Given
 			store := NewStore(NewFooMatcher())
 			mock := store.NewMock(param.url)
@@ -230,5 +229,4 @@ func TestMatch(t *testing.T) {
 				assert.Nil(t, match)
 			}
 		})
-	}
 }

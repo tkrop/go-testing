@@ -11,18 +11,20 @@ import (
 	"github.com/tkrop/testing/test"
 )
 
-var testControllerParams = map[string]struct {
+type ControllerParams struct {
 	url         string
 	expectMatch test.Expect
 	expectError error
-}{
+}
+
+var testControllerParams = map[string]ControllerParams{
 	"match with bar": {
 		url:         "http://foo.com/bar",
-		expectMatch: test.ExpectSuccess,
+		expectMatch: test.Success,
 	},
 	"match with baz": {
 		url:         "http://foo.com/baz",
-		expectMatch: test.ExpectSuccess,
+		expectMatch: test.Success,
 	},
 	"missing host": {
 		url:         "http://bar.com/baz",
@@ -39,16 +41,10 @@ var testControllerParams = map[string]struct {
 }
 
 func TestController(t *testing.T) {
-	t.Parallel()
-
-	for message, param := range testControllerParams {
-		message, param := message, param
-		t.Run(message, func(t *testing.T) {
-			t.Parallel()
-
+	test.Map(t, testControllerParams).
+		Run(func(t test.Test, param ControllerParams) {
 			// Given
-			tt := test.NewTestingT(t, param.expectMatch)
-			ctrl := NewGock(gomock.NewController(tt))
+			ctrl := NewGock(gomock.NewController(t))
 			ctrl.MockStore.Matcher = NewFooMatcher()
 			ctrl.New("http://foo.com").Get("/bar").Times(1).Reply(200)
 			client := &http.Client{}
@@ -73,9 +69,21 @@ func TestController(t *testing.T) {
 			} else {
 				assert.False(t, ctrl.MockStore.IsDone(), "mock not done")
 			}
-			tt.Run(func(t test.Test) {
-				ctrl.cleanup()
-			})
+			ctrl.cleanup()
 		})
-	}
+}
+
+func TestPanic(t *testing.T) {
+	// Given
+	defer func() {
+		if err := recover(); err == nil {
+			assert.Fail(t, "did not panic")
+		}
+	}()
+
+	// When
+	NewGock(gomock.NewController(struct{ gomock.TestReporter }{}))
+
+	// Then
+	assert.Fail(t, "did not panic")
 }

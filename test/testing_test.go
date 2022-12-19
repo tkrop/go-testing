@@ -1,198 +1,239 @@
-package test
+package test_test
 
 import (
 	"testing"
 
-	"github.com/tkrop/testing/mock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/tkrop/testing/sync"
+	"github.com/tkrop/testing/test"
 )
 
-//go:generate mockgen -package=test -destination=mock_iface_test.go -source=testing_test.go  IFace
-
-type IFace interface {
-	CallA(string)
-	CallB(string) string
+type TestParam struct {
+	name     test.Name
+	test     func(test.Test)
+	expect   test.Expect
+	consumed bool
 }
 
-func CallA(input string) mock.SetupFunc {
-	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Times(mocks.Times(1)).
-			Do(mocks.GetDone(1))
-	}
-}
+var testFailureParams = map[string]TestParam{
+	"raw nothing": {
+		test:   func(t test.Test) {},
+		expect: test.Success,
+	},
 
-func CallB(input string, output string) mock.SetupFunc {
-	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallB(input).Return(output).
-			Times(mocks.Times(1)).Do(mocks.GetDone(1))
-	}
-}
+	"raw errorf": {
+		test:   func(t test.Test) { t.Errorf("fail") },
+		expect: test.Failure,
+	},
 
-var testRunParams = map[string]struct {
-	expect Expect
-	test   func(Test)
-}{
+	"raw fatalf": {
+		test:     func(t test.Test) { t.Fatalf("fail") },
+		expect:   test.Failure,
+		consumed: true,
+	},
+
+	"raw failnow": {
+		test:     func(t test.Test) { t.FailNow() },
+		expect:   test.Failure,
+		consumed: true,
+	},
+
+	"raw panic": {
+		test:     func(t test.Test) { panic("panic") },
+		expect:   test.Failure,
+		consumed: true,
+	},
+
 	"run success": {
-		test: InRun(ExpectSuccess,
-			func(Test) {}),
-		expect: ExpectSuccess,
+		test: test.InRun(test.Success,
+			func(test.Test) {}),
+		expect: test.Success,
 	},
 
 	"run success with errorf": {
-		test: InRun(ExpectSuccess,
-			func(t Test) { t.Errorf("fail") }),
-		expect: ExpectFailure,
+		test: test.InRun(test.Success,
+			func(t test.Test) { t.Errorf("fail") }),
+		expect: test.Failure,
 	},
 
 	"run success with fatalf": {
-		test: InRun(ExpectSuccess,
-			func(t Test) { t.Fatalf("fail") }),
-		expect: ExpectFailure,
+		test: test.InRun(test.Success,
+			func(t test.Test) { t.Fatalf("fail") }),
+		expect:   test.Failure,
+		consumed: true,
 	},
 
 	"run success with failnow": {
-		test: InRun(ExpectSuccess,
-			func(t Test) { t.FailNow() }),
-		expect: ExpectFailure,
+		test: test.InRun(test.Success,
+			func(t test.Test) { t.FailNow() }),
+		expect:   test.Failure,
+		consumed: true,
+	},
+
+	"run success with panic": {
+		test: test.InRun(test.Success,
+			func(t test.Test) { panic("panic") }),
+		expect:   test.Failure,
+		consumed: true,
 	},
 
 	"run failure": {
-		test: InRun(ExpectFailure,
-			func(t Test) {}),
-		expect: ExpectFailure,
+		test: test.InRun(test.Failure,
+			func(t test.Test) {}),
+		expect: test.Failure,
 	},
 
 	"run failure with errorf": {
-		test: InRun(ExpectFailure,
-			func(t Test) { t.Errorf("fail") }),
-		expect: ExpectSuccess,
+		test: test.InRun(test.Failure,
+			func(t test.Test) { t.Errorf("fail") }),
+		expect: test.Success,
 	},
 
 	"run failure with fatalf": {
-		test: InRun(ExpectFailure,
-			func(t Test) { t.Fatalf("fail") }),
-		expect: ExpectFailure,
+		test: test.InRun(test.Failure,
+			func(t test.Test) { t.Fatalf("fail") }),
+		expect:   test.Failure,
+		consumed: true,
 	},
 
 	"run failure with failnow": {
-		test: InRun(ExpectFailure,
-			func(t Test) { t.FailNow() }),
-		expect: ExpectFailure,
+		test: test.InRun(test.Failure,
+			func(t test.Test) { t.FailNow() }),
+		expect:   test.Failure,
+		consumed: true,
 	},
 
-	"in success": {
-		test:   InSuccess(func(t Test) {}),
-		expect: ExpectSuccess,
-	},
-
-	"in success with errorf": {
-		test: InSuccess(
-			func(t Test) { t.Errorf("fail") }),
-		expect: ExpectFailure,
-	},
-
-	"in success with fatalf": {
-		test: InSuccess(
-			func(t Test) { t.Fatalf("fail") }),
-		expect: ExpectFailure,
-	},
-
-	"in success with failnow": {
-		test: InSuccess(
-			func(t Test) { t.FailNow() }),
-		expect: ExpectFailure,
-	},
-
-	"in failure": {
-		test:   InFailure(func(t Test) {}),
-		expect: ExpectFailure,
-	},
-
-	"in failure with errorf": {
-		test: InFailure(
-			func(t Test) { t.Errorf("fail") }),
-		expect: ExpectSuccess,
-	},
-
-	"in failure with fatalf": {
-		test: InFailure(
-			func(t Test) { t.Fatalf("fail") }),
-		expect: ExpectFailure,
-	},
-
-	"in failure with failnow": {
-		test: InFailure(
-			func(t Test) { t.FailNow() }),
-		expect: ExpectFailure,
+	"run failure with panic": {
+		test: test.InRun(test.Failure,
+			func(t test.Test) { panic("panic") }),
+		expect:   test.Failure,
+		consumed: true,
 	},
 }
 
-func Call(t Test, mocks *mock.Mocks, expect Expect, test func(Test)) {
-	test(t)
-	if expect == ExpectSuccess {
-		mock.Get(mocks, NewMockIFace).CallA("a")
-	} else {
-		// simulate mock call since consumption of
-		// mock call will creat a random result after
-		// unlocking test thread.
-		mocks.Times(-1)
+func testFailures(t test.Test, param TestParam) {
+	// Given
+	wg := sync.NewLenientWaitGroup()
+	t.(*test.Tester).WaitGroup(wg)
+	if param.consumed {
+		wg.Add(1)
+	}
+
+	// When
+	param.test(t)
+
+	// Then
+	wg.Wait()
+	if param.expect == test.Failure {
+		assert.Fail(t, "should fail")
 	}
 }
 
 func TestRun(t *testing.T) {
 	t.Parallel()
 
-	for message, param := range testRunParams {
-		message, param := message, param
-		t.Run(message, Run(param.expect, func(t Test) {
-			t.Parallel()
-
-			// Given
-			mocks := mock.NewMock(t).Expect(CallA("a"))
-
-			// When
-			go Call(t, mocks, param.expect, param.test)
-
-			// Then
-			mocks.Wait()
+	for name, param := range testFailureParams {
+		name, param := name, param
+		t.Run(name, test.Run(param.expect, func(t test.Test) {
+			testFailures(t, param)
 		}))
 	}
 }
 
-func TestOther(t *testing.T) {
+func TestRunSeq(t *testing.T) {
 	t.Parallel()
 
-	for message, param := range testRunParams {
-		message, param := message, param
-		switch param.expect {
-		case ExpectSuccess:
-			t.Run(message, Success(func(t Test) {
-				t.Parallel()
-
-				// Given
-				mocks := mock.NewMock(t).Expect(CallA("a"))
-
-				// When
-				go Call(t, mocks, param.expect, param.test)
-
-				// Then
-				mocks.Wait()
-			}))
-
-		case ExpectFailure:
-			t.Run(message, Failure(func(t Test) {
-				t.Parallel()
-
-				// Given
-				mocks := mock.NewMock(t).Expect(CallA("a"))
-
-				// When
-				go Call(t, mocks, param.expect, param.test)
-
-				// Then
-				mocks.Wait()
-			}))
-		}
+	for name, param := range testFailureParams {
+		name, param := name, param
+		t.Run(name, test.RunSeq(param.expect, func(t test.Test) {
+			testFailures(t, param)
+		}))
 	}
+}
+
+func TestNewRun(t *testing.T) {
+	test.New[TestParam](t, TestParam{
+		test:   func(t test.Test) { t.FailNow() },
+		expect: test.Failure,
+	}).Run(func(t test.Test, param TestParam) {
+		testFailures(t, param)
+	})
+}
+
+func TestNew(t *testing.T) {
+	t.Parallel()
+
+	for _, param := range testFailureParams {
+		test.New[TestParam](t, TestParam{
+			test:   param.test,
+			expect: param.expect,
+		}).RunSeq(func(t test.Test, param TestParam) {
+			testFailures(t, param)
+		})
+	}
+}
+
+func TestNewNamed(t *testing.T) {
+	t.Parallel()
+
+	for name, param := range testFailureParams {
+		test.New[TestParam](t, TestParam{
+			name:   test.Name(name),
+			test:   param.test,
+			expect: param.expect,
+		}).RunSeq(func(t test.Test, param TestParam) {
+			testFailures(t, param)
+		})
+	}
+}
+
+func TestMap(t *testing.T) {
+	test.Map(t, testFailureParams).
+		Run(func(t test.Test, param TestParam) {
+			testFailures(t, param)
+		})
+}
+
+func TestSlice(t *testing.T) {
+	params := make([]TestParam, 0, len(testFailureParams))
+	for name, param := range testFailureParams {
+		params = append(params, TestParam{
+			name:   test.Name(name),
+			test:   param.test,
+			expect: param.expect,
+		})
+	}
+
+	test.Slice(t, params).
+		Run(func(t test.Test, param TestParam) {
+			testFailures(t, param)
+		})
+}
+
+type ParamParam struct {
+	name   string
+	expect bool
+}
+
+func TestNameCastFallback(t *testing.T) {
+	test.New[ParamParam](t, ParamParam{name: "value"}).
+		Run(func(t test.Test, param ParamParam) {
+			assert.Equal(t, t.Name(), "TestNameCastFallback")
+		})
+}
+
+func TestExpectCastFallback(t *testing.T) {
+	test.New[ParamParam](t, ParamParam{expect: false}).
+		Run(func(t test.Test, param ParamParam) {})
+}
+
+func TestTypePanic(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			assert.Fail(t, "not paniced")
+		}
+	}()
+	test.New[TestParam](t, ParamParam{expect: false}).
+		Run(func(t test.Test, param TestParam) {})
 }
