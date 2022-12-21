@@ -8,18 +8,32 @@ func Reverse[T any](slice []T) []T {
 	return slice
 }
 
+// Permute permutates the given slice as is.
+func Permute[T any](slice []T) [][]T {
+	perms := [][]T{}
+	PermuteDo(slice, func(perm []T) {
+		perms = append(perms, Copy(perm))
+	}, 0)
+	return perms
+}
+
 // Permute permutates the given slice starting at the position given by the
 // index and call the `do` function on each permutation to collect the result.
 // For a full permutation the `index` must start with `0`.
-func Permute[T any](slice []T, do func([]T), i int) {
+func PermuteDo[T any](slice []T, do func([]T), i int) {
 	if i <= len(slice) {
-		Permute(slice, do, i+1)
+		PermuteDo(slice, do, i+1)
 		for j := i + 1; j < len(slice); j++ {
 			slice[i], slice[j] = slice[j], slice[i]
-			Permute(slice, do, i+1)
+			PermuteDo(slice, do, i+1)
 			slice[i], slice[j] = slice[j], slice[i]
 		}
 	} else {
 		do(slice)
 	}
+}
+
+// Copy makes a shallow copy of the given slice.
+func Copy[T any](slice []T) []T {
+	return append(make([]T, 0, len(slice)), slice...)
 }
