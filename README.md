@@ -1,12 +1,12 @@
 [![Build](https://github.com/tkrop/testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/testing/actions/workflows/go.yaml)
 [![Coverage](https://coveralls.io/repos/github/tkrop/testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/testing?branch=main)
-[![Libraries](https://img.shields.io/hackage-deps/v/github.com/tkrop/testing)](https://img.shields.io/hackage-deps/v/github.com/tkrop/testing)
+[![Libraries](https://img.shields.io/librariesio/release/github/tkrop/testing
+)](https://libraries.io/github/tkrop/testing)
+[![Security](https://snyk.io/test/github/tkrop/testing/badge.svg)](https://snyk.io/test/github/tkrop/testing)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
 [![Report](https://goreportcard.com/badge/github.com/tkrop/testing)](https://goreportcard.com/badge/github.com/tkrop/testing)
 [![Docs](https://pkg.go.dev/badge/github.com/tkrop/testing.svg)](https://pkg.go.dev/github.com/tkrop/testing)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
-
 
 # Testing framework
 
