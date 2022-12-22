@@ -9,6 +9,10 @@ require (
 	gopkg.in/h2non/gock.v1 v1.1.2
 )
 
+exclude (
+	github.com/stretchr/testify v1.8.0
+)
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542 // indirect
