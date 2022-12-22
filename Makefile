@@ -24,6 +24,7 @@ TEMPDIR := $(RUNDIR)/temp
 
 TEST_ALL := $(BUILDIR)/test-all.cover
 TEST_UNIT := $(BUILDIR)/test-unit.cover
+TEST_BENCH := $(BUILDIR)/test-bench.cover
 LINT_ALL := lint-src lint-api
 
 # Include required custom variables.
@@ -156,7 +157,7 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: clean clean-init clean-build clean-tools clean-run
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
-.PHONY: test test-all test-unit test-clean test-upload test-cover
+.PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
 .PHONY: lint lint-all lint-src lint- lint-list lint-warn lint-api format
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
@@ -335,16 +336,16 @@ $(MOCKS): go.sum $(MOCK_SOURCES)
 test: test-all
 test-all: test-clean init-sources $(TEST_ALL)
 test-unit: test-clean init-sources $(TEST_UNIT)
+test-bench: test-clean init-sources $(TEST_BENCH)
 test-clean:
 	@if [ -f "$(TEST_ALL)" ]; then rm -vf $(TEST_ALL); fi; \
-	 if [ -f "$(TEST_UNIT)" ]; then rm -vf $(TEST_UNIT); fi;
+	 if [ -f "$(TEST_UNIT)" ]; then rm -vf $(TEST_UNIT); fi; \
+	 if [ -f "$(TEST_BENCH)" ]; then rm -vf $(TEST_BENCH); fi;
 test-upload:
 test-cover:
-	@if [ "$(TEST_ALL)" -nt "$(TEST_UNIT)" ]; then \
-	  go tool cover -html=$(TEST_ALL); \
-	else \
-	  go tool cover -html=$(TEST_UNIT); \
-	fi; \
+	@FILE=$$(ls -Art "$(TEST_ALL)" "$(TEST_UNIT)" \
+	  "$(TEST_BENCH)" 2>/dev/null); \
+	go tool cover -html="$${FILE}"; \
 
 
 define testargs
@@ -373,17 +374,21 @@ define testargs
   else echo "./..."; fi
 endef
 
-TESTFLAGS ?= -race -mod=readonly -count=1
+TESTFLAGS ?= -race -mod=readonly -count 1
 TESTARGS ?= $(shell $(testargs))
 
 $(TEST_ALL): $(SOURCES) init-sources $(TEST_DEPS)
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
 	go test $(TESTFLAGS) -timeout $(TEST_TIMEOUT) \
-	  -cover -coverprofile $@ $(TESTARGS);
+	  -count=1 -cover -coverprofile $@ $(TESTARGS);
 $(TEST_UNIT): $(SOURCES) init-sources
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
 	go test $(TESTFLAGS) -timeout $(TEST_TIMEOUT) \
-	  -cover -coverprofile $@ -short $(TESTARGS);
+	  -count=1 -cover -coverprofile $@ -short $(TESTARGS);
+$(TEST_BENCH): $(SOURCES) init-sources
+	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
+	go test $(TESTFLAGS) -benchtime=8s \
+	  -cover -coverprofile $@ -short -bench=. $(TESTARGS);
 
 
 COMMA := ,

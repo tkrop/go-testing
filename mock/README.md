@@ -1,19 +1,49 @@
-# Usage patterns of testing/mock
+# Package testing/mock
 
-This package contains a small extension library to handle mock call setup in a
-standardized, highly reusable way. Unfortunately, we had to sacrifice a bit of
-type-safety to allow for chaining mock calls in an arbitrary way during setup.
-Anyhow, the offered in runtime validation is a sufficient strategy to cover
-for the missing type-safty.
+Goal of this package is to provide a small extension library that provides a
+common mock controller interface for [gomock][gomock] and [Gock][gock] that
+enables a unified, highly reusable integration pattern.
+
+Unfortunately, we had to sacrifice a bit of type-safety to allow for chaining
+mock calls in an arbitrary way during setup. Anyhow, the offered in runtime
+validation is a sufficient strategy to cover for the missing type-safty.
+
+
+## Example usage
+
+The `mock`-framework provides a simple [gomock][gomock] handler extension to
+creates singelton mock controllers on demand by accepting mock constructors in
+its method calls. In addition, it provides a mock setup abstraction to simply
+setup complex mock request/response chains.
+
+```go
+func TestUnit(t *testing.T) {
+    // Given
+    mocks := mock.NewMock(t)
+
+    mockSetup := mock.Get(mocks, NewServiceMock).EXPECT()...
+    mocks.Expect(mockSetup)
+
+    service := NewUnitService(
+        mock.Get(mocks, NewServiceMock))
+
+    // When
+    ...
+}
+```
+
+Using the features of the `mock`-framework we can design more advanced usage
+patterns as described in the following.
 
 
 ## Generic mock setup pattern
 
-To setup a generic mock handler for any number of mocks, one can simply use the
-following template to setup an arbitrary system under test.
+Usually, multiple test have to be created for the same system under test.
+Therefore, the following generic template to setup the mock controller with an
+arbitrary system under test can be very helpful.
 
 ```go
-func SetupTestUnit(
+func SetupUnit(
     t *gomock.TestReporter,
     mockSetup mock.SetupFunc,
     ...
@@ -43,7 +73,7 @@ func ServiceCall(input..., output..., error) mock.SetupFunc {
     return func(mocks *Mocks) any {
         return mock.Get(mocks, NewServiceMock).EXPECT().
             ServiceCall(input...).Return(output..., error).
-			Times(mocks.Times(1)).Do(mocks.GetDone(<#input-args>))
+            Times(mocks.Times(1)).Do(mocks.GetDone(<#input-args>))
     }
 }
 ```
@@ -218,3 +248,7 @@ for message, param := range testUnitCallParams {
 
 **Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
 for more information on requirements in parallel parameterized tests.
+
+
+[gomock]: https://github.com/golang/mock "GoMock"
+[gock]: https://github.com/h2non/gock "Gock"

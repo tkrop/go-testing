@@ -1,73 +1,106 @@
-# Usage patterns of testing/gock
+# Package testing/gock
 
-This package provides a small controller and mock storage to isolate testing of
-HTTP request/response cycles extending [Gock][gock]. Since framework is focused
-on testing it does not support the networking and observation features of
-[Gock][gock] and requires manual transport interception, however, the interface
-is mainly compatible with.
+Goal of this package is to provide a small controller to isolate testing of
+services (gateways) by mocking the network communication using [Gock][gock].
+
+**Note:** Since the controller is focused on testing, it does not support the
+same networking and observation features of [Gock][gock] and requires manual
+transport interception setup. However, the interface is mainly compatible with.
+
+
+## Example usage
+
+Just create a new controller on each test, connect it to your HTTP clients or
+client wrappers, and than use it to create HTTP mock request/response cycles
+as usual.
+
+
+```go
+func TestUnit(t *testing.T) {
+    // Given
+    gock := gock.NewController(t)
+
+    client := &http.Client{}
+    gock.InterceptClient(client)
+
+    gock.New("http://foo.com").Get("/bar").Times(1).
+        Reply(200).BodyString("result")
+
+    // When
+    ...
+}
+```
+
+The controller is also fully integrated in to the [mock](../mock)-framework, so
+that you can just request the controller via the [gomock][gomock] constructor
+`mock.Get(mocks, gock.NewGock)` (see [Example](#integration-with-mock-framework))
 
 
 ## Migration from Gock
 
-Migration from [Gock][gock] to this package is straigt forward. You can just
-add the controller creation as at the begin of your test giving it the name
-`gock` and hand it over to all methods creating HTTP request/response mocks. The
-mock creation than happens as usual.
+Migration from [Gock][gock] to this package is straigt forward. You just add
+the controller creation at the begin of your test giving it the name `gock` and
+hand it over to all methods creating HTTP request/response mocks. The mock
+creation than happens as usual.
 
 ```go
-func MyTest(t *testing.T) {
-	gock := tock.Controller(t)
+func TestUnit(t *testing.T) {
+    // Given
+    gock := gock.NewController(t)
 
-	...
+    ...
 
-	gock.New("http://foo.com").Get("/bar").Times(1).
-		Reply(200).BodyString("result")
+    gock.New("http://foo.com").Get("/bar").Times(1).
+        Reply(200).BodyString("result")
 
-	...
+    // WHen
+    ...
 }
 ```
 
 Since the controller does not intercept all transports by default, you need to
 setup transport interception manually. This can happen in three different ways.
-If you have access to the HTTP request/response client, you can either use the
-usual `InterceptClient` (and `RestoreClient`) methods.
+If you have access to the HTTP request/response client, you can use the usual
+`InterceptClient` (and `RestoreClient`) methods.
 
 ```go
-func MyTest(t *testing.T) {
-	gock := tock.Controller(t)
+func TestUnit(t *testing.T) {
+    // Given
+    gock := tock.Controller(t)
 
-	...
+    ...
 
-	client := &http.Client{}
-	gock.InterceptClient(client)
-	defer gock.RestoreClient(client) // optional
+    client := &http.Client{}
+    gock.InterceptClient(client)
+    defer gock.RestoreClient(client) // optional
 
-	...
+    // When
+    ...
 }
 ```
 
-Some customized HTTP clients e.g. [resty][resty] offer the ability to set the
-transport manually based on `http.RoundTripper` interface. The controller
-supports customized HTTP clients by implementing `http.RoundTripper` so that
-you can utilize their setup methods.
+Customized HTTP clients e.g. [resty][resty] may not give direct access to the
+transport but offer the ability to set a `http.RoundTripper`. The mcontroller
+implements this interface and therefore can be simply used as drop in entity.
 
 ```go
-func MyTest(t *testing.T) {
-	gock := tock.Controller(t)
+func TestUnit(t *testing.T) {
+    // Given
+    gock := tock.Controller(t)
 
-	...
+    ...
 
-	client := resty.New()
-	client.setTransport(gock)
+    client := resty.New()
+    client.setTransport(gock)
 
-	...
+    // When
+    ...
 }
 ```
 
-As last resort, you can also intercept the `http.DefaultTransport`, however,
+As a last resort, you can also intercept the `http.DefaultTransport`, however,
 this is not advised, since it will destroy the test isolation that is goal of
-this wrapper framework. In this case you should use
-[gock][gock] directly.
+this controller framework. In this case you should use [gock][gock] directly.
 
 
 ## Integration with `mock`-framework
@@ -80,12 +113,12 @@ create the usual setup methods similar as described in
 
 ```go
 func GockCall(
-	url, path string, input..., status int, output..., error,
+    url, path string, input..., status int, output..., error,
 ) mock.SetupFunc {
     return func(mocks *Mocks) any {
         mock.Get(mocks, gock.NewGock).New(url).Get(path).Times(1).
-			Reply(status)...
-		return nil
+            Reply(status)...
+        return nil
     }
 }
 ```
