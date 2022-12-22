@@ -17,7 +17,7 @@ func Permute[T any](slice []T) [][]T {
 	return perms
 }
 
-// Permute permutates the given slice starting at the position given by the
+// PermuteDo permutates the given slice starting at the position given by the
 // index and call the `do` function on each permutation to collect the result.
 // For a full permutation the `index` must start with `0`.
 func PermuteDo[T any](slice []T, do func([]T), i int) {

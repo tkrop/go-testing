@@ -296,12 +296,7 @@ func (r *runner[P]) run(call func(t Test, param P), parallel bool) {
 
 		for name, param := range params {
 			name, param := name, param
-			r.t.Run(name, run(r.expect(param), func(t Test) {
-				// Helpful for debugging to see the test case.
-				require.NotEmpty(t, name)
-
-				call(t, param)
-			}, parallel))
+			r.t.Run(name, r.wrap(name, param, call, parallel))
 		}
 
 	case []P:
@@ -312,34 +307,31 @@ func (r *runner[P]) run(call func(t Test, param P), parallel bool) {
 		for index, param := range params {
 			index, param := index, param
 			name := fmt.Sprintf("%s[%d]", r.name(param), index)
-			r.t.Run(name, run(r.expect(param), func(t Test) {
-				// Helpful for debugging to see the test case.
-				require.NotEmpty(t, name)
-
-				call(t, param)
-			}, parallel))
+			r.t.Run(name, r.wrap(name, param, call, parallel))
 		}
 	case P:
 		name := string(r.name(params))
-		if name == string(unknownName) {
-			run(r.expect(params), func(t Test) {
-				// Helpful for debugging to see the test case.
-				require.NotEmpty(t, name)
-
-				call(t, params)
-			}, parallel)(r.t)
+		if name != string(unknownName) {
+			r.t.Run(name, r.wrap(name, params, call, parallel))
 		} else {
-			r.t.Run(name, run(r.expect(params), func(t Test) {
-				// Helpful for debugging to see the test case.
-				require.NotEmpty(t, name)
-
-				call(t, params)
-			}, parallel))
+			r.wrap(name, params, call, parallel)(r.t)
 		}
 	default:
 		panic(fmt.Errorf("unknown parameter type:  %v",
 			reflect.ValueOf(r.params).Type()))
 	}
+}
+
+// wrap creates the test wrapper method executing the test.
+func (r *runner[P]) wrap(
+	name string, param P, call func(t Test, param P), parallel bool,
+) func(*testing.T) {
+	return run(r.expect(param), func(t Test) {
+		// Helpful for debugging to see the test case.
+		require.NotEmpty(t, name)
+
+		call(t, param)
+	}, parallel)
 }
 
 // name resolves the test case name from the parameter set.
@@ -378,6 +370,8 @@ func RunSeq(expect Expect, test func(Test)) func(*testing.T) {
 // checks whether the result is matching the expectation.
 func run(expect Expect, test func(Test), parallel bool) func(*testing.T) {
 	return func(t *testing.T) {
+		t.Helper()
+
 		NewTester(t, expect).Run(test, parallel)
 	}
 }
@@ -387,6 +381,8 @@ func run(expect Expect, test func(Test), parallel bool) func(*testing.T) {
 // is matching the expectation.
 func InRun(expect Expect, test func(Test)) func(Test) {
 	return func(t Test) {
+		t.Helper()
+
 		NewTester(t, expect).Run(test, false)
 	}
 }
