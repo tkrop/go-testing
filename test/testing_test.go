@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tkrop/testing/sync"
-	"github.com/tkrop/testing/test"
+	"github.com/tkrop/go-testing/sync"
+	"github.com/tkrop/go-testing/test"
 )
 
 type TestParam struct {

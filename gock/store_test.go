@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tkrop/testing/test"
+	"github.com/tkrop/go-testing/test"
 )
 
 func TestStoreRegister(t *testing.T) {

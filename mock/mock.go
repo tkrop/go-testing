@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/tkrop/testing/sync"
+	"github.com/tkrop/go-testing/sync"
 )
 
 // DetachMode defines the mode for detaching mock calls.

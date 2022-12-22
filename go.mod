@@ -1,4 +1,4 @@
-module github.com/tkrop/testing
+module github.com/tkrop/go-testing
 
 go 1.19
 
@@ -9,9 +9,7 @@ require (
 	gopkg.in/h2non/gock.v1 v1.1.2
 )
 
-exclude (
-	github.com/stretchr/testify v1.8.0
-)
+exclude github.com/stretchr/testify v1.8.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

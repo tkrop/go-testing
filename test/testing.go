@@ -12,8 +12,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tkrop/testing/sync"
-	"github.com/tkrop/testing/utils/slices"
+	"github.com/tkrop/go-testing/sync"
+	"github.com/tkrop/go-testing/utils/slices"
 )
 
 type (

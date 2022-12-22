@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/h2non/gock.v1"
 
-	"github.com/tkrop/testing/test"
+	"github.com/tkrop/go-testing/test"
 )
 
 type ControllerParams struct {

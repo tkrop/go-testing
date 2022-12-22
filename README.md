@@ -1,18 +1,18 @@
-[![Build](https://github.com/tkrop/testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/testing/actions/workflows/go.yaml)
-[![Coverage](https://coveralls.io/repos/github/tkrop/testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/testing?branch=main)
-[![Libraries](https://img.shields.io/librariesio/release/github/tkrop/testing)](https://libraries.io/github/tkrop/testing)
-<!--[![Security](https://img.shields.io/snyk/vulnerabilities/github/tkrop/testing/go.mod)](https://snyk.io/github/tkrop/testing)-->
+[![Build](https://github.com/tkrop/go-testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/go-testing/actions/workflows/go.yaml)
+[![Coverage](https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/go-testing?branch=main)
+[![Libraries](https://img.shields.io/librariesio/release/github/tkrop/go-testing)](https://libraries.io/github/tkrop/go-testing)
+<!--[![Security](https://img.shields.io/snyk/vulnerabilities/github/tkrop/go-testing/go.mod)](https://snyk.io/github/tkrop/go-testing)-->
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
-[![Report](https://goreportcard.com/badge/github.com/tkrop/testing)](https://goreportcard.com/badge/github.com/tkrop/testing)
-[![Docs](https://pkg.go.dev/badge/github.com/tkrop/testing.svg)](https://pkg.go.dev/github.com/tkrop/testing)
+[![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Fgo-testing.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Fgo-testing?ref=badge_shield)
+[![Report](https://goreportcard.com/badge/github.com/tkrop/go-testing)](https://goreportcard.com/badge/github.com/tkrop/go-testing)
+[![Docs](https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg)](https://pkg.go.dev/github.com/tkrop/go-testing)
 
 # Testing framework
 
 Goal of the `testing` framework is to provide simple and efficient tools to for
 writing effective unit and component tests in [Go][go].
 
-To accomplish this, the `testing` framework contains a couple of opinionated 
+To accomplish this, the `testing` framework contains a couple of opinionated
 small extensions for [testing][testing], [Gomock][gomock], and [Gock][gock] to
 enable isolated, parallel, parameterized tests using a common pattern to setup
 strongly validating mock request and response chains that work across detached

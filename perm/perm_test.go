@@ -6,9 +6,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/tkrop/testing/mock"
-	"github.com/tkrop/testing/perm"
-	"github.com/tkrop/testing/test"
+	"github.com/tkrop/go-testing/mock"
+	"github.com/tkrop/go-testing/perm"
+	"github.com/tkrop/go-testing/test"
 )
 
 //go:generate mockgen -package=perm_test -destination=mock_iface_test.go -source=perm_test.go  IFace
