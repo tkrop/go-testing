@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tkrop/testing/sync"
+	"github.com/tkrop/go-testing/sync"
 )
 
 func TestWaitGroup(t *testing.T) {

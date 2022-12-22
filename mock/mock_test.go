@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tkrop/testing/mock"
-	"github.com/tkrop/testing/perm"
-	"github.com/tkrop/testing/test"
+	"github.com/tkrop/go-testing/mock"
+	"github.com/tkrop/go-testing/perm"
+	"github.com/tkrop/go-testing/test"
 )
 
 //go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mock_test.go  IFace

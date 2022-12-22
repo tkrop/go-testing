@@ -6,7 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	gock "gopkg.in/h2non/gock.v1"
 
-	"github.com/tkrop/testing/test"
+	"github.com/tkrop/go-testing/test"
 )
 
 // Transport is a small transport implementation delegating requests to the

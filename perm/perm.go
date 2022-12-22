@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/tkrop/testing/mock"
-	"github.com/tkrop/testing/test"
-	"github.com/tkrop/testing/utils/slices"
+	"github.com/tkrop/go-testing/mock"
+	"github.com/tkrop/go-testing/test"
+	"github.com/tkrop/go-testing/utils/slices"
 )
 
 // ExpectMap defines a map of permutation tests that are expected to either
