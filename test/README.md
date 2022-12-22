@@ -1,9 +1,14 @@
-# Usage patterns of testing/test
+# Package testing/test
 
-This package provides a small framework to simply isolate the test execution
-and safely check whether a test fails as expected. This is primarily very handy
-to validate a test framework as provided by the [mock](../mock) package but may
-be handy in other cases too.
+The goal of this package is to provide a small framework to isolate the test
+execution and safely check whether a test fails as expected. This is primarily
+very handy to validate a test framework as provided by the [mock](../mock)
+package but may be handy in other use cases too.
+
+
+## Example usage
+
+TODO
 
 
 ## Isolated parameterized parallel test runner
@@ -19,14 +24,14 @@ started by `Run` that accepts a simple test function as input, using a
 
 ```go
 func TestUnit(t *testing.T) {
-	test.New|Slice|Map(t, testParams).
-	    Run(func(t test.Test, param UnitParams){
+    test.New|Slice|Map(t, testParams).
+        Run(func(t test.Test, param UnitParams){
             // Given
 
             // When
 
             // Then
-	    })
+        })
 }
 ```
 
@@ -51,37 +56,37 @@ parameterized, parallel, isolated test wrapper using the basic abstraction
 `test.Run(test.Success|Failure, func (t test.Test) {})`:
 
 ```go
-func TestUnitCall(t *testing.T) {
-	t.Parallel()
+func TestUnit(t *testing.T) {
+    t.Parallel()
 
-	for name, param := range testParams {
-		name, param := name, param
-		t.Run(name, test.Run(param.expect, func(t test.Test) {
-			t.Parallel()
+    for name, param := range testParams {
+        name, param := name, param
+        t.Run(name, test.Run(param.expect, func(t test.Test) {
+            t.Parallel()
 
             // Given
 
             // When
 
             // Then
-		}))
-	}
+        }))
+    }
 }
 ```
 
 Or the interface of the underlying `test.Tester`:
 
 ```go
-func TestUnitCall(t *testing.T) {
-	t.Parallel()
+func TestUnit(t *testing.T) {
+    t.Parallel()
 
-	test.Tester(t, test.Success).Run(func(t test.Test){
+    test.Tester(t, test.Success).Run(func(t test.Test){
         // Given
 
         // When
 
         // Then
-	})
+    })
 }
 ```
 

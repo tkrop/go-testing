@@ -18,6 +18,13 @@ enable isolated, parallel, parameterized tests using a common pattern to setup
 strongly validating mock request and response chains that work across detached
 `go` routines and various error scenarios.
 
+## Example Usage
+
+The core idea of the [mock](mock)/[gock](gock) packages is to provide a short
+pragmatic domain language for defining mock requests with response that enforce
+validation, while the [test](test) package provides the building blocks for
+test isolation.
+
 ```go
 type UnitParams struct {
     mockSetup    mock.SetupFunc
@@ -66,10 +73,8 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-The core idea of the [mock](mock)/[gock](gock) packages is to provide a short
-pragmatic domain language for defining mock requests with response that enforce
-validation, while the [test](test) package provides the building blocks for
-test isolation.
+This opinionated test pattern supports a wide range of test in a standardized
+way.
 
 
 ## Why parameterized test?
