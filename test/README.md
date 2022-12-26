@@ -1,9 +1,10 @@
 # Package testing/test
 
 The goal of this package is to provide a small framework to isolate the test
-execution and safely check whether a test fails as expected. This is primarily
-very handy to validate a test framework as provided by the [mock](../mock)
-package but may be handy in other use cases too.
+execution and safely check whether a test succeeds or fails as expected. In
+combination with the [mock](../mock) package it ensures that a test finishs
+reliably and reports its failure even if a system under test is spawning
+go-routines.
 
 
 ## Example usage
@@ -45,11 +46,33 @@ Similar a test case name can be provided using type `test.Name` (name `name` -
 default value `unknown-%d`) or as key using a test case name to parameter set
 mapping.
 
-
 **Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
 for more information on requirements in parallel parameterized tests.
 
-## Manual isolated test wrapper setup
+
+## Isolated in-test environment setup
+
+It is also possible to isolate only a single test step by setting up a small
+test function that is run in isolation.
+
+```go
+func TestUnit(t *testing.T) {
+    test.Map(t, testParams).
+        Run(func(t test.Test, param UnitParams){
+            // Given
+
+            // When
+            test.InRun(test.Failure, func(t test.Test) {
+                ...
+            })(t)
+
+            // Then
+        })
+}
+```
+
+
+## Manual isolated test environment setup
 
 If the above pattern is not sufficient, you can create your own customized
 parameterized, parallel, isolated test wrapper using the basic abstraction
@@ -86,10 +109,35 @@ func TestUnit(t *testing.T) {
         // When
 
         // Then
-    })
+    })(t)
 }
 ```
 
 But this should usually be unnecessary.
+
+
+## Isolated failure validation
+
+Asides just capturing the failure in the isolated test environment, it is also
+possible to validate the test failures using a self installing validator, that
+is integrated with the [mock](../mock) framework.
+
+```go
+func TestUnit(t *testing.T) {
+    test.Run(func(t test.Test){
+        // Given
+        mocks := mock.NewMock(t).Expect(test.Fatalf("fail"))
+
+        // When
+        t.Fatalf("fail")
+
+        // Then
+    })(t)
+}
+```
+
+**Note:** Test failures are often use very complicated reporting patterns,
+e.g. in [GoMock][gomock].
+
 
 [gomock]: https://github.com/golang/mock "GoMock"

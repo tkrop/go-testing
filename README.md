@@ -3,9 +3,10 @@
 [![Libraries](https://img.shields.io/librariesio/release/github/tkrop/go-testing)](https://libraries.io/github/tkrop/go-testing)
 <!--[![Security](https://img.shields.io/snyk/vulnerabilities/github/tkrop/go-testing/go.mod)](https://snyk.io/github/tkrop/go-testing)-->
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Fgo-testing.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Fgo-testing?ref=badge_shield)
+[![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
 [![Report](https://goreportcard.com/badge/github.com/tkrop/go-testing)](https://goreportcard.com/badge/github.com/tkrop/go-testing)
 [![Docs](https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg)](https://pkg.go.dev/github.com/tkrop/go-testing)
+
 
 # Testing framework
 
@@ -123,9 +124,9 @@ responsibility of the developer to setup the validation correctly.
 The `testing` framework consists of the following sub-packages:
 
 * [test](test) provides a small framework to simply isolate the test execution
-  and safely check whether a test fails as expected. This is primarily very
-  handy to validate a test framework as provided by the [mock](mock) package
-  but may be handy in other cases too.
+  and safely check whether a test fails or succeeds as expected in coordination
+  with the [mock](mock) package - even in if a system under test spans detached
+  go-routines.
 
 * [mock](mock) provides the means to setup a simple chain or a complex network
   of expected mock calls with minimal effort. This makes it easy to extend the

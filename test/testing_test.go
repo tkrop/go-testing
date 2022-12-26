@@ -1,16 +1,19 @@
 package test_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/sync"
 	"github.com/tkrop/go-testing/test"
 )
 
 type TestParam struct {
 	name     test.Name
+	setup    mock.SetupFunc
 	test     func(test.Test)
 	expect   test.Expect
 	consumed bool
@@ -41,6 +44,26 @@ var testFailureParams = map[string]TestParam{
 
 	"raw panic": {
 		test:     func(t test.Test) { panic("panic") },
+		expect:   test.Failure,
+		consumed: true,
+	},
+
+	"report errorf": {
+		setup:  test.Errorf("fail"),
+		test:   func(t test.Test) { t.Errorf("fail") },
+		expect: test.Failure,
+	},
+
+	"report fatalf": {
+		setup:    test.Fatalf("fail"),
+		test:     func(t test.Test) { t.Fatalf("fail") },
+		expect:   test.Failure,
+		consumed: true,
+	},
+
+	"report failnow": {
+		setup:    test.FailNow(),
+		test:     func(t test.Test) { t.FailNow() },
 		expect:   test.Failure,
 		consumed: true,
 	},
@@ -93,27 +116,31 @@ var testFailureParams = map[string]TestParam{
 	"run failure with fatalf": {
 		test: test.InRun(test.Failure,
 			func(t test.Test) { t.Fatalf("fail") }),
-		expect:   test.Failure,
+		expect:   test.Success,
 		consumed: true,
 	},
 
 	"run failure with failnow": {
 		test: test.InRun(test.Failure,
 			func(t test.Test) { t.FailNow() }),
-		expect:   test.Failure,
+		expect:   test.Success,
 		consumed: true,
 	},
 
 	"run failure with panic": {
 		test: test.InRun(test.Failure,
 			func(t test.Test) { panic("panic") }),
-		expect:   test.Failure,
+		expect:   test.Success,
 		consumed: true,
 	},
 }
 
 func testFailures(t test.Test, param TestParam) {
 	// Given
+	if param.setup != nil {
+		mock.NewMock(t).Expect(param.setup)
+	}
+
 	wg := sync.NewLenientWaitGroup()
 	t.(*test.Tester).WaitGroup(wg)
 	if param.consumed {
@@ -125,9 +152,6 @@ func testFailures(t test.Test, param TestParam) {
 
 	// Then
 	wg.Wait()
-	if param.expect == test.Failure {
-		assert.Fail(t, "should fail")
-	}
 }
 
 func TestRun(t *testing.T) {
@@ -161,7 +185,7 @@ func TestNewRun(t *testing.T) {
 	})
 }
 
-func TestNew(t *testing.T) {
+func TestNewRunSeq(t *testing.T) {
 	t.Parallel()
 
 	for _, param := range testFailureParams {
@@ -174,7 +198,21 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestNewNamed(t *testing.T) {
+func TestNewRunNamed(t *testing.T) {
+	t.Parallel()
+
+	for name, param := range testFailureParams {
+		test.New[TestParam](t, TestParam{
+			name:   test.Name(name),
+			test:   param.test,
+			expect: param.expect,
+		}).Run(func(t test.Test, param TestParam) {
+			testFailures(t, param)
+		})
+	}
+}
+
+func TestNewRunSeqNamed(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testFailureParams {
@@ -208,6 +246,67 @@ func TestSlice(t *testing.T) {
 	test.Slice(t, params).
 		Run(func(t test.Test, param TestParam) {
 			testFailures(t, param)
+		})
+}
+
+type ValidateParams struct {
+	method string
+	call   func(t test.Test)
+	caller string
+	args   []any
+	expect test.Expect
+}
+
+var testValidateParams = map[string]ValidateParams{
+	"errorf": {
+		method: "Errorf",
+		call: func(t test.Test) {
+			t.Errorf("fail")
+		},
+		caller: CallerErrorf,
+		args:   append([]any{}, "fail"),
+		expect: test.Failure,
+	},
+
+	"fatalf": {
+		method: "Fatalf",
+		call: func(t test.Test) {
+			t.Fatalf("fail")
+		},
+		caller: CallerFatalf,
+		args:   append([]any{}, "fail"),
+		expect: test.Failure,
+	},
+
+	"failnow": {
+		method: "FailNow",
+		call: func(t test.Test) {
+			t.FailNow()
+		},
+		caller: CallerFailNow,
+		expect: test.Failure,
+	},
+}
+
+func TestValidate(t *testing.T) {
+	test.Map(t, testValidateParams).
+		Run(func(t test.Test, param ValidateParams) {
+			// Given
+			mocks := mock.NewMock(t)
+
+			// When
+			test.InRun(test.Failure, func(t test.Test) {
+				// Given
+				mocks.Expect(test.Fatalf(
+					"Unexpected call to %T.%v(%v) at %s because: %s",
+					mock.Get(mock.NewMock(t), test.NewValidator),
+					param.method, param.args, param.caller,
+					errors.New("there are no expected calls of the "+
+						"method \""+param.method+"\" for that receiver")))
+
+				// When
+				param.call(t)
+			})(t)
 		})
 }
 
