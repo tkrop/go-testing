@@ -151,11 +151,26 @@ func (mocks *Mocks) GetDone(numargs int) any {
 	return mocks.GetFunc(numargs, func() { mocks.wg.Done() })
 }
 
+// GetVarDone is a convenience method for providing a standardized notification
+// function call with the given number of arguments where the last argument is
+// variadic for `Do` to signal that a mock call setup was consumed.
+func (mocks *Mocks) GetVarDone(numargs int) any {
+	return mocks.GetVarFunc(numargs, func() { mocks.wg.Done() })
+}
+
 // GetPanic is a convenience method for providing a customized notification
 // function call with the given number of arguments for `Do` to signal that a
 // mock call setup was consumed and as result paniced.
 func (mocks *Mocks) GetPanic(numargs int, reason string) any {
 	return mocks.GetFunc(numargs, func() { mocks.wg.Done(); panic(reason) })
+}
+
+// GetVarPanic is a convenience method for providing a customized notification
+// function call with the given number of arguments where the last argument is
+// variadic for `Do` to signal that a mock call setup was consumed and as
+// result paniced.
+func (mocks *Mocks) GetVarPanic(numargs int, reason string) any {
+	return mocks.GetVarFunc(numargs, func() { mocks.wg.Done(); panic(reason) })
 }
 
 // GetFunc is a convenience method for providing a customized function call
@@ -182,6 +197,33 @@ func (mocks *Mocks) GetFunc(numargs int, fn func()) any {
 		return func(any, any, any, any, any, any, any, any) { fn() }
 	case 9:
 		return func(any, any, any, any, any, any, any, any, any) { fn() }
+	default:
+		panic(fmt.Sprintf("argument number not supported: %d", numargs))
+	}
+}
+
+// GetVarFunc is a convenience method for providing a customized function call
+// with the given number of arguments for `Do`.
+func (mocks *Mocks) GetVarFunc(numargs int, fn func()) any {
+	switch numargs {
+	case 1:
+		return func(...any) { fn() }
+	case 2:
+		return func(any, ...any) { fn() }
+	case 3:
+		return func(any, any, ...any) { fn() }
+	case 4:
+		return func(any, any, any, ...any) { fn() }
+	case 5:
+		return func(any, any, any, any, ...any) { fn() }
+	case 6:
+		return func(any, any, any, any, any, ...any) { fn() }
+	case 7:
+		return func(any, any, any, any, any, any, ...any) { fn() }
+	case 8:
+		return func(any, any, any, any, any, any, any, ...any) { fn() }
+	case 9:
+		return func(any, any, any, any, any, any, any, any, ...any) { fn() }
 	default:
 		panic(fmt.Sprintf("argument number not supported: %d", numargs))
 	}

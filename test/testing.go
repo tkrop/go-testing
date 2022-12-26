@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/sync"
 	"github.com/tkrop/go-testing/utils/slices"
 )
@@ -37,12 +38,20 @@ const (
 	Parallel = true
 )
 
-// Test is a minimal interface for abstracting methods on `testing.T` in a
-// way that allows to setup an isolated test environment.
+// Reporter is a minimal inferface for abstracting test report methods that are
+// needed to setup an isolated test environment for GoMock and Testify.
+type Reporter interface {
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
+	FailNow()
+}
+
+// Test is a minimal interface for abstracting test methods that are needed to
+// setup an isolated test environment for GoMock and Testify.
 type Test interface {
-	gomock.TestHelper
-	require.TestingT
+	Reporter
 	Name() string
+	Helper()
 }
 
 // Cleanuper defines an interface to add a custom mehtod that is called after
@@ -61,6 +70,7 @@ type Tester struct {
 	wg       sync.WaitGroup
 	mu       gosync.Mutex
 	failed   atomic.Bool
+	reporter Reporter
 	cleanups []func()
 	expect   Expect
 }
@@ -69,9 +79,9 @@ type Tester struct {
 // context.
 func NewTester(t Test, expect Expect) *Tester {
 	if tx, ok := t.(*Tester); ok {
-		return &Tester{t: tx, wg: tx.wg, expect: expect}
+		return (&Tester{t: tx, wg: tx.wg, expect: expect})
 	}
-	return &Tester{t: t, expect: expect}
+	return (&Tester{t: t, expect: expect})
 }
 
 // Parallel delegates request to `testing.T.Parallel()`.
@@ -79,6 +89,17 @@ func (t *Tester) Parallel() {
 	if t, ok := t.t.(*testing.T); ok {
 		t.Parallel()
 	}
+}
+
+// WaitGroup adds wait group to unlock in case of a failure.
+func (t *Tester) WaitGroup(wg sync.WaitGroup) {
+	t.wg = wg
+}
+
+// Reporter sets up a test failure reporter. This can be used to validate the
+// reported failures in a test environment.
+func (t *Tester) Reporter(reporter Reporter) {
+	t.reporter = reporter
 }
 
 // Cleanup is a function called to setup test cleanup after execution. This
@@ -90,71 +111,58 @@ func (t *Tester) Cleanup(cleanup func()) {
 	t.cleanups = append(t.cleanups, cleanup)
 }
 
-// WaitGroup adds wait group to unlock in case of a failure.
-func (t *Tester) WaitGroup(wg sync.WaitGroup) {
-	t.wg = wg
-}
-
 // Name delegates the request to the parent test context.
 func (t *Tester) Name() string {
-	t.mu.Lock()
-	defer t.mu.Unlock()
 	return t.t.Name()
 }
 
 // Helper delegates request to the parent test context.
 func (t *Tester) Helper() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
 	t.t.Helper()
-}
-
-// Unlock unlocks the wait group of the test by consuming the wait group
-// counter completely.
-func (t *Tester) Unlock() {
-	if t.wg != nil {
-		t.wg.Add(math.MinInt)
-	}
-}
-
-// FailNow delegates failure handling delayed to the parent test context.
-func (t *Tester) FailNow() {
-	t.Helper()
-	t.failure(func() {
-		t.t.FailNow()
-	}, true)
 }
 
 // Errorf delegated the failure handling to the parent test context.
 func (t *Tester) Errorf(format string, args ...any) {
 	t.Helper()
-	t.failure(func() {
+	t.failed.Store(true)
+	if t.expect == Success {
 		t.t.Errorf(format, args...)
-	}, false)
+	} else if t.reporter != nil {
+		t.reporter.Errorf(format, args...)
+	}
 }
 
 // Fatalf delegated the failure handling to the parent test context.
 func (t *Tester) Fatalf(format string, args ...any) {
 	t.Helper()
-	t.failure(func() {
+	t.failed.Store(true)
+	if t.expect == Success {
 		t.t.Fatalf(format, args...)
-	}, true)
+	} else if t.reporter != nil {
+		t.reporter.Fatalf(format, args...)
+	}
+	defer t.unlock()
+	runtime.Goexit()
 }
 
-// failure handles all failures by setting the failure state stopping the test
-// and reporting the failure to the parent context - if success was expected.
-// The failure is always scheduled to be reported during cleanup by the parent
-// test go-routine - to open the test framework for spawning new go-routines
-// (not possible by now).
-func (t *Tester) failure(fail func(), exit bool) {
+// FailNow delegates failure handling delayed to the parent test context.
+func (t *Tester) FailNow() {
 	t.Helper()
 	t.failed.Store(true)
 	if t.expect == Success {
-		t.Cleanup(fail)
+		t.t.FailNow()
+	} else if t.reporter != nil {
+		t.reporter.FailNow()
 	}
-	if exit {
-		defer t.Unlock()
-		runtime.Goexit()
+	defer t.unlock()
+	runtime.Goexit()
+}
+
+// unlock unlocks the wait group of the test by consuming the wait group
+// counter completely.
+func (t *Tester) unlock() {
+	if t.wg != nil {
+		t.wg.Add(math.MinInt)
 	}
 }
 
@@ -168,19 +176,8 @@ func (t *Tester) Run(test func(Test), parallel bool) Test {
 		t.Parallel()
 	}
 
-	// register clean up handlers with test context.
-	if c, ok := t.t.(Cleanuper); ok {
-		c.Cleanup(func() {
-			t.Helper()
-			t.cleanup()
-		})
-	}
-
-	// register finish as first clean up handler.
-	t.Cleanup(func() {
-		t.Helper()
-		t.finish()
-	})
+	// register cleanup handlers.
+	t.register()
 
 	// execute test function.
 	wg := sync.NewWaitGroup()
@@ -201,6 +198,23 @@ func (t *Tester) recover() {
 	if err := recover(); err != nil {
 		t.Fatalf("panic: %v", err)
 	}
+}
+
+// register registers the clean up handlers with the parent test context.
+func (t *Tester) register() {
+	t.Helper()
+
+	if c, ok := t.t.(Cleanuper); ok {
+		c.Cleanup(func() {
+			t.Helper()
+			t.cleanup()
+		})
+	}
+
+	t.Cleanup(func() {
+		t.Helper()
+		t.finish()
+	})
 }
 
 // cleanup runs the cleanup methods registered on the isolated test environment.
@@ -384,5 +398,96 @@ func InRun(expect Expect, test func(Test)) func(Test) {
 		t.Helper()
 
 		NewTester(t, expect).Run(test, false)
+	}
+}
+
+// Validator a test failure validator based on the thest reporter interface.
+type Validator struct {
+	ctrl     *gomock.Controller
+	recorder *Recorder
+}
+
+// Recorder a test failure validator recorder.
+type Recorder struct {
+	validator *Validator
+}
+
+func NewValidator(ctrl *gomock.Controller) *Validator {
+	validator := &Validator{ctrl: ctrl}
+	validator.recorder = &Recorder{validator: validator}
+	if t, ok := ctrl.T.(*Tester); ok {
+		ctrl.T = NewTester(t.t, Success)
+		t.Reporter(validator)
+	}
+	return validator
+}
+
+func (v *Validator) EXPECT() *Recorder {
+	return v.recorder
+}
+
+// Errorf receive expected method call to `Errorf`.
+func (v *Validator) Errorf(format string, args ...any) {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Errorf", append([]any{format}, args...)...)
+}
+
+// Errorf indicate an expected method call to `Errorf`.
+func (r *Recorder) Errorf(format string, args ...any) *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Errorf",
+		reflect.TypeOf((*Validator)(nil).Errorf), append([]any{format}, args...)...)
+}
+
+// Errorf creates a validation method call setup for `Errorf`.
+func Errorf(format string, args ...any) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Errorf(format, args...).Times(mocks.Times(1)).
+			Do(mocks.GetVarDone(2))
+	}
+}
+
+// Fatalf receive expected method call to `Fatalf`.
+func (v *Validator) Fatalf(format string, args ...any) {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Fatalf", append([]any{format}, args...)...)
+}
+
+// Fatalf indicate an expected method call to `Fatalf`.
+func (r *Recorder) Fatalf(format string, args ...any) *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Fatalf",
+		reflect.TypeOf((*Validator)(nil).Fatalf), append([]any{format}, args...)...)
+}
+
+// Fatalf creates a validation method call setup for `Fatalf`.
+func Fatalf(format string, args ...any) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Fatalf(format, args...).Times(mocks.Times(1)).
+			Do(mocks.GetVarDone(2))
+	}
+}
+
+// FailNow receive expected method call to `FailNow`.
+func (v *Validator) FailNow() {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "FailNow")
+}
+
+// FailNow indicate an expected method call to `FailNow`.
+func (r *Recorder) FailNow() *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "FailNow",
+		reflect.TypeOf((*Validator)(nil).FailNow))
+}
+
+// FailNow creates a validation method call setup for `FailNow`.
+func FailNow() mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			FailNow().Times(mocks.Times(1)).
+			Do(mocks.GetDone(0))
 	}
 }
