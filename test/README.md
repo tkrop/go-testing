@@ -9,7 +9,25 @@ go-routines.
 
 ## Example usage
 
-TODO
+Use the following example to intercept and validate a panic using the isolated
+test environment.
+
+```go
+func TestUnit(t *testing.T) {
+    test.Run(func(t test.Test){
+        // Given
+        mocks := mock.NewMock(t).Expect(
+            test.Panic("fail"),
+        )
+
+        // When
+        panic("fail")
+    })(t)
+
+    // Then
+    ...
+}
+```
 
 
 ## Isolated parameterized parallel test runner
@@ -116,28 +134,39 @@ func TestUnit(t *testing.T) {
 But this should usually be unnecessary.
 
 
-## Isolated failure validation
+## Isolated failure/panic validation
 
-Asides just capturing the failure in the isolated test environment, it is also
-possible to validate the test failures using a self installing validator, that
-is integrated with the [mock](../mock) framework.
+Besides just capturing the failure in the isolated test environment, it is also
+very simple possible to validate the failures/panics using the self installing
+validator that is tightly integrated with the [mock](../mock) framework.
 
 ```go
 func TestUnit(t *testing.T) {
     test.Run(func(t test.Test){
         // Given
-        mocks := mock.NewMock(t).Expect(test.Fatalf("fail"))
+        mocks := mock.NewMock(t).Expect(mock.Setup(
+            test.Errorf("fail"),
+            test.Fatalf("fail"),
+            test.FailNow(),
+            test.Panic("fail"),
+        ))
 
         // When
+        t.Errorf("fail")
         t.Fatalf("fail")
+        t.FailNow()
+        panic("fail")
 
         // Then
     })(t)
 }
 ```
 
-**Note:** Test failures are often use very complicated reporting patterns,
-e.g. in [GoMock][gomock].
+**Note:** Usually, you can only expect either `Fatalf`, `FailNow`, or `Panic`,
+since creating these in a test is aborting the test execution.
+
+**Hint:** [GoMock][gomock] uses very complicated reporting patterns that are
+hard to recreate. Do not try it.
 
 
 [gomock]: https://github.com/golang/mock "GoMock"

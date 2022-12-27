@@ -40,6 +40,12 @@ func (c *Caller) FailNow() {
 	panic("finished") // prevents goexit.
 }
 
+func (c *Caller) Panic(arg any) {
+	_, path, line, _ := runtime.Caller(1)
+	c.path = path + ":" + strconv.Itoa(line)
+	panic("finished") // prevents goexit.
+}
+
 // getCaller implements the capturing logic for the callers file and line
 // number for the given call.
 func getCaller(call func(t test.Reporter)) string {
@@ -69,5 +75,9 @@ var (
 	// CallerFailNow provides the file with line number of the `FailNow` call.
 	CallerFailNow = getCaller(func(t test.Reporter) {
 		t.FailNow()
+	})
+	// CallerPanic provides the file with line number of the `FailNow` call.
+	CallerPanic = getCaller(func(t test.Reporter) {
+		t.Panic("fail")
 	})
 )

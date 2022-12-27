@@ -20,30 +20,26 @@ type TestParam struct {
 }
 
 var testFailureParams = map[string]TestParam{
-	"raw nothing": {
+	"base nothing": {
 		test:   func(t test.Test) {},
 		expect: test.Success,
 	},
-
-	"raw errorf": {
+	"base errorf": {
 		test:   func(t test.Test) { t.Errorf("fail") },
 		expect: test.Failure,
 	},
-
-	"raw fatalf": {
+	"base fatalf": {
 		test:     func(t test.Test) { t.Fatalf("fail") },
 		expect:   test.Failure,
 		consumed: true,
 	},
-
-	"raw failnow": {
+	"base failnow": {
 		test:     func(t test.Test) { t.FailNow() },
 		expect:   test.Failure,
 		consumed: true,
 	},
-
-	"raw panic": {
-		test:     func(t test.Test) { panic("panic") },
+	"base panic": {
+		test:     func(t test.Test) { panic("fail") },
 		expect:   test.Failure,
 		consumed: true,
 	},
@@ -53,83 +49,79 @@ var testFailureParams = map[string]TestParam{
 		test:   func(t test.Test) { t.Errorf("fail") },
 		expect: test.Failure,
 	},
-
 	"report fatalf": {
 		setup:    test.Fatalf("fail"),
 		test:     func(t test.Test) { t.Fatalf("fail") },
 		expect:   test.Failure,
 		consumed: true,
 	},
-
 	"report failnow": {
 		setup:    test.FailNow(),
 		test:     func(t test.Test) { t.FailNow() },
 		expect:   test.Failure,
 		consumed: true,
 	},
+	"report panic": {
+		setup:    test.Panic("fail"),
+		test:     func(t test.Test) { panic("fail") },
+		expect:   test.Failure,
+		consumed: true,
+	},
 
-	"run success": {
+	"inrun success": {
 		test: test.InRun(test.Success,
 			func(test.Test) {}),
 		expect: test.Success,
 	},
-
-	"run success with errorf": {
+	"inrun success with errorf": {
 		test: test.InRun(test.Success,
 			func(t test.Test) { t.Errorf("fail") }),
 		expect: test.Failure,
 	},
-
-	"run success with fatalf": {
+	"inrun success with fatalf": {
 		test: test.InRun(test.Success,
 			func(t test.Test) { t.Fatalf("fail") }),
 		expect:   test.Failure,
 		consumed: true,
 	},
-
-	"run success with failnow": {
+	"inrun success with failnow": {
 		test: test.InRun(test.Success,
 			func(t test.Test) { t.FailNow() }),
 		expect:   test.Failure,
 		consumed: true,
 	},
-
-	"run success with panic": {
+	"inrun success with panic": {
 		test: test.InRun(test.Success,
-			func(t test.Test) { panic("panic") }),
+			func(t test.Test) { panic("fail") }),
 		expect:   test.Failure,
 		consumed: true,
 	},
 
-	"run failure": {
+	"inrun failure": {
 		test: test.InRun(test.Failure,
 			func(t test.Test) {}),
 		expect: test.Failure,
 	},
-
-	"run failure with errorf": {
+	"inrun failure with errorf": {
 		test: test.InRun(test.Failure,
 			func(t test.Test) { t.Errorf("fail") }),
 		expect: test.Success,
 	},
-
-	"run failure with fatalf": {
+	"inrun failure with fatalf": {
 		test: test.InRun(test.Failure,
 			func(t test.Test) { t.Fatalf("fail") }),
 		expect:   test.Success,
 		consumed: true,
 	},
-
-	"run failure with failnow": {
+	"inrun failure with failnow": {
 		test: test.InRun(test.Failure,
 			func(t test.Test) { t.FailNow() }),
 		expect:   test.Success,
 		consumed: true,
 	},
-
-	"run failure with panic": {
+	"inrun failure with panic": {
 		test: test.InRun(test.Failure,
-			func(t test.Test) { panic("panic") }),
+			func(t test.Test) { panic("fail") }),
 		expect:   test.Success,
 		consumed: true,
 	},
@@ -284,6 +276,16 @@ var testValidateParams = map[string]ValidateParams{
 			t.FailNow()
 		},
 		caller: CallerFailNow,
+		expect: test.Failure,
+	},
+
+	"panic": {
+		method: "Panic",
+		call: func(t test.Test) {
+			panic("fail")
+		},
+		caller: CallerPanic,
+		args:   append([]any{}, "fail"),
 		expect: test.Failure,
 	},
 }

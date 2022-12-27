@@ -39,8 +39,10 @@ type UnitParams struct {
 var testUnitParams = map[string]UnitParams {
     "success" {
         mockSetup: mock.Chain(
-            CallMockA(input..., output...), ...
-        ),
+            CallMockA(input..., output...),
+            ...
+            test.Panic("failure message"),
+       ),
         ...
         expect: test.ExpectSuccess
     }
@@ -51,11 +53,13 @@ func TestUnit(t *testing.T) {
         Run(func(t test.Test, param UnitParams){
 
         // Given
-        mocks := mock.NewMock(t).Expect(param.mockSetup)
-        // TODO: defer test.Recover(param.expectPanic)
+        mocks := mock.NewMock(t).Expect(
+          param.mockSetup,
+        )
 
         unit := NewUnitService(
-            mock.Get(mocks, NewServiceMock), ...
+            mock.Get(mocks, NewServiceMock),
+            ...
         )
 
         // When

@@ -41,6 +41,7 @@ const (
 // Reporter is a minimal inferface for abstracting test report methods that are
 // needed to setup an isolated test environment for GoMock and Testify.
 type Reporter interface {
+	Panic(arg any)
 	Errorf(format string, args ...any)
 	Fatalf(format string, args ...any)
 	FailNow()
@@ -49,9 +50,11 @@ type Reporter interface {
 // Test is a minimal interface for abstracting test methods that are needed to
 // setup an isolated test environment for GoMock and Testify.
 type Test interface {
-	Reporter
-	Name() string
 	Helper()
+	Name() string
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
+	FailNow()
 }
 
 // Cleanuper defines an interface to add a custom mehtod that is called after
@@ -121,7 +124,9 @@ func (t *Tester) Helper() {
 	t.t.Helper()
 }
 
-// Errorf delegated the failure handling to the parent test context.
+// Errorf handles failure messages where the test is supposed to continue. On
+// an expected success, the failure is also delegated to the parent test
+// context.
 func (t *Tester) Errorf(format string, args ...any) {
 	t.Helper()
 	t.failed.Store(true)
@@ -132,38 +137,48 @@ func (t *Tester) Errorf(format string, args ...any) {
 	}
 }
 
-// Fatalf delegated the failure handling to the parent test context.
+// Fatalf handles a fatal failure messge that immediate aborts of the test
+// execution. On an expected success, the failure handling is also delegated
+// to the parent test context.
 func (t *Tester) Fatalf(format string, args ...any) {
 	t.Helper()
 	t.failed.Store(true)
+	defer t.unlock()
 	if t.expect == Success {
 		t.t.Fatalf(format, args...)
 	} else if t.reporter != nil {
 		t.reporter.Fatalf(format, args...)
 	}
-	defer t.unlock()
 	runtime.Goexit()
 }
 
-// FailNow delegates failure handling delayed to the parent test context.
+// FailNow handles fatal failure notifications without log output that aborts
+// test execution immediately. On an expected success, it the failure handling
+// is also delegated to the parent test context.
 func (t *Tester) FailNow() {
 	t.Helper()
 	t.failed.Store(true)
+	defer t.unlock()
 	if t.expect == Success {
 		t.t.FailNow()
 	} else if t.reporter != nil {
 		t.reporter.FailNow()
 	}
-	defer t.unlock()
 	runtime.Goexit()
 }
 
-// unlock unlocks the wait group of the test by consuming the wait group
-// counter completely.
-func (t *Tester) unlock() {
-	if t.wg != nil {
-		t.wg.Add(math.MinInt)
+// Panic handles failure notifications of panics that also abort the test
+// execution immediately.
+func (t *Tester) Panic(arg any) {
+	t.Helper()
+	t.failed.Store(true)
+	defer t.unlock()
+	if t.expect == Success {
+		t.Fatalf("panic: %v", arg)
+	} else if t.reporter != nil {
+		t.reporter.Panic(arg)
 	}
+	runtime.Goexit()
 }
 
 // Run executes the test function in a safe detached environment and check
@@ -190,14 +205,6 @@ func (t *Tester) Run(test func(Test), parallel bool) Test {
 	wg.Wait()
 
 	return t
-}
-
-// recover recovers from panics and generate test failure.
-func (t *Tester) recover() {
-	t.Helper()
-	if err := recover(); err != nil {
-		t.Fatalf("panic: %v", err)
-	}
 }
 
 // register registers the clean up handlers with the parent test context.
@@ -243,6 +250,22 @@ func (t *Tester) finish() {
 		if !t.failed.Load() {
 			t.t.Errorf("Expected test to fail but it succeeded: %s", t.t.Name())
 		}
+	}
+}
+
+// recover recovers from panics and generate test failure.
+func (t *Tester) recover() {
+	t.Helper()
+	if arg := recover(); arg != nil {
+		t.Panic(arg)
+	}
+}
+
+// unlock unlocks the wait group of the test by consuming the wait group
+// counter completely.
+func (t *Tester) unlock() {
+	if t.wg != nil {
+		t.wg.Add(math.MinInt)
 	}
 }
 
@@ -489,5 +512,27 @@ func FailNow() mock.SetupFunc {
 		return mock.Get(mocks, NewValidator).EXPECT().
 			FailNow().Times(mocks.Times(1)).
 			Do(mocks.GetDone(0))
+	}
+}
+
+// Panic receive expected method call indicating a panic.
+func (v *Validator) Panic(arg any) {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Panic", []any{arg}...)
+}
+
+// Panic indicate an expected method call from panic.
+func (r *Recorder) Panic(arg any) *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Panic",
+		reflect.TypeOf((*Validator)(nil).Panic), []any{arg}...)
+}
+
+// Panic creates a validation method call setup for a panic.
+func Panic(arg any) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Panic(arg).Times(mocks.Times(1)).
+			Do(mocks.GetDone(1))
 	}
 }
