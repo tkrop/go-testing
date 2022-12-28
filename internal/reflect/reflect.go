@@ -1,11 +1,34 @@
-package test
+// Package reflect contains a collection of helpful generic functions helping
+// with reflection. It is currently not part of the public interface and must
+// be consider as highly instable.
+package reflect
 
 import (
 	"reflect"
 	"unsafe"
 )
 
-func extract[P any](param P, deflt any, names ...string) any {
+// Aliases for types.
+type (
+	// Value alias for `reflect.Value`.
+	Value = reflect.Value
+	// Type alias for `reflect.Type`.
+	Type = reflect.Type
+)
+
+// Aliases for functions and values.
+var (
+	// TypeOf alias for `reflect.TypeOf`.
+	TypeOf = reflect.TypeOf
+	// ValueOf alias for `reflect.ValueOf`.
+	ValueOf = reflect.ValueOf
+	// Func alias for `reflect.Func`.
+	Func = reflect.Func
+)
+
+// FindArgOf find the first argument with one of the given field names matching
+// the type matching the default argument type.
+func FindArgOf[P any](param P, deflt any, names ...string) any {
 	t := reflect.TypeOf(param)
 	dt := reflect.TypeOf(deflt)
 	if t.Kind() != reflect.Struct {
@@ -23,11 +46,11 @@ func extract[P any](param P, deflt any, names ...string) any {
 		if fv.Type().Kind() == dt.Kind() {
 			for _, name := range names {
 				if t.Field(i).Name == name {
-					return getReflect(v, i)
+					return FieldArgOf(v, i)
 				}
 			}
 			if !found {
-				deflt = getReflect(v, i)
+				deflt = FieldArgOf(v, i)
 				found = true
 			}
 		}
@@ -35,10 +58,11 @@ func extract[P any](param P, deflt any, names ...string) any {
 	return deflt
 }
 
-func getReflect(v reflect.Value, i int) any {
+// FieldArgOf returns the argument of the `i`th field of the given value.
+func FieldArgOf(v reflect.Value, i int) any {
 	vf := v.Field(i)
 	if vf.CanInterface() {
-		return getValue(vf)
+		return ArgOf(vf)
 	}
 
 	// Make a copy to circumvent access restrictions.
@@ -54,7 +78,8 @@ func getReflect(v reflect.Value, i int) any {
 	return value
 }
 
-func getValue(v reflect.Value) any {
+// ArgOf returns the argument of the given value.
+func ArgOf(v reflect.Value) any {
 	switch v.Type().Kind() {
 	case reflect.Bool:
 		return v.Bool()

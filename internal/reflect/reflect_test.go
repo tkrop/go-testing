@@ -1,14 +1,16 @@
-package test
+package reflect_test
 
 import (
-	reflect "reflect"
 	"testing"
 
+	"github.com/tkrop/go-testing/internal/reflect"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/tkrop/go-testing/test"
 )
 
 var (
-	testchan    = make(chan Test)
+	testchan    = make(chan test.Test)
 	testint     = 1
 	testfloat   = 1.0
 	testcomplex = complex(1.0, 1.0)
@@ -16,14 +18,14 @@ var (
 	testmap     = map[string]string{"value": "value"}
 )
 
-type GetValueParams struct {
+func FuncTest() {}
+
+type ArgOfParams struct {
 	value  reflect.Value
 	expect any
 }
 
-func FuncTest() {}
-
-var testGetValueParams = map[string]GetValueParams{
+var testArgOfParams = map[string]ArgOfParams{
 	"bool": {
 		value:  reflect.ValueOf(true),
 		expect: true,
@@ -115,8 +117,8 @@ var testGetValueParams = map[string]GetValueParams{
 		expect: testmap,
 	},
 	"struct": {
-		value:  reflect.ValueOf(GetValueParams{expect: "value"}),
-		expect: GetValueParams{expect: "value"},
+		value:  reflect.ValueOf(ArgOfParams{expect: "value"}),
+		expect: ArgOfParams{expect: "value"},
 	},
 	"chan": {
 		value:  reflect.ValueOf(testchan),
@@ -128,22 +130,23 @@ var testGetValueParams = map[string]GetValueParams{
 	},
 }
 
-func TestGetValue(t *testing.T) {
-	Map(t, testGetValueParams).Run(func(t Test, param GetValueParams) {
-		// When
-		value := getValue(param.value)
+func TestArgOf(t *testing.T) {
+	test.Map(t, testArgOfParams).
+		Run(func(t test.Test, param ArgOfParams) {
+			// When
+			value := reflect.ArgOf(param.value)
 
-		// Then
-		if param.value.Type().Kind() == reflect.Func {
-			assert.NotNil(t, value)
-			assert.True(t, reflect.TypeOf(value).Kind() == reflect.Func)
-		} else {
-			assert.Equal(t, param.expect, value)
-		}
-	})
+			// Then
+			if param.value.Type().Kind() == reflect.Func {
+				assert.NotNil(t, value)
+				assert.True(t, reflect.TypeOf(value).Kind() == reflect.Func)
+			} else {
+				assert.Equal(t, param.expect, value)
+			}
+		})
 }
 
-type ExtractParams struct {
+type FindArgOfParams struct {
 	name   string
 	value  any
 	deflt  any
@@ -170,7 +173,7 @@ type StructParams struct {
 	value BoolParams
 }
 
-var testExtractParams = map[string]ExtractParams{
+var testFindArgOfParams = map[string]FindArgOfParams{
 	"no struct": {
 		name:   "value",
 		value:  "string",
@@ -309,10 +312,10 @@ var testExtractParams = map[string]ExtractParams{
 	},
 }
 
-func TestExtract(t *testing.T) {
-	Map(t, testExtractParams).Run(func(t Test, param ExtractParams) {
+func TestFindArgOf(t *testing.T) {
+	test.Map(t, testFindArgOfParams).Run(func(t test.Test, param FindArgOfParams) {
 		// When
-		value := extract(param.value, param.deflt, param.name)
+		value := reflect.FindArgOf(param.value, param.deflt, param.name)
 
 		// Then
 		assert.Equal(t, param.expect, value)
