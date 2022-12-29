@@ -14,7 +14,7 @@ test environment.
 
 ```go
 func TestUnit(t *testing.T) {
-    test.Run(func(t test.Test){
+    test.Run(test.Success, func(t test.Test){
         // Given
         mocks := mock.NewMock(t).Expect(
             test.Panic("fail"),

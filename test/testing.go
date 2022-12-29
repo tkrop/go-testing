@@ -3,7 +3,6 @@ package test
 import (
 	"fmt"
 	"math"
-	"reflect"
 	"runtime"
 	gosync "sync"
 	"sync/atomic"
@@ -12,9 +11,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/tkrop/go-testing/internal/reflect"
+	"github.com/tkrop/go-testing/internal/slices"
+
 	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/sync"
-	"github.com/tkrop/go-testing/utils/slices"
 )
 
 type (
@@ -373,7 +374,7 @@ func (r *runner[P]) wrap(
 
 // name resolves the test case name from the parameter set.
 func (r *runner[P]) name(param P) Name {
-	name, ok := extract(param, unknownName, "name").(Name)
+	name, ok := reflect.FindArgOf(param, unknownName, "name").(Name)
 	if ok && name != "" {
 		return name
 	}
@@ -382,7 +383,7 @@ func (r *runner[P]) name(param P) Name {
 
 // expect resolves the test case expectation from the parameter set.
 func (r *runner[P]) expect(param P) Expect {
-	if expect, ok := extract(param, Success, "expect").(Expect); ok {
+	if expect, ok := reflect.FindArgOf(param, Success, "expect").(Expect); ok {
 		return expect
 	}
 	return Success

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tkrop/go-testing/utils/slices"
+	"github.com/tkrop/go-testing/internal/slices"
 )
 
 func TestReverse(t *testing.T) {

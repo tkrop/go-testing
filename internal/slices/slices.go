@@ -1,3 +1,6 @@
+// Package slices contains a collection of helpful generic functions for
+// working with slices. It is currently not part of the public interface and
+// must be consider as highly instable.
 package slices
 
 // Reverse reverses the given slice.
