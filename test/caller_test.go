@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
 	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/test"
 )

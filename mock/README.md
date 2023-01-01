@@ -36,17 +36,16 @@ Using the features of the `mock`-framework we can design more advanced usage
 patterns as described in the following.
 
 
-## Generic mock setup pattern
+## Generic mock controller setup
 
-Usually, multiple test have to be created for the same system under test.
-Therefore, the following generic template to setup the mock controller with an
-arbitrary system under test can be very helpful.
+Usually, a new system under test must be create for each test run. Therefore,
+the following generic pattern to setup the mock controller with an arbitrary
+system under test is very useful.
 
 ```go
 func SetupUnit(
-    t *gomock.TestReporter,
+    t test.Test,
     mockSetup mock.SetupFunc,
-    ...
 ) (*Unit, *Mocks) {
     mocks := mock.NewMock(t).Expect(mockSetup)
 
@@ -59,42 +58,42 @@ func SetupUnit(
 ```
 
 **Note:** The `mock.Get(mocks, NewServiceMock)` is the standard pattern to
-request an existing or new mock instance from the mock handler.
+request a new or existing mock instance from the mock controller. As input, any
+test interface or entity compatible with the `gomock.TestReporter` can be used.
 
 
-## Generic mock service call pattern
+## Generic mock call setup
 
-Now we need to define the mock service calls that follow a primitive, common
-coding and naming pattern, that may be supported by code generation in the
-future.
+Now we need to define the mock service inline or better via a function calls
+following the below common coding and naming pattern, that we may support by
+code generation in the future.
 
 ```go
-func ServiceCall(input..., output..., error) mock.SetupFunc {
+func Call(input..., output..., error) mock.SetupFunc {
     return func(mocks *Mocks) any {
-        return mock.Get(mocks, NewServiceMock).EXPECT().
-            ServiceCall(input...).Return(output..., error).
-            Times(mocks.Times(1)).Do(mocks.GetDone(<#input-args>))
+        return mock.Get(mocks, NewServiceMock).EXPECT().Call(input...).
+            Do|DoAndReturn(mocks.Return(Service.Call, output..., error))
     }
 }
 ```
 
-For simplicity the pattern combines regular as well as error behavior and is
+The pattern combines regular as well as error behavior and is out-of-the-box
 prepared to handle tests with detached *goroutines*, i.e. functions that are
 spawned by the system-under-test without waiting for their result.
 
 The mock handler therefore provides a `WaitGroup` and automatically registers
-the expected mock calls via `mock.Times(<#>)` and notifies the completion via
-`Do(mocks.GetDone(<#input-args>))`. The test needs to wait for the detached
-*goroutines* to finish by calling `mocks.Wait()` before checking whether mock
-calls are completely consumed.
+a single mock call on each request using `mocks.Return(...)` and notifies the
+completion via `Do|DoAndReturn()`. For test with detached *goroutines* the
+test can wait via `mocks.Wait()`, before finishing and checking whether the
+mock calls are completely consumed.
 
-**Note:** Since waiting for mock calls can take unitl the test timeout appears
-in case of test failures, you need to tests using `mocks.Wait()` in an isolated
-[test environment](../test) that unlocks the waiting test in case of failures
-and fatal errors using:
+**Note:** Since waiting for mock calls can take literally for ever in case of
+test failures, it is advised to use an isolated [test environment](../test)
+that unlocks the waiting test in case of failures and fatal errors, e.g.
+by using:
 
 ```go
-test.Success(func(t *TestingT) {
+test.Run(test.Success, func(t *TestingT) {
     // Given
     ...
 
@@ -111,11 +110,11 @@ mock service calls as follows using `mock.Chain` and while defining a new mock
 call setup function:
 
 ```go
-func ServiceCallChain(input..., output..., error) mock.SetupFunc {
+func CallChain(input..., output..., error) mock.SetupFunc {
     return func(mocks *Mocks) any {
         return mock.Chain(
-            ServiceCallA(input...),
-            ServiceCallB(input...),
+            CallA(input...),
+            CallB(input...),
             ...
     }
 }
@@ -170,38 +169,38 @@ var testUnitCallParams = map[string]struct {
     expectError  error
 }{
     "single mock setup": {
-        mockSetup: ServiceCall(...),
+        mockSetup: Call(...),
     }
     "chain mock setup": {
         mockSetup: mock.Chain(
-            ServiceCallA(...),
-            ServiceCallB(...),
+            CallA(...),
+            CallB(...),
             ...
         )
     }
     "nested chain mock setup": {
         mockSetup: mock.Chain(
-            ServiceCallA(...),
+            CallA(...),
             mock.Chain(
-                ServiceCallA(...),
-                ServiceCallB(...),
+                CallA(...),
+                CallB(...),
                 ...
             ),
-            ServiceCallB(...),
+            CallB(...),
             ...
         )
     }
     "parallel chain mock setup": {
         mockSetup: mock.Parallel(
-            ServiceCallA(...),
+            CallA(...),
             mock.Chain(
-                ServiceCallB(...),
-                ServiceCallC(...),
+                CallB(...),
+                CallC(...),
                 ...
             ),
             mock.Chain(
-                ServiceCallD(...),
-                ServiceCallE(...),
+                CallD(...),
+                CallE(...),
                 ...
             ),
             ...

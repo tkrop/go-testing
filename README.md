@@ -140,10 +140,6 @@ The `testing` framework consists of the following sub-packages:
   controller and a mock storage that allows to run tests isolated. This allows
   to parallelize simple test and parameterized tests.
 
-* [sync](sync) provides a lenient wait group implementation for coordinating
-  [mock](mock)s in the isolated [test](test)s to gracefully unlock all waiters
-  after test failures to finish the test.
-
 * [perm](perm) provides a small framework to simplify permutation tests, i.e.
   a consistent test set where conditions can be checked in all known orders
   with different outcome. This is very handy in combination with [test](test)

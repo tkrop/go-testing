@@ -1,3 +1,7 @@
+// Package test contains the main collection of functions and types for setting
+// up the basic isolated test environment. It is part of the public interface
+// and starting to get stable, however, we are still experimenting to optimize
+// the interface and the user experience.
 package test
 
 import (
@@ -8,14 +12,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/tkrop/go-testing/internal/reflect"
 	"github.com/tkrop/go-testing/internal/slices"
-
-	"github.com/tkrop/go-testing/mock"
-	"github.com/tkrop/go-testing/sync"
+	"github.com/tkrop/go-testing/internal/sync"
 )
 
 type (
@@ -422,118 +423,5 @@ func InRun(expect Expect, test func(Test)) func(Test) {
 		t.Helper()
 
 		NewTester(t, expect).Run(test, false)
-	}
-}
-
-// Validator a test failure validator based on the thest reporter interface.
-type Validator struct {
-	ctrl     *gomock.Controller
-	recorder *Recorder
-}
-
-// Recorder a test failure validator recorder.
-type Recorder struct {
-	validator *Validator
-}
-
-func NewValidator(ctrl *gomock.Controller) *Validator {
-	validator := &Validator{ctrl: ctrl}
-	validator.recorder = &Recorder{validator: validator}
-	if t, ok := ctrl.T.(*Tester); ok {
-		ctrl.T = NewTester(t.t, Success)
-		t.Reporter(validator)
-	}
-	return validator
-}
-
-func (v *Validator) EXPECT() *Recorder {
-	return v.recorder
-}
-
-// Errorf receive expected method call to `Errorf`.
-func (v *Validator) Errorf(format string, args ...any) {
-	v.ctrl.T.Helper()
-	v.ctrl.Call(v, "Errorf", append([]any{format}, args...)...)
-}
-
-// Errorf indicate an expected method call to `Errorf`.
-func (r *Recorder) Errorf(format string, args ...any) *gomock.Call {
-	r.validator.ctrl.T.Helper()
-	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Errorf",
-		reflect.TypeOf((*Validator)(nil).Errorf), append([]any{format}, args...)...)
-}
-
-// Errorf creates a validation method call setup for `Errorf`.
-func Errorf(format string, args ...any) mock.SetupFunc {
-	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewValidator).EXPECT().
-			Errorf(format, args...).Times(mocks.Times(1)).
-			Do(mocks.GetVarDone(2))
-	}
-}
-
-// Fatalf receive expected method call to `Fatalf`.
-func (v *Validator) Fatalf(format string, args ...any) {
-	v.ctrl.T.Helper()
-	v.ctrl.Call(v, "Fatalf", append([]any{format}, args...)...)
-}
-
-// Fatalf indicate an expected method call to `Fatalf`.
-func (r *Recorder) Fatalf(format string, args ...any) *gomock.Call {
-	r.validator.ctrl.T.Helper()
-	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Fatalf",
-		reflect.TypeOf((*Validator)(nil).Fatalf), append([]any{format}, args...)...)
-}
-
-// Fatalf creates a validation method call setup for `Fatalf`.
-func Fatalf(format string, args ...any) mock.SetupFunc {
-	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewValidator).EXPECT().
-			Fatalf(format, args...).Times(mocks.Times(1)).
-			Do(mocks.GetVarDone(2))
-	}
-}
-
-// FailNow receive expected method call to `FailNow`.
-func (v *Validator) FailNow() {
-	v.ctrl.T.Helper()
-	v.ctrl.Call(v, "FailNow")
-}
-
-// FailNow indicate an expected method call to `FailNow`.
-func (r *Recorder) FailNow() *gomock.Call {
-	r.validator.ctrl.T.Helper()
-	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "FailNow",
-		reflect.TypeOf((*Validator)(nil).FailNow))
-}
-
-// FailNow creates a validation method call setup for `FailNow`.
-func FailNow() mock.SetupFunc {
-	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewValidator).EXPECT().
-			FailNow().Times(mocks.Times(1)).
-			Do(mocks.GetDone(0))
-	}
-}
-
-// Panic receive expected method call indicating a panic.
-func (v *Validator) Panic(arg any) {
-	v.ctrl.T.Helper()
-	v.ctrl.Call(v, "Panic", []any{arg}...)
-}
-
-// Panic indicate an expected method call from panic.
-func (r *Recorder) Panic(arg any) *gomock.Call {
-	r.validator.ctrl.T.Helper()
-	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Panic",
-		reflect.TypeOf((*Validator)(nil).Panic), []any{arg}...)
-}
-
-// Panic creates a validation method call setup for a panic.
-func Panic(arg any) mock.SetupFunc {
-	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewValidator).EXPECT().
-			Panic(arg).Times(mocks.Times(1)).
-			Do(mocks.GetDone(1))
 	}
 }

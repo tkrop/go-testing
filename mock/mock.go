@@ -1,12 +1,16 @@
+// Package mock contains the basic collection of functions and types for
+// controlling mocks and mock request/response setup. It is part of the public
+// interface and starting to get stable, however, we are still experimenting
+// to optimize the interface and the user experience.
 package mock
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/tkrop/go-testing/sync"
+	"github.com/tkrop/go-testing/internal/reflect"
+	"github.com/tkrop/go-testing/internal/sync"
 )
 
 // DetachMode defines the mode for detaching mock calls.
@@ -137,105 +141,62 @@ func (mocks *Mocks) Wait() {
 // 	mocks.wg.Done()
 // }
 
+// TODO: not needed anymore - optional extension.
+//
 // Times is creating the expectation that exactly the given number of mock call
 // are consumed. This call is best provided as input for `Times`.
-func (mocks *Mocks) Times(num int) int {
-	mocks.wg.Add(num)
-	return num
+// func (mocks *Mocks) Times(num int) int {
+// 	mocks.wg.Add(num - 1)
+// 	return num
+// }
+
+// Return is a convenience method providing a notification function for `Do` or
+// `DoAndReturn` to signal that a mock call setup was consumed returning the
+// given arguments as result.
+func (mocks *Mocks) Return(fn any, args ...any) any {
+	ftype := reflect.TypeOf(fn)
+	btype := reflect.BaseFuncOf(ftype, 1, 0)
+	return mocks.notify(btype, nil, args...)
 }
 
-// GetDone is a convenience method for providing a standardized notification
-// function call with the given number of arguments for `Do` to signal that a
-// mock call setup was consumed.
-func (mocks *Mocks) GetDone(numargs int) any {
-	return mocks.GetFunc(numargs, func() { mocks.wg.Done() })
+// Panic is a convenience method providing a notification function for `Do` or
+// `DoAndReturn` to signal that a mock call setup was consumed while panicing
+// with given reason.
+func (mocks *Mocks) Panic(fn any, reason any) any {
+	ftype := reflect.TypeOf(fn)
+	btype := reflect.BaseFuncOf(ftype, 1, 0)
+	return mocks.notify(btype, func() { panic(reason) })
 }
 
-// GetVarDone is a convenience method for providing a standardized notification
-// function call with the given number of arguments where the last argument is
-// variadic for `Do` to signal that a mock call setup was consumed.
-func (mocks *Mocks) GetVarDone(numargs int) any {
-	return mocks.GetVarFunc(numargs, func() { mocks.wg.Done() })
+// notify is a generic method for providing a customized notification function
+// of given function call type with given custom call behavior and given return
+// arguments for usage in `Do` or `DoAndReturn`.
+func (mocks *Mocks) notify(
+	ftype reflect.Type, call func(), args ...any,
+) any {
+	mocks.wg.Add(1)
+
+	notify := reflect.MakeFuncOf(ftype,
+		func([]reflect.Value) []reflect.Value {
+			mocks.ctrl.T.Helper()
+
+			defer mocks.wg.Done()
+			if call != nil {
+				call()
+			}
+
+			return reflect.ValuesOut(ftype, args...)
+		})
+
+	return notify
 }
 
-// GetPanic is a convenience method for providing a customized notification
-// function call with the given number of arguments for `Do` to signal that a
-// mock call setup was consumed and as result paniced.
-func (mocks *Mocks) GetPanic(numargs int, reason string) any {
-	return mocks.GetFunc(numargs, func() { mocks.wg.Done(); panic(reason) })
-}
-
-// GetVarPanic is a convenience method for providing a customized notification
-// function call with the given number of arguments where the last argument is
-// variadic for `Do` to signal that a mock call setup was consumed and as
-// result paniced.
-func (mocks *Mocks) GetVarPanic(numargs int, reason string) any {
-	return mocks.GetVarFunc(numargs, func() { mocks.wg.Done(); panic(reason) })
-}
-
-// GetFunc is a convenience method for providing a customized function call
-// with the given number of arguments for `Do`.
-func (mocks *Mocks) GetFunc(numargs int, fn func()) any {
-	switch numargs {
-	case 0:
-		return func() { fn() }
-	case 1:
-		return func(any) { fn() }
-	case 2:
-		return func(any, any) { fn() }
-	case 3:
-		return func(any, any, any) { fn() }
-	case 4:
-		return func(any, any, any, any) { fn() }
-	case 5:
-		return func(any, any, any, any, any) { fn() }
-	case 6:
-		return func(any, any, any, any, any, any) { fn() }
-	case 7:
-		return func(any, any, any, any, any, any, any) { fn() }
-	case 8:
-		return func(any, any, any, any, any, any, any, any) { fn() }
-	case 9:
-		return func(any, any, any, any, any, any, any, any, any) { fn() }
-	default:
-		panic(fmt.Sprintf("argument number not supported: %d", numargs))
-	}
-}
-
-// GetVarFunc is a convenience method for providing a customized function call
-// with the given number of arguments for `Do`.
-func (mocks *Mocks) GetVarFunc(numargs int, fn func()) any {
-	switch numargs {
-	case 1:
-		return func(...any) { fn() }
-	case 2:
-		return func(any, ...any) { fn() }
-	case 3:
-		return func(any, any, ...any) { fn() }
-	case 4:
-		return func(any, any, any, ...any) { fn() }
-	case 5:
-		return func(any, any, any, any, ...any) { fn() }
-	case 6:
-		return func(any, any, any, any, any, ...any) { fn() }
-	case 7:
-		return func(any, any, any, any, any, any, ...any) { fn() }
-	case 8:
-		return func(any, any, any, any, any, any, any, ...any) { fn() }
-	case 9:
-		return func(any, any, any, any, any, any, any, any, ...any) { fn() }
-	default:
-		panic(fmt.Sprintf("argument number not supported: %d", numargs))
-	}
-}
-
-// TODO: Reconsider this approach. Seems not to be helpful yet. Test setup
-// functions would look as follows:
+// TODO: Reconsider approach - complex signature. Test setup look as follows:
 //
-//	func GetTokenX(url string, err error) mock.SetupFunc {
-//	  return mock.Mock(NewMockTokenProvider, func(mock *MockTokenProvider) *gomock.Call {
-//	    return mock.EXPECT().GetToken(url).Return(token)
-//	  })
+//	func CallBX(input string, output string) mock.SetupFunc {
+//		return mock.Mock(NewMockIFace, func(mock *MockIFace) *gomock.Call {
+//			return mock.EXPECT().CallB(input).Return(output)
+//		})
 //	}
 //
 // Mock defines an advanced mock setup function for exactly one mock call setup
@@ -245,15 +206,15 @@ func (mocks *Mocks) GetVarFunc(numargs int, fn func()) any {
 // strategies.
 //
 // func Mock[T any](
-// 	creator func(*Controller) *T, caller func(*T) *gomock.Call,
+// 	creator func(*Controller) *T, call func(*T) *gomock.Call,
 // ) SetupFunc {
 // 	return func(mocks *Mocks) any {
-// 		call := caller(Get(mocks, creator)).
-// 			Times(mocks.Times(1))
+// 		call := call(Get(mocks, creator))
 // 		value := reflect.ValueOf(call).Elem()
 // 		field := value.FieldByName("methodType")
 // 		ftype := *(*reflect.Type)(unsafe.Pointer(field.UnsafeAddr()))
-// 		return call.Do(mocks.GetDone(ftype.NumIn()))
+// 		btype := reflect.BaseFuncOf(ftype, 0, ftype.NumOut())
+// 		return call.Do(mocks.notify(btype, nil))
 // 	}
 // }
 
