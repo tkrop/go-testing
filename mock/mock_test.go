@@ -1,13 +1,14 @@
 package mock_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/tkrop/go-testing/internal/reflect"
 
 	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/perm"
@@ -24,18 +25,22 @@ type IFace interface {
 func CallA(input string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Times(mocks.Times(1)).
-			Do(mocks.GetDone(1))
+			CallA(input).Do(mocks.Return(IFace.CallA))
 	}
 }
 
 func CallB(input string, output string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallB(input).Return(output).
-			Times(mocks.Times(1)).Do(mocks.GetDone(1))
+			CallB(input).DoAndReturn(mocks.Return(IFace.CallB, output))
 	}
 }
+
+// func CallBX(input string, output string) mock.SetupFunc {
+// 	return mock.Mock(NewMockIFace, func(mock *MockIFace) *gomock.Call {
+// 		return mock.EXPECT().CallB(input).Return(output)
+// 	})
+// }
 
 func NoCall() mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
@@ -484,206 +489,90 @@ func TestGetSubSlice(t *testing.T) {
 		})
 }
 
-type GetFuncParams struct {
-	numargs int
-	exist   bool
+type FuncParams struct {
+	call   any
+	result []any
 }
 
-func call(fncall any, args int) {
-	switch args {
-	case 0:
-		fncall.(func())()
-	case 1:
-		fncall.(func(any))(nil)
-	case 2:
-		fncall.(func(any, any))(nil, nil)
-	case 3:
-		fncall.(func(any, any, any))(nil, nil, nil)
-	case 4:
-		fncall.(func(any, any, any, any))(nil, nil, nil, nil)
-	case 5:
-		fncall.(func(
-			any, any, any, any, any,
-		))(nil, nil, nil, nil, nil)
-	case 6:
-		fncall.(func(
-			any, any, any, any, any, any,
-		))(nil, nil, nil, nil, nil, nil)
-	case 7:
-		fncall.(func(
-			any, any, any, any, any, any, any,
-		))(nil, nil, nil, nil, nil, nil, nil)
-	case 8:
-		fncall.(func(
-			any, any, any, any, any, any, any, any,
-		))(nil, nil, nil, nil, nil, nil, nil, nil)
-	case 9:
-		fncall.(func(
-			any, any, any, any, any, any, any, any, any,
-		))(nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	default:
-		panic("not supported")
-	}
+var testFuncParams = map[string]FuncParams{
+	"in-0-out-0": {
+		call: func(any) {},
+	},
+	"in-1-out-0": {
+		call: func(any, any) {},
+	},
+	"in-1-var-out-0": {
+		call: func(any, ...any) {},
+	},
+	"in-2-out-0": {
+		call: func(any, any, any) {},
+	},
+	"in-2-var-out-0": {
+		call: func(any, any, ...any) {},
+	},
+	"in-4-out-0": {
+		call: func(any, any, any, any, any) {},
+	},
+	"in-4-var-out-0": {
+		call: func(any, any, any, any, ...any) {},
+	},
+	// TODO: increase cover for results.
 }
 
-var testGetFuncParams = map[string]GetFuncParams{
-	"test 0 args":  {numargs: 0, exist: true},
-	"test 1 args":  {numargs: 1, exist: true},
-	"test 2 args":  {numargs: 2, exist: true},
-	"test 3 args":  {numargs: 3, exist: true},
-	"test 4 args":  {numargs: 4, exist: true},
-	"test 5 args":  {numargs: 5, exist: true},
-	"test 6 args":  {numargs: 6, exist: true},
-	"test 7 args":  {numargs: 7, exist: true},
-	"test 8 args":  {numargs: 8, exist: true},
-	"test 9 args":  {numargs: 9, exist: true},
-	"test 10 args": {numargs: 10},
-	"test 11 args": {numargs: 11},
-}
-
-func TestGetDone(t *testing.T) {
-	test.Map(t, testGetFuncParams).
-		Run(func(t test.Test, param GetFuncParams) {
+func TestFuncReturn(t *testing.T) {
+	test.Map(t, testFuncParams).
+		Run(func(t test.Test, param FuncParams) {
 			// Given
 			mocks := MockSetup(t, nil)
-			mocks.Times(1)
-			if !param.exist {
-				defer func() { recover() }()
-			}
+			ctype := reflect.TypeOf(param.call)
 
 			// When
-			call(mocks.GetDone(param.numargs), param.numargs)
+			call := mocks.Return(param.call, param.result...)
 
 			// Then
+			ftype := reflect.TypeOf(call)
+			assert.Equal(t, ctype.NumIn()-1, ftype.NumIn())
+			assert.Equal(t, ctype.NumOut(), ftype.NumOut())
+			assert.Equal(t, len(param.result), ftype.NumOut())
+
+			// When
+			result := reflect.ArgsOf(reflect.ValueOf(call).Call(
+				reflect.ValuesIn(ftype, make([]any, ftype.NumIn())...),
+			)...)
+
+			// Then
+			assert.Equal(t, param.result, result)
 			mocks.Wait()
-			if !param.exist {
-				assert.Fail(t, "not paniced on not supported argument number")
-			}
 		})
 }
 
-func TestGetPanic(t *testing.T) {
-	test.Map(t, testGetFuncParams).
-		Run(func(t test.Test, param GetFuncParams) {
+func TestFuncPanic(t *testing.T) {
+	test.Map(t, testFuncParams).
+		Run(func(t test.Test, param FuncParams) {
 			// Given
 			mocks := MockSetup(t, nil)
-			mocks.Times(1)
+			ctype := reflect.TypeOf(param.call)
 			defer func() {
-				reason := recover()
-				// Then
-				if param.exist {
-					require.Equal(t, "panic-test", reason)
-					mocks.Wait()
-				} else {
-					assert.Equal(t, fmt.Sprintf(
-						"argument number not supported: %d",
-						param.numargs), reason)
-				}
+				require.Equal(t, "panic-test", recover())
+				mocks.Wait()
 			}()
 
 			// When
-			call(mocks.GetPanic(param.numargs, "panic-test"), param.numargs)
+			call := mocks.Panic(param.call, "panic-test")
 
 			// Then
-			assert.Fail(t, "not paniced on not supported argument number")
-		})
-}
-
-func callVar(fncall any, args int) {
-	switch args {
-	case 1:
-		fncall.(func(...any))(nil)
-	case 2:
-		fncall.(func(any, ...any))(nil, nil)
-	case 3:
-		fncall.(func(any, any, ...any))(nil, nil, nil)
-	case 4:
-		fncall.(func(any, any, any, ...any))(nil, nil, nil, nil)
-	case 5:
-		fncall.(func(
-			any, any, any, any, ...any,
-		))(nil, nil, nil, nil, nil)
-	case 6:
-		fncall.(func(
-			any, any, any, any, any, ...any,
-		))(nil, nil, nil, nil, nil, nil)
-	case 7:
-		fncall.(func(
-			any, any, any, any, any, any, ...any,
-		))(nil, nil, nil, nil, nil, nil, nil)
-	case 8:
-		fncall.(func(
-			any, any, any, any, any, any, any, ...any,
-		))(nil, nil, nil, nil, nil, nil, nil, nil)
-	case 9:
-		fncall.(func(
-			any, any, any, any, any, any, any, any, ...any,
-		))(nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	default:
-		panic("not supported")
-	}
-}
-
-var testGetVarFuncParams = map[string]GetFuncParams{
-	"test 0 args":  {numargs: 0},
-	"test 1 args":  {numargs: 1, exist: true},
-	"test 2 args":  {numargs: 2, exist: true},
-	"test 3 args":  {numargs: 3, exist: true},
-	"test 4 args":  {numargs: 4, exist: true},
-	"test 5 args":  {numargs: 5, exist: true},
-	"test 6 args":  {numargs: 6, exist: true},
-	"test 7 args":  {numargs: 7, exist: true},
-	"test 8 args":  {numargs: 8, exist: true},
-	"test 9 args":  {numargs: 9, exist: true},
-	"test 10 args": {numargs: 10},
-	"test 11 args": {numargs: 11},
-}
-
-func TestGetVarDone(t *testing.T) {
-	test.Map(t, testGetVarFuncParams).
-		Run(func(t test.Test, param GetFuncParams) {
-			// Given
-			mocks := MockSetup(t, nil)
-			mocks.Times(1)
-			if !param.exist {
-				defer func() { recover() }()
-			}
+			ftype := reflect.TypeOf(call)
+			assert.Equal(t, ctype.NumIn()-1, ftype.NumIn())
+			assert.Equal(t, ctype.NumOut(), ftype.NumOut())
+			assert.Equal(t, len(param.result), ftype.NumOut())
 
 			// When
-			callVar(mocks.GetVarDone(param.numargs), param.numargs)
+			reflect.ValueOf(call).Call(
+				reflect.ValuesIn(ftype, make([]any, ftype.NumIn())...),
+			)
 
 			// Then
-			mocks.Wait()
-			if !param.exist {
-				assert.Fail(t, "not paniced on not supported argument number")
-			}
-		})
-}
-
-func TestGetVarPanic(t *testing.T) {
-	test.Map(t, testGetVarFuncParams).
-		Run(func(t test.Test, param GetFuncParams) {
-			// Given
-			mocks := MockSetup(t, nil)
-			mocks.Times(1)
-			defer func() {
-				reason := recover()
-				// Then
-				if param.exist {
-					require.Equal(t, "panic-test", reason)
-					mocks.Wait()
-				} else {
-					assert.Equal(t, fmt.Sprintf(
-						"argument number not supported: %d",
-						param.numargs), reason)
-				}
-			}()
-
-			// When
-			callVar(mocks.GetVarPanic(param.numargs, "panic-test"), param.numargs)
-
-			// Then
-			assert.Fail(t, "not paniced on not supported argument number")
+			assert.Fail(t, "not paniced")
 		})
 }
 

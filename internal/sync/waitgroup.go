@@ -1,3 +1,6 @@
+// Package sync contains a small collection of helpful generic functions and
+// types for synchronization. It is currently part of the public interface and
+// stable, but this may change in future.
 package sync
 
 import "sync"

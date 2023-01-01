@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/golang/mock v1.6.0
 	github.com/stretchr/testify v1.8.1
+	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
 	golang.org/x/text v0.3.3
 	gopkg.in/h2non/gock.v1 v1.1.2
 )
