@@ -153,6 +153,8 @@ func TestUnit(t *testing.T) {
 
         // When
         t.Errorf("fail")
+        ...
+        // And one of the following
         t.Fatalf("fail")
         t.FailNow()
         panic("fail")
@@ -162,8 +164,10 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-**Note:** Usually, you can only expect either `Fatalf`, `FailNow`, or `Panic`,
-since creating these in a test is aborting the test execution.
+**Note:** To enable panic testing, the isolated test enviroment is recovering
+from all panics by default and converting it in a fatal error message. This is
+often most usable and sufficient to fix the issue. If you need to discover the
+source of the panic, you need to spawn a new unrecovered go-routine.
 
 **Hint:** [GoMock][gomock] uses very complicated reporting patterns that are
 hard to recreate. Do not try it.
