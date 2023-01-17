@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"runtime/debug"
+	"strings"
 	gosync "sync"
 	"sync/atomic"
 	"testing"
@@ -39,6 +41,41 @@ const (
 	// Flag to run test by default sequential instead of parallel.
 	Parallel = true
 )
+
+// TODO: consider following convenience mehtods:
+//
+// // Result is a convenience method that returns the first argument ans swollows
+// // all others assuming that the first argument contains the important result to
+// // focus the test at.
+// func Result[T any](result T, swollowed any) T {
+// 	return result
+// }
+
+// // Check is a convenience method that returns the second argument and swollows
+// // the first used to focus a test on the second.
+// func Check[T any](swollowed any, check T) T {
+// 	return check
+// }
+
+// // NoError is a convenience method to check whether the second error argument
+// // is providing and actual error while extracting the first argument only. If
+// // the error argument is an error, the method panics providing the error.
+// func NoError[T any](result T, err error) T {
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return result
+// }
+
+// // Ok is a conveninence method to check whether the second boolean argument is
+// // `true` while returning the first argument. If the boolean argument is
+// // `false`, the method panics.
+// func Ok[T any](result T, ok bool) T {
+// 	if !ok {
+// 		panic("bool not okay")
+// 	}
+// 	return result
+// }
 
 // Reporter is a minimal inferface for abstracting test report methods that are
 // needed to setup an isolated test environment for GoMock and Testify.
@@ -176,7 +213,8 @@ func (t *Tester) Panic(arg any) {
 	t.failed.Store(true)
 	defer t.unlock()
 	if t.expect == Success {
-		t.Fatalf("panic: %v", arg)
+		stack := strings.SplitN(string(debug.Stack()), "\n", 10)
+		t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[9])
 	} else if t.reporter != nil {
 		t.reporter.Panic(arg)
 	}
@@ -200,6 +238,7 @@ func (t *Tester) Run(test func(Test), parallel bool) Test {
 	wg := sync.NewWaitGroup()
 	wg.Add(1)
 	go func() {
+		t.Helper()
 		defer wg.Done()
 		defer t.recover()
 		test(t)
@@ -366,6 +405,8 @@ func (r *runner[P]) wrap(
 	name string, param P, call func(t Test, param P), parallel bool,
 ) func(*testing.T) {
 	return run(r.expect(param), func(t Test) {
+		t.Helper()
+
 		// Helpful for debugging to see the test case.
 		require.NotEmpty(t, name)
 

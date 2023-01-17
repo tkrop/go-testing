@@ -49,7 +49,7 @@ func NoCall() mock.SetupFunc {
 }
 
 func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
-	return mock.NewMock(t).Expect(mockSetup)
+	return mock.NewMocks(t).Expect(mockSetup)
 }
 
 func MockValidate(
@@ -612,7 +612,7 @@ func TestFailures(t *testing.T) {
 	test.Map(t, testFailureParams).
 		Run(func(t test.Test, param FailureParam) {
 			// Given
-			mocks := mock.NewMock(t).Expect(CallA("a"))
+			mocks := mock.NewMocks(t).Expect(CallA("a"))
 			defer func() {
 				if err := recover(); err != nil && err != "panic" {
 					// Test thread will not wait on failures.

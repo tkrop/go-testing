@@ -15,6 +15,9 @@ jobs:
     - name: Build and tests
       run: make cdp
 
+#    - name: Upload coverage
+#      run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r build/test-all.cover
+
     - name: Send coverage 
       uses: shogo82148/actions-goveralls@v1
       with:

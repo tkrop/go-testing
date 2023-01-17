@@ -38,7 +38,7 @@ func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
 }
 
 func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
-	return mock.NewMock(t).Expect(mockSetup)
+	return mock.NewMocks(t).Expect(mockSetup)
 }
 
 var testPermTestParams = perm.ExpectMap{

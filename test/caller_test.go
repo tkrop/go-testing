@@ -51,7 +51,7 @@ func (c *Caller) Panic(arg any) {
 // number for the given call.
 func getCaller(call func(t test.Reporter)) string {
 	t := test.NewTester(&testing.T{}, test.Failure)
-	mocks := mock.NewMock(t)
+	mocks := mock.NewMocks(t)
 	caller := mock.Get(mocks,
 		func(ctrl *gomock.Controller) *Caller {
 			return &Caller{}
