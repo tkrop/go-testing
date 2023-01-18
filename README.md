@@ -4,7 +4,7 @@
 <!--[![Security](https://img.shields.io/snyk/vulnerabilities/github/tkrop/go-testing/go.mod)](https://snyk.io/github/tkrop/go-testing)-->
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
-[![Report](https://goreportcard.com/badge/github.com/tkrop/go-testing)](https://goreportcard.com/badge/github.com/tkrop/go-testing)
+[![Report](https://goreportcard.com/badge/github.com/tkrop/go-testing)](https://goreportcard.com/report/github.com/tkrop/go-testing)
 [![Docs](https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg)](https://pkg.go.dev/github.com/tkrop/go-testing)
 
 

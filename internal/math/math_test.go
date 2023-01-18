@@ -43,7 +43,7 @@ func TestMin(t *testing.T) {
 	test.Map(t, testMinParams).
 		Run(func(t test.Test, param MinMaxParams) {
 			// Given
-			mock.NewMock(t).Expect(param.setup)
+			mock.NewMocks(t).Expect(param.setup)
 
 			// When
 			result := math.Min(param.values...)
@@ -79,7 +79,7 @@ func TestMax(t *testing.T) {
 	test.Map(t, testMaxParams).
 		Run(func(t test.Test, param MinMaxParams) {
 			// Given
-			mock.NewMock(t).Expect(param.setup)
+			mock.NewMocks(t).Expect(param.setup)
 
 			// When
 			result := math.Max(param.values...)

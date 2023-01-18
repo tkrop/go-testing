@@ -520,7 +520,7 @@ func TestValuesIn(t *testing.T) {
 	test.Map(t, testValuesInParams).
 		Run(func(t test.Test, param ValuesParams) {
 			// Given
-			mock.NewMock(t).Expect(param.setup)
+			mock.NewMocks(t).Expect(param.setup)
 			ftype := reflect.TypeOf(param.call)
 
 			// When
@@ -583,7 +583,7 @@ func TestValuesOut(t *testing.T) {
 	test.Map(t, testValuesOutParams).
 		Run(func(t test.Test, param ValuesParams) {
 			// Given
-			mock.NewMock(t).Expect(param.setup)
+			mock.NewMocks(t).Expect(param.setup)
 			ftype := reflect.TypeOf(param.call)
 
 			// When

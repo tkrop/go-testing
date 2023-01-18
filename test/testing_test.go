@@ -131,7 +131,7 @@ var testFailureParams = map[string]TestParam{
 func testFailures(t test.Test, param TestParam) {
 	// Given
 	if param.setup != nil {
-		mock.NewMock(t).Expect(param.setup)
+		mock.NewMocks(t).Expect(param.setup)
 	}
 
 	wg := sync.NewLenientWaitGroup()
@@ -295,14 +295,14 @@ func TestValidate(t *testing.T) {
 	test.Map(t, testValidateParams).
 		Run(func(t test.Test, param ValidateParams) {
 			// Given
-			mocks := mock.NewMock(t)
+			mocks := mock.NewMocks(t)
 
 			// When
 			test.InRun(test.Failure, func(t test.Test) {
 				// Given
 				mocks.Expect(test.Fatalf(
 					"Unexpected call to %T.%v(%v) at %s because: %s",
-					mock.Get(mock.NewMock(t), test.NewValidator),
+					mock.Get(mock.NewMocks(t), test.NewValidator),
 					param.method, param.args, param.caller,
 					errors.New("there are no expected calls of the "+
 						"method \""+param.method+"\" for that receiver")))
