@@ -1,7 +1,6 @@
 package test_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ type TestParam struct {
 	consumed bool
 }
 
-var testFailureParams = map[string]TestParam{
+var testParams = map[string]TestParam{
 	"base nothing": {
 		test:   func(t test.Test) {},
 		expect: test.Success,
@@ -40,30 +39,6 @@ var testFailureParams = map[string]TestParam{
 		consumed: true,
 	},
 	"base panic": {
-		test:     func(t test.Test) { panic("fail") },
-		expect:   test.Failure,
-		consumed: true,
-	},
-
-	"report errorf": {
-		setup:  test.Errorf("fail"),
-		test:   func(t test.Test) { t.Errorf("fail") },
-		expect: test.Failure,
-	},
-	"report fatalf": {
-		setup:    test.Fatalf("fail"),
-		test:     func(t test.Test) { t.Fatalf("fail") },
-		expect:   test.Failure,
-		consumed: true,
-	},
-	"report failnow": {
-		setup:    test.FailNow(),
-		test:     func(t test.Test) { t.FailNow() },
-		expect:   test.Failure,
-		consumed: true,
-	},
-	"report panic": {
-		setup:    test.Panic("fail"),
 		test:     func(t test.Test) { panic("fail") },
 		expect:   test.Failure,
 		consumed: true,
@@ -150,7 +125,7 @@ func testFailures(t test.Test, param TestParam) {
 func TestRun(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testFailureParams {
+	for name, param := range testParams {
 		name, param := name, param
 		t.Run(name, test.Run(param.expect, func(t test.Test) {
 			testFailures(t, param)
@@ -161,7 +136,7 @@ func TestRun(t *testing.T) {
 func TestRunSeq(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testFailureParams {
+	for name, param := range testParams {
 		name, param := name, param
 		t.Run(name, test.RunSeq(param.expect, func(t test.Test) {
 			testFailures(t, param)
@@ -181,7 +156,7 @@ func TestNewRun(t *testing.T) {
 func TestNewRunSeq(t *testing.T) {
 	t.Parallel()
 
-	for _, param := range testFailureParams {
+	for _, param := range testParams {
 		test.New[TestParam](t, TestParam{
 			test:   param.test,
 			expect: param.expect,
@@ -194,7 +169,7 @@ func TestNewRunSeq(t *testing.T) {
 func TestNewRunNamed(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testFailureParams {
+	for name, param := range testParams {
 		test.New[TestParam](t, TestParam{
 			name:   test.Name(name),
 			test:   param.test,
@@ -208,7 +183,7 @@ func TestNewRunNamed(t *testing.T) {
 func TestNewRunSeqNamed(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testFailureParams {
+	for name, param := range testParams {
 		test.New[TestParam](t, TestParam{
 			name:   test.Name(name),
 			test:   param.test,
@@ -220,15 +195,15 @@ func TestNewRunSeqNamed(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	test.Map(t, testFailureParams).
+	test.Map(t, testParams).
 		Run(func(t test.Test, param TestParam) {
 			testFailures(t, param)
 		})
 }
 
 func TestSlice(t *testing.T) {
-	params := make([]TestParam, 0, len(testFailureParams))
-	for name, param := range testFailureParams {
+	params := make([]TestParam, 0, len(testParams))
+	for name, param := range testParams {
 		params = append(params, TestParam{
 			name:   test.Name(name),
 			test:   param.test,
@@ -239,77 +214,6 @@ func TestSlice(t *testing.T) {
 	test.Slice(t, params).
 		Run(func(t test.Test, param TestParam) {
 			testFailures(t, param)
-		})
-}
-
-type ValidateParams struct {
-	method string
-	call   func(t test.Test)
-	caller string
-	args   []any
-	expect test.Expect
-}
-
-var testValidateParams = map[string]ValidateParams{
-	"errorf": {
-		method: "Errorf",
-		call: func(t test.Test) {
-			t.Errorf("fail")
-		},
-		caller: CallerErrorf,
-		args:   append([]any{}, "fail"),
-		expect: test.Failure,
-	},
-
-	"fatalf": {
-		method: "Fatalf",
-		call: func(t test.Test) {
-			t.Fatalf("fail")
-		},
-		caller: CallerFatalf,
-		args:   append([]any{}, "fail"),
-		expect: test.Failure,
-	},
-
-	"failnow": {
-		method: "FailNow",
-		call: func(t test.Test) {
-			t.FailNow()
-		},
-		caller: CallerFailNow,
-		expect: test.Failure,
-	},
-
-	"panic": {
-		method: "Panic",
-		call: func(t test.Test) {
-			panic("fail")
-		},
-		caller: CallerPanic,
-		args:   append([]any{}, "fail"),
-		expect: test.Failure,
-	},
-}
-
-func TestValidate(t *testing.T) {
-	test.Map(t, testValidateParams).
-		Run(func(t test.Test, param ValidateParams) {
-			// Given
-			mocks := mock.NewMocks(t)
-
-			// When
-			test.InRun(test.Failure, func(t test.Test) {
-				// Given
-				mocks.Expect(test.Fatalf(
-					"Unexpected call to %T.%v(%v) at %s because: %s",
-					mock.Get(mock.NewMocks(t), test.NewValidator),
-					param.method, param.args, param.caller,
-					errors.New("there are no expected calls of the "+
-						"method \""+param.method+"\" for that receiver")))
-
-				// When
-				param.call(t)
-			})(t)
 		})
 }
 

@@ -16,7 +16,7 @@ test environment.
 func TestUnit(t *testing.T) {
     test.Run(test.Success, func(t test.Test){
         // Given
-        mocks := mock.NewMock(t).Expect(
+        mocks := mock.NewMocks(t).Expect(
             test.Panic("fail"),
         )
 
@@ -144,7 +144,7 @@ validator that is tightly integrated with the [mock](../mock) framework.
 func TestUnit(t *testing.T) {
     test.Run(func(t test.Test){
         // Given
-        mocks := mock.NewMock(t).Expect(mock.Setup(
+        mocks := mock.NewMocks(t).Expect(mock.Setup(
             test.Errorf("fail"),
             test.Fatalf("fail"),
             test.FailNow(),

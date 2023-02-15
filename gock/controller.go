@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/golang/mock/gomock"
-	gock "gopkg.in/h2non/gock.v1"
+	"github.com/h2non/gock"
 
 	"github.com/tkrop/go-testing/test"
 )

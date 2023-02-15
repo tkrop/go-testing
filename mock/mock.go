@@ -76,7 +76,7 @@ type SetupFunc func(*Mocks) any
 // Mocks common mock handler.
 type Mocks struct {
 	// The mock controller used.
-	ctrl *Controller
+	Ctrl *Controller
 	// The lenient wait group.
 	wg sync.WaitGroup
 	// The map of mock singletons.
@@ -86,7 +86,7 @@ type Mocks struct {
 // NewMocks creates a new mock handler using given test reporter (`*testing.T`).
 func NewMocks(t gomock.TestReporter) *Mocks {
 	return (&Mocks{
-		ctrl:  gomock.NewController(t),
+		Ctrl:  gomock.NewController(t),
 		wg:    sync.NewLenientWaitGroup(),
 		mocks: map[reflect.Type]any{},
 	}).syncWith(t)
@@ -101,7 +101,7 @@ func (mocks *Mocks) Get(creator func(*Controller) any) any {
 	if ok && mock != nil {
 		return mock
 	}
-	mock = creator(mocks.ctrl)
+	mock = creator(mocks.Ctrl)
 	mocks.mocks[ctype] = mock
 	return mock
 }
@@ -193,7 +193,7 @@ func (mocks *Mocks) notify(
 
 	notify := reflect.MakeFuncOf(ftype,
 		func([]reflect.Value) []reflect.Value {
-			mocks.ctrl.T.Helper()
+			mocks.Ctrl.T.Helper()
 
 			defer mocks.wg.Done()
 			if call != nil {
