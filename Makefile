@@ -31,7 +31,7 @@ LINT_ALL := lint-src lint-api
 ifneq ("$(wildcard Makefile.vars)","")
   include Makefile.vars
 else
-  $(error error: please define variables in Makefile.vars)
+  $(info info: please define variables in Makefile.vars)
 endif
 
 # Setup sensible defaults for configuration variables.
@@ -41,7 +41,7 @@ CONTAINER ?= Dockerfile
 REPOSITORY ?= $(shell git remote get-url origin | \
 	sed "s/^https:\/\///; s/^git@//; s/.git$$//; s/:/\//;")
 TEAM ?= $(shell cat .zappr.yaml | grep "X-Zalando-Team" | \
-	sed "s/.*: *\([a-z-]*\).*/\1/")
+	sed "s/.*:[[:space:]]*\([a-z-]*\).*/\1/")
 
 TOOLS ?= github.com/golang/mock/mockgen@latest \
 	github.com/zalando/zally/cli/zally@latest \
@@ -130,7 +130,7 @@ endef
 ifneq ("$(wildcard Makefile.defs)","")
   include Makefile.defs
 else
-  $(warning warning: please define custom functions in Makefile.defs)
+  $(info info: please define custom functions in Makefile.defs)
 endif
 
 
@@ -158,7 +158,7 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
 .PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
-.PHONY: lint lint-all lint-src lint- lint-list lint-warn lint-api format
+.PHONY: lint lint-all lint-src lint- lint-list lint-extra lint-api format
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: image image-build image-push docker docker-build docker-push
@@ -213,16 +213,20 @@ endif
 
 # Setup go to use desired and consistent golang versions.
 GOVERSION := $(shell go version | sed -Ee "s/.*go([0-9]+\.[0-9]+).*/\1/")
-GOVERSION_MOD := $(shell grep "^go [1-9.]*$$" go.mod | cut -f2 -d' ')
-GOVERSION_DELIVERY := $(shell if [ -f delivery.yaml ]; then \
+GOVERSION_MOD := $(shell grep "^go [0-9.]*$$" go.mod | cut -f2 -d' ')
+GOVERSION_YAML := $(shell if [ -f delivery.yaml ]; then \
     grep -o "cdp-runtime/go-[0-9.]*" delivery.yaml | grep -o "[0-9.]*" | sort -u; \
   else echo $(GOVERSION); fi)
 ifneq (update-go,$(MAKECMDGOALS))
-  ifneq ($(firstword $(GOVERSION_DELIVERY)), $(GOVERSION_DELIVERY))
-    $(error "inconsistent go versions: delivery.yaml uses $(GOVERSION_DELIVERY)")
+  ifneq ($(firstword $(GOVERSION_YAML)), $(GOVERSION_YAML))
+    $(error "inconsistent go versions: delivery.yaml uses $(GOVERSION_YAML)")
   endif
-  ifneq ($(GOVERSION), $(GOVERSION_DELIVERY))
-    $(error "unsupported go version $(GOVERSION): delivery.yaml requires $(GOVERSION_DELIVERY)")
+  ifneq ($(GOVERSION), $(GOVERSION_YAML))
+    ifneq ($(GOVERSION_YAML),)
+      $(error "no cdp-runtime go version $(GOVERSION): delivery.yaml likely uses stil overlay")
+    else
+      $(error "unsupported go version $(GOVERSION): delivery.yaml requires $(GOVERSION_YAML)")
+    endif
   endif
   ifneq ($(GOVERSION), $(GOVERSION_MOD))
     $(error "unsupported go version $(GOVERSION): go.mod requires $(GOVERSION_MOD)")
@@ -242,7 +246,9 @@ cdp: $(TARGETS_CDP)
 update: update-deps
 update-go:
 	@sed -i "s/go $(GOVERSION_MOD)/go $(GOVERSION)/" go.mod; \
-	sed -E -i "s/(cdp-runtime\/go)[0-9.-]*/\1-$(GOVERSION)/" delivery.yaml; \
+	if [ -f delivery.yaml ]; then \
+	  sed -E -i "s/(cdp-runtime\/go)[0-9.-]*/\1-$(GOVERSION)/" delivery.yaml; \
+	fi; \
 
 update-make:
 	@TEMPDIR=$$(mktemp -d) && echo "update Makefile" &&  \
@@ -374,17 +380,17 @@ define testargs
   else echo "./..."; fi
 endef
 
-TESTFLAGS ?= -race -mod=readonly -count 1
+TESTFLAGS ?= -race -mod=readonly -count=1
 TESTARGS ?= $(shell $(testargs))
 
 $(TEST_ALL): $(SOURCES) init-sources $(TEST_DEPS)
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
 	go test $(TESTFLAGS) -timeout $(TEST_TIMEOUT) \
-	  -count=1 -cover -coverprofile $@ $(TESTARGS);
+	  -cover -coverprofile $@ $(TESTARGS);
 $(TEST_UNIT): $(SOURCES) init-sources
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
 	go test $(TESTFLAGS) -timeout $(TEST_TIMEOUT) \
-	  -count=1 -cover -coverprofile $@ -short $(TESTARGS);
+	  -cover -coverprofile $@ -short $(TESTARGS);
 $(TEST_BENCH): $(SOURCES) init-sources
 	@if [ ! -d "$(BUILDIR)" ]; then mkdir -p $(BUILDIR); fi;
 	go test $(TESTFLAGS) -benchtime=8s \
@@ -412,27 +418,45 @@ LINTERS_ENABLED ?= goimports gofumpt gofmt goheader decorder :gci \
 	asciicheck bidichk durationcheck loggercheck staticcheck stylecheck \
 	typecheck :wrapcheck :errcheck
 
-LINTERS_WARNING ?= godox :errorlint :goerr113 gosec
+LINTERS_EXTRA ?= godox :errorlint :goerr113 gosec
 
-LINT_DISABLE ?= $(subst $(SPACE),$(COMMA),$(strip \
+LINT_DISABLED ?= $(subst $(SPACE),$(COMMA),$(strip \
 	$(filter-out :%,$(LINTERS_DISABLED))))
-LINT_ENABLE ?= $(subst $(SPACE),$(COMMA),$(strip \
+LINT_ENABLED ?= $(subst $(SPACE),$(COMMA),$(strip \
 	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_ENABLED)))))
-LINT_WARN ?= $(subst $(SPACE),$(COMMA),$(strip \
-	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_WARNING)))))
+LINT_EXTRA ?= $(subst $(SPACE),$(COMMA),$(strip \
+	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_EXTRA)))))
+
+LINT_LIST := linters --enable $(LINT_ENABLE) --disable $(LINT_DISABLED)
+LINT_RUN_ALL := run --enable-all --disable $(LINT_DISABLED) ./...
+ifneq ($(shell ls .golangci-lint.yaml 2>/dev/null), .golangci-lint.yaml)
+  LINT_RUN_SRC := run --no-config  --enable $(LINT_ENABLED) \
+    --disable $(LINT_DISABLED) ./...
+else
+  LINT_RUN_SRC := run --config .golangci-lint.yaml
+endif
+ifneq ($(shell ls .golangci-lint-extra.yaml 2>/dev/null), .golangci-lint-extra.yaml)
+  LINT_RUN_EXTRA := run --no-config --enable $(LINT_ENABLED),$(LINT_EXTRA) \
+    --disable $(LINT_DISABLED) ./...
+else
+  LINT_RUN_EXTRA := run --config .golangci-lint-extra.yaml
+endif
 
 lint: $(TARGETS_LINT)
-lint-all: init-sources
-	golangci-lint run --enable-all --disable $(LINT_DISABLE) ./...;
-lint-src: init-sources
-	golangci-lint run --enable $(LINT_ENABLE) --disable $(LINT_DISABLE) ./...;
 lint-list:
-	golangci-lint linters --enable $(LINT_ENABLE) --disable $(LINT_DISABLE);
-lint-warn: init-sources
-	golangci-lint run --diable-all --enable $(LINT_WARN),$(LINT_ENABLE) \
-	  --disable $(LINT_DISABLE) ./... || true;
+	golangci-lint $(LINT_LIST);
+lint-all: init-sources
+	golangci-lint $(LINT_RUN_ALL);
+lint-src: init-sources
+	golangci-lint $(LINT_RUN_SRC);
+lint-extra: init-sources
+	golangci-lint $(LINT_RUN_EXTRA);
 lint-api:
-	@ARGS=("--linter-service" "https://infrastructure-api-linter.zalandoapis.com"); \
+	@LINTER="https://infrastructure-api-linter.zalandoapis.com"; \
+	if ! curl -is $${LINTER} >/dev/null; then \
+	  echo "warning: API linter not available;" >/dev/stderr; exit 0; \
+	fi; \
+	ARGS=("--linter-service" "$${LINTER}"); \
 	if command -v ztoken > /dev/null; then ARGS+=("--token" "$$(ztoken)"); fi; \
 	for APISPEC in $$(find zalando-apis -name "*.yaml" 2>/dev/null); do \
 	  echo "check API: zally \"$${APISPEC}\""; \
@@ -462,7 +486,8 @@ GOARCH := $(BUILDARCH)
 
 # Define flags propagate versions to build commands.
 LDFLAGS ?= -X $(shell go list ./... | grep "config$$").Version=$(IMAGE_VERSION) \
-           -X $(shell go list ./... | grep "config$$").GitHash=$(shell git rev-parse --short HEAD)
+	-X $(shell go list ./... | grep "config$$").GitHash=$(shell git rev-parse --short HEAD) \
+	-X main.Version=$(IMAGE_VERSION) -X main.GitHash=$(shell git rev-parse --short HEAD)
 
 # Build targets for native platform builds and linux builds.
 build: build-native
@@ -516,7 +541,11 @@ run-db:
 	  --env POSTGRES_USER="$(DB_USER)" \
 	  --env POSTGRES_PASSWORD="$(DB_PASSWORD)" \
 	  --env POSTGRES_DB="$(DB_NAME)" \
-	  $(DB_IMAGE) $(RUNARGS) 2>&1 & \
+	  $(DB_IMAGE) \
+	    -c 'shared_preload_libraries=pg_stat_statements' \
+        -c 'pg_stat_statements.max=10000' \
+        -c 'pg_stat_statements.track=all' \
+	  $(RUNARGS) 2>&1 & \
 	until [ "$$($(IMAGE_CMD) inspect -f {{.State.Running}} \
 	         $(IMAGE_ARTIFACT)-db 2>/dev/null)" == "true" ]; \
 	do echo "waiting for db container" >/dev/stderr; sleep 1; done && \
