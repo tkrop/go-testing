@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/h2non/gock"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/h2non/gock.v1"
 
 	"github.com/tkrop/go-testing/test"
 )

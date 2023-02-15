@@ -26,7 +26,10 @@ func NewValidator(ctrl *gomock.Controller) *Validator {
 	validator := &Validator{ctrl: ctrl}
 	validator.recorder = &Recorder{validator: validator}
 	if t, ok := ctrl.T.(*Tester); ok {
-		ctrl.T = NewTester(t.t, Success)
+		// We need to install a second isolated test environment to break the
+		// reporter cycle on the failure issued by the mock controller.
+		ctrl.T = NewTester(t.t, t.expect)
+		t.expect = Failure
 		t.Reporter(validator)
 	}
 	return validator

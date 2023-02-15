@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/h2non/gock"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	gock "gopkg.in/h2non/gock.v1"
 )
 
 var errAny = errors.New("any error")

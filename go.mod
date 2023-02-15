@@ -1,16 +1,14 @@
 module github.com/tkrop/go-testing
 
-go 1.19
+go 1.20
 
 require (
 	github.com/golang/mock v1.6.0
+	github.com/h2non/gock v1.2.0
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/exp v0.0.0-20230116083435-1de6713980de
-	golang.org/x/text v0.3.3
-	gopkg.in/h2non/gock.v1 v1.1.2
+	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
+	golang.org/x/text v0.6.0
 )
-
-exclude github.com/stretchr/testify v1.8.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
