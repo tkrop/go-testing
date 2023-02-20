@@ -91,15 +91,20 @@ func methodsMockIFaceFunc(mocktest, test, mock string) []*Method {
 		Results:  []*Param{{Type: "[]any"}, {Type: "error"}},
 		Variadic: true,
 	}, {
-		Name: "CallB",
-		Params: []*Param{{
-			Name: "test", Type: aliasType(test, "Tester"),
-		}},
+		Name:   "CallB",
+		Params: []*Param{},
 		Results: []*Param{{
 			Name: "fn", Type: "func([]*" + aliasType(mock, "File") + ") []any",
 		}, {
 			Name: "err", Type: "error",
 		}},
+		Variadic: false,
+	}, {
+		Name: "CallC",
+		Params: []*Param{{
+			Name: "test", Type: aliasType(test, "Tester"),
+		}},
+		Results:  []*Param{},
 		Variadic: false,
 	}}
 }
