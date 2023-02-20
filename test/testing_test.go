@@ -1,9 +1,11 @@
 package test_test
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/tkrop/go-testing/internal/sync"
 
@@ -145,11 +147,15 @@ func TestRunSeq(t *testing.T) {
 }
 
 func TestNewRun(t *testing.T) {
+	finished := false
 	test.New[TestParam](t, TestParam{
 		test:   func(t test.Test) { t.FailNow() },
 		expect: test.Failure,
 	}).Run(func(t test.Test, param TestParam) {
+		defer func() { finished = true }()
 		testFailures(t, param)
+	}).Cleanup(func() {
+		require.True(t, finished)
 	})
 }
 
@@ -157,11 +163,15 @@ func TestNewRunSeq(t *testing.T) {
 	t.Parallel()
 
 	for _, param := range testParams {
+		finished := false
 		test.New[TestParam](t, TestParam{
 			test:   param.test,
 			expect: param.expect,
 		}).RunSeq(func(t test.Test, param TestParam) {
+			defer func() { finished = true }()
 			testFailures(t, param)
+		}).Cleanup(func() {
+			require.True(t, finished)
 		})
 	}
 }
@@ -170,12 +180,16 @@ func TestNewRunNamed(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
+		finished := false
 		test.New[TestParam](t, TestParam{
 			name:   test.Name(name),
 			test:   param.test,
 			expect: param.expect,
 		}).Run(func(t test.Test, param TestParam) {
+			defer func() { finished = true }()
 			testFailures(t, param)
+		}).Cleanup(func() {
+			require.True(t, finished)
 		})
 	}
 }
@@ -184,24 +198,36 @@ func TestNewRunSeqNamed(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
+		finished := false
 		test.New[TestParam](t, TestParam{
 			name:   test.Name(name),
 			test:   param.test,
 			expect: param.expect,
 		}).RunSeq(func(t test.Test, param TestParam) {
+			defer func() { finished = true }()
 			testFailures(t, param)
+		}).Cleanup(func() {
+			require.True(t, finished)
 		})
 	}
 }
 
 func TestMap(t *testing.T) {
+	count := atomic.Int32{}
+
 	test.Map(t, testParams).
 		Run(func(t test.Test, param TestParam) {
+			defer count.Add(1)
 			testFailures(t, param)
+		}).
+		Cleanup(func() {
+			require.Equal(t, len(testParams), int(count.Load()))
 		})
 }
 
 func TestSlice(t *testing.T) {
+	count := atomic.Int32{}
+
 	params := make([]TestParam, 0, len(testParams))
 	for name, param := range testParams {
 		params = append(params, TestParam{
@@ -213,7 +239,11 @@ func TestSlice(t *testing.T) {
 
 	test.Slice(t, params).
 		Run(func(t test.Test, param TestParam) {
+			defer count.Add(1)
 			testFailures(t, param)
+		}).
+		Cleanup(func() {
+			require.Equal(t, len(testParams), int(count.Load()))
 		})
 }
 

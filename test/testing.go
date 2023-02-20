@@ -99,7 +99,7 @@ type Test interface {
 // Cleanuper defines an interface to add a custom mehtod that is called after
 // the test execution to cleanup the test environment.
 type Cleanuper interface {
-	Cleanup(f func())
+	Cleanup(cleanup func())
 }
 
 // Tester is a test isolation environment based on the `Test` abstraction. It
@@ -312,15 +312,19 @@ func (t *Tester) unlock() {
 
 // Runner is a generic test runner interface.
 type Runner[P any] interface {
+	// Cleanup register a function to be called for cleanup after all tests
+	// have been finished.
+	Cleanup(call func())
 	// Run runs the test parameter sets (by default) parallel.
-	Run(call func(t Test, param P))
+	Run(call func(t Test, param P)) Runner[P]
 	// RunSeq runs the test parameter sets in a sequence.
-	RunSeq(call func(t Test, param P))
+	RunSeq(call func(t Test, param P)) Runner[P]
 }
 
 // runner is a generic parameterized test runner struct.
 type runner[P any] struct {
 	t      *testing.T
+	wg     sync.WaitGroup
 	params any
 }
 
@@ -333,6 +337,7 @@ func New[P any](t *testing.T, params any) Runner[P] {
 
 	return &runner[P]{
 		t:      t,
+		wg:     sync.NewWaitGroup(),
 		params: params,
 	}
 }
@@ -354,23 +359,36 @@ func Slice[P any](t *testing.T, params []P) Runner[P] {
 	return New[P](t, params)
 }
 
+// Cleanup register a function to be called for cleanup after all tests have
+// been finished.
+func (r *runner[P]) Cleanup(call func()) {
+	r.t.Cleanup(func() {
+		r.t.Helper()
+		r.wg.Wait()
+		call()
+	})
+}
+
 // Run runs the test parameter sets (by default) parallel.
-func (r *runner[P]) Run(call func(t Test, param P)) {
-	r.run(call, Parallel)
+func (r *runner[P]) Run(call func(t Test, param P)) Runner[P] {
+	return r.run(call, Parallel)
 }
 
 // RunSeq runs the test parameter sets in a sequence.
-func (r *runner[P]) RunSeq(call func(t Test, param P)) {
-	r.run(call, false)
+func (r *runner[P]) RunSeq(call func(t Test, param P)) Runner[P] {
+	return r.run(call, false)
 }
 
 // Run runs the test parameter sets either parallel or in sequence.
-func (r *runner[P]) run(call func(t Test, param P), parallel bool) {
+func (r *runner[P]) run(
+	call func(t Test, param P), parallel bool,
+) Runner[P] {
 	switch params := r.params.(type) {
 	case map[string]P:
 		if parallel {
 			r.t.Parallel()
 		}
+		r.wg.Add(len(params))
 
 		for name, param := range params {
 			name, param := name, param
@@ -381,6 +399,7 @@ func (r *runner[P]) run(call func(t Test, param P), parallel bool) {
 		if parallel {
 			r.t.Parallel()
 		}
+		r.wg.Add(len(params))
 
 		for index, param := range params {
 			index, param := index, param
@@ -388,6 +407,8 @@ func (r *runner[P]) run(call func(t Test, param P), parallel bool) {
 			r.t.Run(name, r.wrap(name, param, call, parallel))
 		}
 	case P:
+		r.wg.Add(1)
+
 		name := string(r.name(params))
 		if name != string(unknownName) {
 			r.t.Run(name, r.wrap(name, params, call, parallel))
@@ -398,6 +419,7 @@ func (r *runner[P]) run(call func(t Test, param P), parallel bool) {
 		panic(fmt.Errorf("unknown parameter type:  %v",
 			reflect.ValueOf(r.params).Type()))
 	}
+	return r
 }
 
 // wrap creates the test wrapper method executing the test.
@@ -410,6 +432,7 @@ func (r *runner[P]) wrap(
 		// Helpful for debugging to see the test case.
 		require.NotEmpty(t, name)
 
+		defer r.wg.Done()
 		call(t, param)
 	}, parallel)
 }

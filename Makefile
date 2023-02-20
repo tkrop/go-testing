@@ -268,7 +268,7 @@ update-make-would-be-better:
 update-deps:
 	@for DIR in $$(find . -name "*.go" | xargs dirname | sort -u); do \
 	  echo -n "update: $${DIR} -> "; cd $${DIR} && \
-	  go get -u && go mod tidy -compat=${GOVERSION} && \
+	  go mod tidy -v -e -compat=${GOVERSION} && go get -u && \
 	  cd -; \
 	done; \
 
