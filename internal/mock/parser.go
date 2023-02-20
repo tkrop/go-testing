@@ -12,31 +12,39 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+const (
+	// Default directory for package loading.
+	DefaultDir = "."
+)
+
 // Parser is a mock setup command line argument parser.
 type Parser struct {
 	// A caching, reusable package loader.
 	loader Loader
+	// The default target definition for parsing.
+	target Type
 }
 
 // NewParser creates a new mock setup command line argument parser with loading
 // of test packages enabled or disabled.
-func NewParser(loader Loader) *Parser {
-	return &Parser{loader: loader}
+func NewParser(loader Loader, target Type) *Parser {
+	return &Parser{loader: loader, target: target}
 }
 
 // parse parses the command line arguments provided and returns a list of mock
 // stubs containing the necessary source and target information without method
 // data.
 func (parser *Parser) Parse(args ...string) ([]*Mock, []error) {
-	state := newParseState(parser.loader)
+	state := newParseState(parser)
 	for pos, arg := range args {
-		atype, arg := state.parseArgType(arg)
-		switch atype {
+		switch atype, arg := state.parseArgType(arg); atype {
 		case argTypeSource:
 			state.ensureIFace(pos)
-			state.source = Source{Path: arg}
+			state.source = Type{File: arg}
 		case argTypePackage:
 			state.target.Package = arg
+		case argTypePath:
+			state.target.Path = arg
 		case argTypeFile:
 			state.target.File = arg
 		case argTypeIFace:
@@ -64,13 +72,16 @@ type argType int
 const (
 	// Unknown argument type that results in an error.
 	argTypeUnknown argType = iota
-	// Source package, directory, or file argument type (very flexible).
-	argTypeSource
 	// Target package argument type (must be identifier).
 	argTypePackage
 	// Target file argument type (must end with `.go`).
+	argTypePath
+	// Target import path argument type (must resolve to a loadable package).
 	argTypeFile
-	// Target interface argument type (must be list of identifier mappings).
+	// Source package, directory, or file argument type (very flexible).
+	argTypeSource
+	// Source and target interface argument type (must be list of identifier
+	// mappings).
 	argTypeIFace
 )
 
@@ -85,15 +96,17 @@ type ParseState struct {
 	// Collected errors during parsing and package loading.
 	errs []error
 	// Source provides the actual source interface setup.
-	source Source
+	source Type
 	// Target provides the actual target interface setup.
 	target Type
 }
 
 // newParseState creates a new parse state for parsing.
-func newParseState(loader Loader) *ParseState {
+func newParseState(parser *Parser) *ParseState {
 	return &ParseState{
-		loader:  loader,
+		loader:  parser.loader,
+		source:  Type{},
+		target:  parser.target,
 		targets: map[Type]*Mock{},
 		mocks:   []*Mock{},
 		errs:    []error{},
@@ -116,9 +129,15 @@ func (state *ParseState) parseArgType(arg string) (argType, string) {
 			if token.IsIdentifier(sarg) {
 				return argTypePackage, sarg
 			}
+			pkgs, err := state.loader.LoadPackage(sarg)
+			if len(pkgs) > 0 && err == nil {
+				return argTypePath, sarg
+			}
 			return argTypeFile, sarg
 		case "target-pkg":
 			return argTypePackage, sarg
+		case "target-path":
+			return argTypePath, sarg
 		case "target-file":
 			return argTypeFile, sarg
 		default:
@@ -147,28 +166,40 @@ func (state *ParseState) parseArgType(arg string) (argType, string) {
 	return argTypeSource, arg
 }
 
-// ensureSource checks the current source setup and sets the default source
-// package name, if a proper source setup is missing.
+// ensureSource checks the current source setup and derives the default package
+// name and package path from the given source file, if the setup is missing.
+// The default name is ensured when parsing the interface specific command line
+// arguments.
 func (state *ParseState) ensureSource() *ParseState {
-	if state.source.Path == "" {
-		state.source.Path = "."
+	if state.source.File == "" {
+		state.source.File = DefaultDir
 	}
-	return state
+	return state.ensureType(&state.source)
 }
 
-// ensureTarget checks the current target setup and sets the default target
-// package name, if a proper target setup is missing. The interface name.
-// We currently do not ensure a default path or file name, since we write to
-// standard output by default. The default name is ensured when parsing the
-// interface command line arguments.
+// ensureTarget checks the current target setup and derives the default package
+// name and package path from the given target file, if the setup is missing.
+// The default name is ensured when parsing the interface specific command line
+// arguments.
 func (state *ParseState) ensureTarget() *ParseState {
-	if state.target.Package == "" {
-		// found no way to make filepath.Abs to provide an error.
-		file, _ := filepath.Abs(state.target.File)
-		if pkgs, err := state.loader.LoadPackage(file); err == nil {
-			state.target.Package = pkgs[0].Name
-		} else if dir := filepath.Dir(file); dir != "/" {
-			state.target.Package = filepath.Base(dir)
+	return state.ensureType(&state.target)
+}
+
+// ensureType checks the current setup and derives the default package name and
+// package path from the given file, if the setup is missing. The default name
+// is ensured when parsing the interface command line arguments.
+func (state *ParseState) ensureType(ptype *Type) *ParseState {
+	// found no way to make filepath.Abs to provide an error.
+	file, _ := filepath.Abs(ptype.File)
+	if info, err := os.Stat(file); err != nil || !info.IsDir() {
+		file = filepath.Dir(file)
+	}
+
+	if pkgs, err := state.loader.LoadPackage(file); err == nil {
+		ptype.Path = pkgs[0].PkgPath
+		// TODO: support only valid package names!
+		if ptype.Package == "" {
+			ptype.Package = pkgs[0].Name
 		}
 	}
 	return state
@@ -206,7 +237,7 @@ func (state *ParseState) ensuresArg(arg string) string {
 // stub was created, a generic mock stub is created that mocks all interfaces
 // in this package.
 func (state *ParseState) ensureIFace(pos int) {
-	if state.source.Path != "" && state.source.Name == "" {
+	if state.source.File != "" && state.source.Name == "" {
 		state.creatMocks(pos, "")
 	}
 }
@@ -246,7 +277,7 @@ type Loader interface {
 	LoadPackage(path string) ([]*packages.Package, error)
 	// LoadIFaces is loading the go-packages for the given source and extracts
 	// the interfaces matching the interface naming pattern.
-	LoadIFaces(source Source) ([]*IFace, error)
+	LoadIFaces(source Type) ([]*IFace, error)
 }
 
 // CachingLoader allows to efficient load, parse, and analyze packages as well
@@ -265,15 +296,14 @@ type CachingLoader struct {
 // to types from files and packages. By default it provides also access to the
 // test packages and searches these for interfaces. To disable you need to set
 // `loader.(*CachingLoader).Config.Tests` to `false`.
-func NewLoader() Loader {
+func NewLoader(dir string) Loader {
 	return &CachingLoader{
 		Config: &packages.Config{
-			Mode: packages.NeedName | packages.NeedTypes | packages.NeedSyntax,
-			// Needs evaluation: packages.NeedSyntax |
-			// And: packages.NeedTypesSizes | packages.NeedTypesInfo,
-			// Helpful: packages.NeedFiles | packages.NeedModule,
-			// Not needed: packages.NeedImports [| packages.NeedDeps] !!!
+			Mode: packages.NeedName |
+				packages.NeedTypes |
+				packages.NeedSyntax,
 			Tests: true,
+			Dir:   dir,
 		},
 		pkgs: map[string][]*packages.Package{},
 	}
@@ -291,10 +321,8 @@ func (loader *CachingLoader) LoadPackage(
 
 // LoadIFaces is loading the go-packages for the given source and extracts the
 // interfaces matching the interface naming pattern.
-func (loader *CachingLoader) LoadIFaces(
-	source Source,
-) ([]*IFace, error) {
-	pkgs, err := loader.lookupPackage(source.Path)
+func (loader *CachingLoader) LoadIFaces(source Type) ([]*IFace, error) {
+	pkgs, err := loader.lookupPackage(source.File)
 	if err != nil {
 		return nil, err
 	} else if source.Name == "*" {
@@ -345,7 +373,7 @@ func (loader *CachingLoader) lookupIFace(
 }
 
 func (loader *CachingLoader) lockupIFacesNamed(
-	pkgs []*packages.Package, source Source,
+	pkgs []*packages.Package, source Type,
 ) ([]*IFace, error) {
 	ifaces := []*IFace{}
 	for _, pkg := range pkgs {
@@ -358,13 +386,13 @@ func (loader *CachingLoader) lockupIFacesNamed(
 	}
 
 	if len(ifaces) == 0 {
-		return ifaces, NewErrNotFound(source.Path, source.Name)
+		return ifaces, NewErrNotFound(source.File, source.Name)
 	}
 	return ifaces, nil
 }
 
 func (loader *CachingLoader) lookupIFacesAny(
-	pkgs []*packages.Package, source Source, //nolint:unparam
+	pkgs []*packages.Package, source Type, //nolint:unparam
 ) ([]*IFace, error) {
 	ifaces := []*IFace{}
 	for _, pkg := range pkgs {

@@ -1,7 +1,7 @@
 [![Build](https://github.com/tkrop/go-testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/go-testing/actions/workflows/go.yaml)
 [![Coverage](https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/go-testing?branch=main)
 [![Libraries](https://img.shields.io/librariesio/release/github/tkrop/go-testing)](https://libraries.io/github/tkrop/go-testing)
-<!--[![Security](https://img.shields.io/snyk/vulnerabilities/github/tkrop/go-testing/go.mod)](https://snyk.io/github/tkrop/go-testing)-->
+[![Security](https://snyk.io/test/github/tkrop/go-testing/badge.svg)](https://snyk.io/test/github/tkrop/go-testing)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
 [![Report](https://goreportcard.com/badge/github.com/tkrop/go-testing)](https://goreportcard.com/report/github.com/tkrop/go-testing)
@@ -33,7 +33,6 @@ type UnitParams struct {
     expect       test.Expect
     expect*...   *model.*
     expectError  error
-    // TODO: expectPanic  error
 }
 
 var testUnitParams = map[string]UnitParams {
@@ -157,17 +156,34 @@ with `go test -race`.
 
 **Note:** there are some general requirements for running test in parallel:
 
-1. Tests *must not modify* environment variables dynamically.
-2. Tests *must not require* reserved service ports and open listeners.
-3. Tests *must not share* resources, e.g. objects or database schemas, that
-   are updated during execution of any parallel test.
-4. Tests *must not use* [monkey patching][monkey] to modify commonly used
-   functions, e.g. `time.Now()`, and finally
-5. Tests *must not use* [Gock][gock] for mocking HTTP responses on transport
-   level, instead use the [gock](gock)-controller provided by this framework.
+1. Tests *must not modify* environment variables dynamically - utilize test
+   specific configuration instead.
+2. Tests *must not require* reserved service ports and open listeners - setup
+   services to acquire dynamic ports instead.
+3. Tests *must not share* files, folder and pipelines, e.g. `stdin`, `stdout`,
+   or `stderr` - implement logic by using wrappers that can be redirected and
+   mocked.
+4. Tests *must not share* database schemas or tables, that are updated during
+   execution of parallel tests - implement test to setup test specific database
+   schemas.
+5. Tests *must not share* process resources, that are update during execution
+   of parallel tests. Many frameworks make use of common global resources that
+   make them unsuitable for parallel tests.
 
-If this conditions hold, the general pattern provided above can be used to
-support parallel test execution.
+Examples for such shared resources in common frameworks are:
+
+* Using of [monkey patching][monkey] to modify commonly used global functions,
+  e.g. `time.Now()` - implement access to these global functions using lambdas
+  and interfaces to allow for mocking.
+* Using of [Gock][gock] to mock HTTP responses on transport level - make use
+  of the [gock](gock)-controller provided by this framework.
+* Using the [Gin](gin) HTTP web framework which uses a common `json`-parser
+  setup instead of a service specific configuration. While this is not a huge
+  deal, the repeated global setup creates race alerts. Instead use [chi](chi)
+  that supports a service specific configuration.
+
+With a careful design the general pattern provided above can be used to support
+parallel test execution.
 
 
 # Terms of Usage
@@ -190,3 +206,5 @@ provide feedback on it.
 [gomock]: https://github.com/golang/mock "GoMock"
 [gock]: https://github.com/h2non/gock "Gock"
 [monkey]: https://github.com/bouk/monkey "Monkey Patching"
+[gin]: https://github.com/gin-gonic/gin "Gin HTTP web framework"
+[chi]: https://github.com/go-chi/chi "Chi HTTP web service"

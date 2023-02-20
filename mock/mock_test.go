@@ -1,6 +1,7 @@
 package mock_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -32,7 +33,10 @@ func CallA(input string) mock.SetupFunc {
 func CallB(input string, output string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallB(input).DoAndReturn(mocks.Return(IFace.CallB, output))
+			CallB(input).DoAndReturn(
+			mocks.Call(IFace.CallB, func(a ...any) []any {
+				return []any{output}
+			}))
 	}
 }
 
@@ -516,7 +520,27 @@ var testFuncParams = map[string]FuncParams{
 	"in-4-var-out-0": {
 		call: func(any, any, any, any, ...any) {},
 	},
-	// TODO: increase cover for results.
+
+	"in-0-out-1": {
+		call:   func(any) any { return nil },
+		result: []any{"string"},
+	},
+	"in-0-out-2": {
+		call:   func(any) (any, any) { return nil, nil },
+		result: []any{"string", 1},
+	},
+	"in-0-out-3": {
+		call: func(any) (any, any, any) {
+			return nil, nil, nil
+		},
+		result: []any{"string", 1, true},
+	},
+	"in-0-out-4": {
+		call: func(any) (any, any, any, any) {
+			return nil, nil, nil, nil
+		},
+		result: []any{"string", 1, true, errors.New("any error")},
+	},
 }
 
 func TestFuncReturn(t *testing.T) {

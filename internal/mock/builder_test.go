@@ -7,160 +7,171 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/tkrop/go-testing/internal/mock"
-	test_mock "github.com/tkrop/go-testing/mock"
+	mock "github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/test"
 )
 
-const (
-	aliasMock   = "mock_" + pkgMock
-	aliasInt    = "internal_" + aliasMock
-	aliasRepo   = "testing_" + aliasInt
-	aliasOrg    = "tkrop_" + aliasRepo
-	aliasCom    = "com_" + aliasOrg
-	aliasGitHub = "github_" + aliasCom
-)
-
 var (
-	importMock = &Import{Alias: pkgMock, Path: pathMock}
+	importMock     = &Import{Path: pathMock}
+	importMockTest = &Import{Alias: pkgTest, Path: pathMockTest}
+	importTest     = &Import{Alias: pkgTesting, Path: pathTest}
+	importIllegal  = &Import{Alias: pkgMock, Path: pathMock}
 )
 
 func importAlias(alias string) *Import {
 	return &Import{Alias: alias, Path: alias}
 }
 
-func methodsMockIFaceFunc(alias string) []*Method {
-	return []*Method{{
-		Name: "Call",
-		Params: []*Param{{
-			Name: "value", Type: "*" + alias + ".Struct",
-		}, {
-			Name: "args", Type: "[]*reflect.Value",
-		}},
-		Results: []*Param{{
-			Type: "[]any",
-		}},
-		Variadic: true,
-	}}
-}
-
 type FileBuilderParams struct {
-	setup      test_mock.SetupFunc
+	setup      mock.SetupFunc
+	target     Type
 	imports    []*Import
 	mocks      []*Mock
 	expectFile *File
 }
 
 var testFileBuilderParams = map[string]FileBuilderParams{
+	"import double": {
+		setup: test.Panic(NewErrAliasConflict(
+			importMockTest, pathMockTest)),
+		target:  targetMockIFace,
+		imports: []*Import{importMockTest, importMockTest},
+	},
+
+	"import illegal": {
+		setup:   test.Panic(NewErrIllegalImport(importIllegal)),
+		target:  targetMockIFace,
+		imports: []*Import{importIllegal},
+	},
+
 	"no imports": {
+		target: targetMockIFace,
 		mocks: []*Mock{{
 			Methods: methodsMockIFace,
 		}},
 		expectFile: &File{
+			Target: targetMockIFace,
 			Imports: []*Import{
-				importMock, ImportReflect,
+				importMockTest, ImportReflect, importTest, importMock,
 			},
 			Mocks: []*Mock{{
-				Methods: methodsMockIFaceFunc(pkgMock),
+				Methods: methodsMockIFaceFunc(pkgTest, pkgTesting, ""),
 			}},
 		},
 	},
 
 	"others imported": {
+		target: targetMockIFace,
 		imports: []*Import{
-			ImportReflect, ImportGomock,
+			ImportReflect, ImportGomock, ImportMock,
 		},
 		mocks: []*Mock{{
 			Methods: methodsMockIFace,
 		}},
 		expectFile: &File{
+			Target: targetMockIFace,
 			Imports: []*Import{
-				ImportReflect, ImportGomock, importMock,
+				ImportReflect, ImportGomock, ImportMock,
+				importMockTest, importTest, importMock,
 			},
 			Mocks: []*Mock{{
-				Methods: methodsMockIFaceFunc(pkgMock),
+				Methods: methodsMockIFaceFunc(pkgTest, pkgTesting, ""),
 			}},
 		},
 	},
 
 	"pre imported": {
+		target: targetMockIFace,
 		imports: []*Import{
-			ImportReflect, importMock,
+			ImportReflect, importMock, importMockTest, importTest,
 		},
 		mocks: []*Mock{{
 			Methods: methodsMockIFace,
 		}},
 		expectFile: &File{
+			Target: targetMockIFace,
 			Imports: []*Import{
-				ImportReflect, importMock,
+				ImportReflect, importMock, importMockTest, importTest,
 			},
 			Mocks: []*Mock{{
-				Methods: methodsMockIFaceFunc(pkgMock),
+				Methods: methodsMockIFaceFunc(pkgTest, pkgTesting, ""),
 			}},
 		},
 	},
 
 	"alias imported": {
-		imports: []*Import{importAlias(pkgMock)},
+		target:  targetMockIFace,
+		imports: []*Import{importAlias(pkgTest)},
 		mocks: []*Mock{{
 			Methods: methodsMockIFace,
 		}},
 		expectFile: &File{
+			Target: targetMockIFace,
 			Imports: []*Import{
-				importAlias(pkgMock), {
-					Alias: aliasMock, Path: pathMock,
-				}, ImportReflect,
+				importAlias(pkgTest), {
+					Alias: aliasMock, Path: pathMockTest,
+				}, ImportReflect, importTest, importMock,
 			},
 			Mocks: []*Mock{{
-				Methods: methodsMockIFaceFunc(aliasMock),
+				Methods: methodsMockIFaceFunc(aliasMock, pkgTesting, ""),
 			}},
 		},
 	},
 
 	"package imported": {
+		target: targetMockIFace,
 		imports: []*Import{
-			importAlias(pkgMock),
+			importAlias(pkgTest),
 			importAlias(aliasMock),
 		},
 		mocks: []*Mock{{
 			Methods: methodsMockIFace,
 		}},
 		expectFile: &File{
+			Target: targetMockIFace,
 			Imports: []*Import{
-				importAlias(pkgMock),
-				importAlias(aliasMock), {
-					Alias: aliasInt, Path: pathMock,
-				}, ImportReflect,
+				importAlias(pkgTest),
+				importAlias(aliasMock),
+				{
+					Alias: aliasInt, Path: pathMockTest,
+				},
+				ImportReflect, importTest, importMock,
 			},
 			Mocks: []*Mock{{
-				Methods: methodsMockIFaceFunc(aliasInt),
+				Methods: methodsMockIFaceFunc(aliasInt, pkgTesting, ""),
 			}},
 		},
 	},
 
 	"internal imported": {
+		target: targetMockIFace,
 		imports: []*Import{
-			importAlias(pkgMock),
+			importAlias(pkgTest),
 			importAlias(aliasMock),
 		},
 		mocks: []*Mock{{
 			Methods: methodsMockIFace,
 		}},
 		expectFile: &File{
+			Target: targetMockIFace,
 			Imports: []*Import{
-				importAlias(pkgMock),
-				importAlias(aliasMock), {
-					Alias: aliasInt, Path: pathMock,
-				}, ImportReflect,
+				importAlias(pkgTest),
+				importAlias(aliasMock),
+				{
+					Alias: aliasInt, Path: pathMockTest,
+				},
+				ImportReflect, importTest, importMock,
 			},
 			Mocks: []*Mock{{
-				Methods: methodsMockIFaceFunc(aliasInt),
+				Methods: methodsMockIFaceFunc(aliasInt, pkgTesting, ""),
 			}},
 		},
 	},
 
 	"organization imported": {
+		target: targetMockIFace,
 		imports: []*Import{
-			importAlias(pkgMock),
+			importAlias(pkgTest),
 			importAlias(aliasMock),
 			importAlias(aliasInt),
 			importAlias(aliasRepo),
@@ -169,29 +180,30 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			Methods: methodsMockIFace,
 		}},
 		expectFile: &File{
+			Target: targetMockIFace,
 			Imports: []*Import{
-				importAlias(pkgMock),
+				importAlias(pkgTest),
 				importAlias(aliasMock),
 				importAlias(aliasInt),
-				importAlias(aliasRepo), {
-					Alias: aliasOrg, Path: pathMock,
-				}, ImportReflect,
+				importAlias(aliasRepo),
+				{
+					Alias: aliasOrg, Path: pathMockTest,
+				},
+				ImportReflect, importTest, importMock,
 			},
 			Mocks: []*Mock{{
-				Methods: methodsMockIFaceFunc(aliasOrg),
+				Methods: methodsMockIFaceFunc(aliasOrg, pkgTesting, ""),
 			}},
 		},
 	},
 
-	"import double": {
-		setup:   test.Panic(NewErrAliasConflict(pathMock, pkgMock)),
-		imports: []*Import{importMock, importMock},
-	},
-
 	"import conflict": {
-		setup: test.Panic(NewErrAliasConflict(pathMock, aliasGitHub)),
+		setup: test.Panic(NewErrAliasConflict(&Import{
+			Alias: aliasGitHub, Path: pathMockTest,
+		}, pathMockTest)),
+		target: targetMockIFace,
 		imports: []*Import{
-			importAlias(pkgMock),
+			importAlias(pkgTest),
 			importAlias(aliasMock),
 			importAlias(aliasInt),
 			importAlias(aliasRepo),
@@ -205,20 +217,23 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 	},
 }
 
+// TODO: var testFileBuilderXParams = map[string]FileBuilderParams{}
+
 func TestFileBuilder(t *testing.T) {
-	test.Map(t, testFileBuilderParams).Run(func(t test.Test, param FileBuilderParams) {
-		test_mock.NewMocks(t).Expect(param.setup)
+	test.Map(t, testFileBuilderParams).
+		Run(func(t test.Test, param FileBuilderParams) {
+			mock.NewMocks(t).Expect(param.setup)
 
-		// Given
-		builder := NewFileBuilder(Type{})
-		mocks := clone.Clone(param.mocks).([]*Mock)
-		assert.Equal(t, param.mocks, mocks)
+			// Given
+			builder := NewFileBuilder(param.target)
+			mocks := clone.Clone(param.mocks).([]*Mock)
+			assert.Equal(t, param.mocks, mocks)
 
-		// When
-		file := builder.AddImports(param.imports...).
-			AddMocks(mocks...).Build()
+			// When
+			file := builder.AddImports(param.imports...).
+				AddMocks(mocks...).Build()
 
-		// Then
-		assert.Equal(t, param.expectFile, file)
-	})
+			// Then
+			assert.Equal(t, param.expectFile, file)
+		})
 }

@@ -1,0 +1,5 @@
+engines:
+  duplication:
+    minTokenMatch: 50
+    exclude_paths:
+      - "**/*_test.go"

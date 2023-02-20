@@ -1,7 +1,7 @@
 package mock_test
 
 import (
-	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,361 +11,16 @@ import (
 )
 
 type ParseParams struct {
-	root        string
+	loader      Loader
+	target      Type
 	args        []string
 	expectMocks []*Mock
 	expectError []error
 }
 
-var testParseParams = map[string]ParseParams{
-	"no argument": {
-		args: []string{},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"invalid argument": {
-		args:        []string{"--unknown=any"},
-		expectError: []error{NewErrArgInvalid(0, "--unknown=any")},
-	},
-
-	"source package explicit": {
-		args: []string{"--source=" + pathMock},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"source package derived": {
-		args: []string{dirAny},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"source package invalid": {
-		args: []string{pathUnknown},
-		expectError: []error{
-			NewErrArgFailure(0, "*", NewErrPackageParsing(
-				pathUnknown, newPackage(pathUnknown))),
-		},
-	},
-
-	"source directory explicit": {
-		args: []string{"--source=" + dirMock},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"source directory derived": {
-		args: []string{dirMock},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"source directory invalid": {
-		root: ".",
-		args: []string{dirUnknown},
-		expectError: []error{
-			NewErrArgFailure(0, "*", NewErrPackageParsing(
-				dirUnknown, newPackage(dirUnknown))),
-		},
-	},
-
-	"source file explicit": {
-		args: []string{"--source=" + fileParser},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"source file derived": {
-		args: []string{fileParser},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"source file invalid": {
-		args: []string{fileUnknown},
-		expectError: []error{
-			NewErrArgFailure(0, "*", NewErrPackageParsing(
-				fileUnknown, newPackage(fileUnknown))),
-		},
-	},
-
-	"target package explicit": {
-		args: []string{"--target-pkg=" + pkgOther},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgOther, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"target package derived": {
-		args: []string{"--target=" + pkgOther},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgOther, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"target package guessed": {
-		args: []string{pkgOther},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgOther, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-
-	"target file explicit": {
-		args: []string{"--target-file=" + fileMock},
-		expectMocks: []*Mock{{
-			Source: sourceIFaceAny,
-			Target: Type{
-				Package: pkgMock,
-				Name:    ifaceMock,
-				File:    fileMock,
-			},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"target file derived": {
-		args: []string{"--target=" + fileMock},
-		expectMocks: []*Mock{{
-			Source: sourceIFaceAny,
-			Target: Type{
-				Package: pkgMock,
-				Name:    ifaceMock,
-				File:    fileMock,
-			},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"target file guessed": {
-		args: []string{fileMock},
-		expectMocks: []*Mock{{
-			Source: sourceIFaceAny,
-			Target: Type{
-				Package: pkgMock,
-				Name:    ifaceMock,
-				File:    fileMock,
-			},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"target file and path guessed": {
-		args: []string{dirMock + "/" + fileTarget},
-		expectMocks: []*Mock{{
-			Source: sourceIFaceAny,
-			Target: Type{
-				Package: pkgMock,
-				Name:    ifaceMock,
-				File:    dirMock + "/" + fileTarget,
-			},
-			Methods: methodsMockIFace,
-		}},
-	},
-
-	"target file with package guessed": {
-		args: []string{fileMock, pkgOther},
-		expectMocks: []*Mock{{
-			Source: sourceIFaceAny,
-			Target: Type{
-				Package: pkgOther,
-				Name:    ifaceMock,
-				File:    fileMock,
-			},
-			Methods: methodsMockIFace,
-		}},
-	},
-
-	"iface explicit": {
-		args: []string{"--iface=" + iface},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"iface derived": {
-		args: []string{iface},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"iface with mock": {
-		args: []string{ifaceArg},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: iface},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"iface with empty mock": {
-		args: []string{iface + "="},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"iface with empty interface": {
-		args: []string{"=Test"},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: "Test"},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"iface twice different": {
-		args: []string{ifaceArg, iface},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: iface},
-			Methods: methodsMockIFace,
-		}, {
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: ifaceMock},
-			Methods: methodsMockIFace,
-		}},
-	},
-	"iface multiple times": {
-		args: []string{ifaceArg, ifaceArg, ifaceArg},
-		expectMocks: []*Mock{{
-			Source:  sourceIFaceAny,
-			Target:  Type{Package: pkgMock, Name: iface},
-			Methods: methodsMockIFace,
-		}},
-	},
-
-	"iface failure": {
-		args: []string{pathMock, "Missing", "Struct", iface},
-		expectError: []error{
-			NewErrArgFailure(1, "Missing",
-				NewErrNotFound(pathMock, "Missing")),
-			NewErrArgFailure(2, "Struct",
-				NewErrNoIFace(pathMock, "Struct")),
-		},
-	},
-
-	"loading failure": {
-		root: "nodir", // ensures fallback target
-		expectError: []error{
-			NewErrArgFailure(-1, "*", NewErrLoading(".", errors.New(
-				"err: chdir nodir: no such file or directory: stderr: "))),
-		},
-	},
-}
-
-var testParseAddParams = map[string]ParseParams{
-	"package test": {
-		args: []string{
-			pathTest, "Test", "--target=" + pkgOther, "Reporter=Reporter",
-		},
-		expectMocks: []*Mock{{
-			Source:  sourceTestTest,
-			Target:  Type{Package: pkgMock, Name: "MockTest"},
-			Methods: methodsTestTest,
-		}, {
-			Source:  sourceTestReporter,
-			Target:  Type{Package: pkgOther, Name: "Reporter"},
-			Methods: methodsTestReporter,
-		}},
-	},
-
-	"package test path": {
-		root: ".",
-		args: []string{
-			dirTest, "Test",
-			"--target=" + pkgOther, "Reporter=Reporter",
-		},
-		expectMocks: []*Mock{{
-			Source:  sourceTestTest,
-			Target:  Type{Package: pkgMock, Name: "MockTest"},
-			Methods: methodsTestTest,
-		}, {
-			Source:  sourceTestReporter,
-			Target:  Type{Package: pkgOther, Name: "Reporter"},
-			Methods: methodsTestReporter,
-		}},
-	},
-
-	"package test file": {
-		root: ".",
-		args: []string{
-			dirTest + "/" + fileTesting, "Test",
-			"--target=" + pkgOther, "Reporter=Reporter",
-		},
-		expectMocks: []*Mock{{
-			Source:  sourceTestTest,
-			Target:  Type{Package: pkgMock, Name: "MockTest"},
-			Methods: methodsTestTest,
-		}, {
-			Source:  sourceTestReporter,
-			Target:  Type{Package: pkgOther, Name: "Reporter"},
-			Methods: methodsTestReporter,
-		}},
-	},
-
-	"package gomock": {
-		args: []string{pathGoMock, "TestReporter"},
-		expectMocks: []*Mock{{
-			Source:  sourceGoMockTestReporter,
-			Target:  Type{Package: pkgMock, Name: "MockTestReporter"},
-			Methods: methodsGoMockTestReporter,
-		}},
-	},
-
-	"package test and gomock": {
-		args: []string{
-			pathTest, "Test", "Reporter", pathGoMock, "TestReporter",
-		},
-		expectMocks: []*Mock{{
-			Source:  sourceTestTest,
-			Target:  Type{Package: pkgMock, Name: "MockTest"},
-			Methods: methodsTestTest,
-		}, {
-			Source:  sourceTestReporter,
-			Target:  Type{Package: pkgMock, Name: "MockReporter"},
-			Methods: methodsTestReporter,
-		}, {
-			Source:  sourceGoMockTestReporter,
-			Target:  Type{Package: pkgMock, Name: "MockTestReporter"},
-			Methods: methodsGoMockTestReporter,
-		}},
-	},
-}
-
-func TestParse(t *testing.T) {
-	test.Map(t, testParseParams).Run(testParse)
-}
-
-func TestParseAdd(t *testing.T) {
-	test.Map(t, testParseAddParams).Run(testParse)
-}
-
 func testParse(t test.Test, param ParseParams) {
 	// Given
-	parser := NewParser(loader)
-	if param.root != "" {
-		loader := NewLoader().(*CachingLoader)
-		loader.Config.Dir = param.root
-		parser = NewParser(loader)
-	}
+	parser := NewParser(param.loader, param.target)
 
 	// When
 	mocks, errs := parser.Parse(param.args...)
@@ -377,4 +32,429 @@ func testParse(t test.Test, param ParseParams) {
 		assert.Empty(t, errs)
 	}
 	assert.Equal(t, param.expectMocks, mocks)
+}
+
+var testParseParams = map[string]ParseParams{
+	"no argument": {
+		loader: loaderTest,
+		args:   []string{},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"invalid argument": {
+		loader:      loaderTest,
+		args:        []string{"--unknown=any"},
+		expectError: []error{NewErrArgInvalid(0, "--unknown=any")},
+	},
+
+	"default file": {
+		loader: loaderTest,
+		args:   []string{},
+		target: Type{File: fileMock},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{File: fileMock}),
+			Methods: methodsMockIFace,
+		}},
+	},
+	"default path (ignored)": {
+		loader: loaderTest,
+		args:   []string{},
+		target: Type{Path: pathTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"default package": {
+		loader: loaderTest,
+		args:   []string{},
+		target: Type{Package: pkgMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFaceTest,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"default interface (ignore)": {
+		loader: loaderTest,
+		args:   []string{},
+		target: Type{Name: iface},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+
+	"source package explicit": {
+		loader: loaderTest,
+		args:   []string{"--source=" + pathMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"source package derived": {
+		loader: loaderTest,
+		args:   []string{pkgMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFaceTest,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"source package default": {
+		loader: loaderTest,
+		args:   []string{DefaultDir},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"source package invalid": {
+		loader: loaderMock,
+		args:   []string{pathUnknown},
+		expectError: []error{
+			NewErrArgFailure(0, "*", NewErrPackageParsing(
+				pathUnknown, newPackage(pathUnknown))),
+		},
+	},
+
+	"source directory explicit": {
+		loader: loaderMock,
+		args:   []string{"--source=" + dirMockTest + "/" + fileIFace},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"source directory derived": {
+		loader: loaderMock,
+		args:   []string{dirMockTest + "/" + fileIFace},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"source directory invalid": {
+		loader: loaderMock,
+		args:   []string{dirUnknown},
+		expectError: []error{
+			NewErrArgFailure(0, "*", NewErrPackageParsing(
+				dirUnknown, newPackage(dirUnknown))),
+		},
+	},
+
+	"source file explicit": {
+		loader: loaderMock,
+		args:   []string{"--source=" + dirMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"source file derived": {
+		loader: loaderMock,
+		args:   []string{dirMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"source file invalid": {
+		loader: loaderMock,
+		args:   []string{dirUnknown},
+		expectError: []error{
+			NewErrArgFailure(0, "*", NewErrPackageParsing(
+				dirUnknown, newPackage(dirUnknown))),
+		},
+	},
+
+	"target package explicit": {
+		loader: loaderTest,
+		args:   []string{"--target-pkg=" + pkgMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFaceTest,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"target package derived": {
+		loader: loaderTest,
+		args:   []string{"--target=" + pkgMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFaceTest,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"target package guessed": {
+		loader: loaderTest,
+		args:   []string{pkgMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFaceTest,
+			Methods: methodsMockIFace,
+		}},
+	},
+
+	"target path explicit": {
+		loader: loaderTest,
+		args:   []string{"--target-path=" + pathMock},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"target path derived": {
+		loader: loaderTest,
+		args:   []string{"--target=" + pathMock},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+
+	"target file explicit": {
+		loader: loaderTest,
+		args:   []string{"--target-file=" + fileMock},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{File: fileMock}),
+			Methods: methodsMockIFace,
+		}},
+	},
+	"target file derived": {
+		loader: loaderTest,
+		args:   []string{"--target=" + fileMock},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{File: fileMock}),
+			Methods: methodsMockIFace,
+		}},
+	},
+	"target file guessed": {
+		loader: loaderTest,
+		args:   []string{fileMock},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{File: fileMock}),
+			Methods: methodsMockIFace,
+		}},
+	},
+	"target file with path guessed": {
+		loader: loaderTest,
+		args:   []string{dirMock + "/" + fileMock},
+		expectMocks: []*Mock{{
+			Source: sourceIFaceAny,
+			Target: targetMockIFace.With(Type{
+				File: dirMock + "/" + fileMock,
+			}),
+			Methods: methodsMockIFace,
+		}},
+	},
+
+	"target file with package guessed": {
+		loader: loaderTest,
+		args:   []string{fileMock, pkgMockTest},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFaceTest.With(Type{File: fileMock}),
+			Methods: methodsMockIFace,
+		}},
+	},
+
+	"iface explicit": {
+		loader: loaderTest,
+		args:   []string{"--iface=" + iface},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"iface derived": {
+		loader: loaderTest,
+		args:   []string{iface},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"iface with mock": {
+		loader: loaderTest,
+		args:   []string{ifaceArg},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{Name: iface}),
+			Methods: methodsMockIFace,
+		}},
+	},
+	"iface with empty mock": {
+		loader: loaderTest,
+		args:   []string{iface + "="},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"iface with empty interface": {
+		loader: loaderTest,
+		args:   []string{"=Test"},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{Name: "Test"}),
+			Methods: methodsMockIFace,
+		}},
+	},
+	"iface twice different": {
+		loader: loaderTest,
+		args:   []string{ifaceArg, iface},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{Name: iface}),
+			Methods: methodsMockIFace,
+		}, {
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace,
+			Methods: methodsMockIFace,
+		}},
+	},
+	"iface multiple times": {
+		loader: loaderTest,
+		args:   []string{ifaceArg, ifaceArg, ifaceArg},
+		expectMocks: []*Mock{{
+			Source:  sourceIFaceAny,
+			Target:  targetMockIFace.With(Type{Name: iface}),
+			Methods: methodsMockIFace,
+		}},
+	},
+
+	"iface failure": {
+		loader: loaderTest,
+		args:   []string{pathMockTest, "Missing", "Struct", iface},
+		expectError: []error{
+			NewErrArgFailure(1, "Missing",
+				NewErrNotFound(pathMockTest, "Missing")),
+			NewErrArgFailure(2, "Struct",
+				NewErrNoIFace(pathMockTest, "Struct")),
+		},
+	},
+
+	"loading failure": {
+		// ensures package loading failure.
+		loader: NewLoader(dirUnknown),
+		expectError: []error{
+			NewErrArgFailure(-1, "*", NewErrLoading(DefaultDir, fmt.Errorf(
+				"err: chdir %s: no such file or directory: stderr: ",
+				dirUnknown))),
+		},
+	},
+}
+
+// TODO: var testParseXParams = map[string]ParseParams{}
+
+func TestParseMain(t *testing.T) {
+	test.Map(t, testParseParams).Run(testParse)
+}
+
+var testParseAddParams = map[string]ParseParams{
+	"package test": {
+		loader: loaderMock,
+		args: []string{
+			pathTest, "Test", "--target=" + pkgMockTest, "Reporter=Reporter",
+		},
+		expectMocks: []*Mock{{
+			Source:  sourceTestTest,
+			Target:  targetMockIFace.With(Type{Name: "MockTest"}),
+			Methods: methodsTestTest,
+		}, {
+			Source:  sourceTestReporter,
+			Target:  targetMockIFaceTest.With(Type{Name: "Reporter"}),
+			Methods: methodsTestReporter,
+		}},
+	},
+
+	"package test path": {
+		loader: loaderMock,
+		args: []string{
+			dirTest, "Test",
+			"--target=" + pkgMockTest, "Reporter=Reporter",
+		},
+		expectMocks: []*Mock{{
+			Source:  sourceTestTest,
+			Target:  targetMockIFace.With(Type{Name: "MockTest"}),
+			Methods: methodsTestTest,
+		}, {
+			Source:  sourceTestReporter,
+			Target:  targetMockIFaceTest.With(Type{Name: "Reporter"}),
+			Methods: methodsTestReporter,
+		}},
+	},
+
+	"package test file": {
+		loader: loaderMock,
+		args: []string{
+			dirTest + "/" + fileTesting, "Test",
+			"--target=" + pkgMockTest, "Reporter=Reporter",
+		},
+		expectMocks: []*Mock{{
+			Source:  sourceTestTest,
+			Target:  targetMockIFace.With(Type{Name: "MockTest"}),
+			Methods: methodsTestTest,
+		}, {
+			Source:  sourceTestReporter,
+			Target:  targetMockIFaceTest.With(Type{Name: "Reporter"}),
+			Methods: methodsTestReporter,
+		}},
+	},
+
+	"package gomock": {
+		loader: loaderMock,
+		args:   []string{pathGoMock, "TestReporter"},
+		expectMocks: []*Mock{{
+			Source:  sourceGoMockTestReporter,
+			Target:  targetMockIFace.With(Type{Name: "MockTestReporter"}),
+			Methods: methodsGoMockTestReporter,
+		}},
+	},
+
+	"package test and gomock": {
+		loader: loaderMock,
+		args: []string{
+			pathTest, "Test", "Reporter", pathGoMock, "TestReporter",
+		},
+		expectMocks: []*Mock{{
+			Source:  sourceTestTest,
+			Target:  targetMockIFace.With(Type{Name: "MockTest"}),
+			Methods: methodsTestTest,
+		}, {
+			Source:  sourceTestReporter,
+			Target:  targetMockIFace.With(Type{Name: "MockReporter"}),
+			Methods: methodsTestReporter,
+		}, {
+			Source:  sourceGoMockTestReporter,
+			Target:  targetMockIFace.With(Type{Name: "MockTestReporter"}),
+			Methods: methodsGoMockTestReporter,
+		}},
+	},
+}
+
+func TestParseAdd(t *testing.T) {
+	test.Map(t, testParseAddParams).Run(testParse)
 }

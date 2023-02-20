@@ -7,6 +7,10 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+func NewErrFileOpening(path string, err error) error {
+	return fmt.Errorf("opening file [name: %s]: %w", path, err)
+}
+
 var ErrPackageParsing = errors.New("package parsing")
 
 func NewErrPackageParsing(path string, pkgs []*packages.Package) error {
@@ -48,7 +52,7 @@ func NewErrNoIFace(path, name string) error {
 var ErrLoading = errors.New("loading")
 
 func NewErrLoading(path string, err error) error {
-	return fmt.Errorf("%w [path: %s] => %v",
+	return fmt.Errorf("%w [path: %s] => %w",
 		ErrLoading, path, err)
 }
 
@@ -66,7 +70,16 @@ func NewErrArgFailure(pos int, arg string, err error) error {
 		ErrArgFailure, pos, arg, err)
 }
 
-func NewErrAliasConflict(path, alias string) error {
-	return fmt.Errorf("alias conflict [path: %s, alias: %s]",
-		path, alias)
+var ErrAliasConflict = errors.New("alias conflict")
+
+func NewErrAliasConflict(imprt *Import, path string) error {
+	return fmt.Errorf("%w [alias: %s, path: %s <=> %s]",
+		ErrAliasConflict, imprt.Alias, imprt.Path, path)
+}
+
+var ErrIllegalImport = errors.New("illegal import")
+
+func NewErrIllegalImport(imprt *Import) error {
+	return fmt.Errorf("%w [alias: %s, path: %s]",
+		ErrIllegalImport, imprt.Alias, imprt.Path)
 }
