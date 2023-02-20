@@ -52,7 +52,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 		expectFile: &File{
 			Target: targetMockIFace,
 			Imports: []*Import{
-				importMockTest, ImportReflect, importTest, importMock,
+				importMockTest, ImportReflect, importMock, importTest,
 			},
 			Mocks: []*Mock{{
 				Methods: methodsMockIFaceFunc(pkgTest, pkgTesting, ""),
@@ -72,7 +72,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			Target: targetMockIFace,
 			Imports: []*Import{
 				ImportReflect, ImportGomock, ImportMock,
-				importMockTest, importTest, importMock,
+				importMockTest, importMock, importTest,
 			},
 			Mocks: []*Mock{{
 				Methods: methodsMockIFaceFunc(pkgTest, pkgTesting, ""),
@@ -83,7 +83,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 	"pre imported": {
 		target: targetMockIFace,
 		imports: []*Import{
-			ImportReflect, importMock, importMockTest, importTest,
+			ImportReflect, importTest, importMock, importMockTest,
 		},
 		mocks: []*Mock{{
 			Methods: methodsMockIFace,
@@ -91,7 +91,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 		expectFile: &File{
 			Target: targetMockIFace,
 			Imports: []*Import{
-				ImportReflect, importMock, importMockTest, importTest,
+				ImportReflect, importTest, importMock, importMockTest,
 			},
 			Mocks: []*Mock{{
 				Methods: methodsMockIFaceFunc(pkgTest, pkgTesting, ""),
@@ -110,7 +110,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			Imports: []*Import{
 				importAlias(pkgTest), {
 					Alias: aliasMock, Path: pathMockTest,
-				}, ImportReflect, importTest, importMock,
+				}, ImportReflect, importMock, importTest,
 			},
 			Mocks: []*Mock{{
 				Methods: methodsMockIFaceFunc(aliasMock, pkgTesting, ""),
@@ -135,7 +135,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 				{
 					Alias: aliasInt, Path: pathMockTest,
 				},
-				ImportReflect, importTest, importMock,
+				ImportReflect, importMock, importTest,
 			},
 			Mocks: []*Mock{{
 				Methods: methodsMockIFaceFunc(aliasInt, pkgTesting, ""),
@@ -160,7 +160,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 				{
 					Alias: aliasInt, Path: pathMockTest,
 				},
-				ImportReflect, importTest, importMock,
+				ImportReflect, importMock, importTest,
 			},
 			Mocks: []*Mock{{
 				Methods: methodsMockIFaceFunc(aliasInt, pkgTesting, ""),
@@ -189,7 +189,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 				{
 					Alias: aliasOrg, Path: pathMockTest,
 				},
-				ImportReflect, importTest, importMock,
+				ImportReflect, importMock, importTest,
 			},
 			Mocks: []*Mock{{
 				Methods: methodsMockIFaceFunc(aliasOrg, pkgTesting, ""),

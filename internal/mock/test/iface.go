@@ -14,7 +14,8 @@ import (
 // IFace is an interface for testing.
 type IFace interface {
 	CallA(value *Struct, args ...*reflect.Value) ([]any, error)
-	CallB(test test.Tester) (fn func([]*mock.File) []interface{}, err error)
+	CallB() (fn func([]*mock.File) []interface{}, err error)
+	CallC(test test.Tester)
 }
 
 // Struct is a non-interface for testing.
