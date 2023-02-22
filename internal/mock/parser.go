@@ -1,69 +1,20 @@
 package mock
 
 import (
-	"errors"
 	"go/token"
-	"go/types"
-	"os"
-	"path/filepath"
 	"strings"
-	"sync"
-
-	"golang.org/x/tools/go/packages"
 )
 
 const (
 	// Default directory for package loading.
-	DefaultDir = "."
+	DirDefault = "."
+	// Magic constant defining packages read from file.
+	ReadFromFile = "command-line-arguments"
+	// Default value of mock interface name pattern.
+	MockPatternDefault = "Mock*"
+	// Default value of interface regex matching pattern.
+	MatchPatternDefault = ".*"
 )
-
-// Parser is a mock setup command line argument parser.
-type Parser struct {
-	// A caching, reusable package loader.
-	loader Loader
-	// The default target definition for parsing.
-	target Type
-}
-
-// NewParser creates a new mock setup command line argument parser with loading
-// of test packages enabled or disabled.
-func NewParser(loader Loader, target Type) *Parser {
-	return &Parser{loader: loader, target: target}
-}
-
-// parse parses the command line arguments provided and returns a list of mock
-// stubs containing the necessary source and target information without method
-// data.
-func (parser *Parser) Parse(args ...string) ([]*Mock, []error) {
-	state := newParseState(parser)
-	for pos, arg := range args {
-		switch atype, arg := state.parseArgType(arg); atype {
-		case argTypeSource:
-			state.ensureIFace(pos)
-			state.source = Type{File: arg}
-		case argTypePackage:
-			state.target.Package = arg
-		case argTypePath:
-			state.target.Path = arg
-		case argTypeFile:
-			state.target.File = arg
-		case argTypeIFace:
-			for _, arg := range strings.Split(arg, ",") {
-				state.creatMocks(pos, arg)
-			}
-		default:
-			err := NewErrArgInvalid(pos, arg)
-			state.errs = append(state.errs, err)
-		}
-	}
-
-	state.ensureSource().
-		ensureIFace(len(args) - 1)
-	if len(state.errs) != 0 {
-		return nil, state.errs
-	}
-	return state.mocks, nil
-}
 
 // argType defines the command line argument types.
 type argType int
@@ -72,18 +23,37 @@ type argType int
 const (
 	// Unknown argument type that results in an error.
 	argTypeUnknown argType = iota
-	// Target package argument type (must be identifier).
-	argTypePackage
-	// Target file argument type (must end with `.go`).
-	argTypePath
-	// Target import path argument type (must resolve to a loadable package).
-	argTypeFile
-	// Source package, directory, or file argument type (very flexible).
-	argTypeSource
-	// Source and target interface argument type (must be list of identifier
-	// mappings).
+	// Invalid argument type that results in an not found error.
+	argTypeNotFound
+
+	// Target package argument type. Must be an identifier.
+	argTypeSourcePkg
+	// Source import path argument type. Must resolve to a loadable package.
+	argTypeSourcePath
+	// Source file or local path argument type. Must resolve to a loadable file
+	// or a package.
+	argTypeSourceFile
+
+	// Target package argument type. Must be an identifier.
+	argTypeTargetPkg
+	// Target import path argument type. Must resolve to a loadable package.
+	argTypeTargetPath
+	// Target file or path argument type. Must be a relative or absolute path
+	// containing a file. Auto detection requires and ending with `.go`.
+	argTypeTargetFile
+
+	// Source/target interface mapping argument type. Must be a list of
+	// identifier mappings.
 	argTypeIFace
 )
+
+// Parser is a mock setup command line argument parser.
+type Parser struct {
+	// A caching, reusable package loader.
+	loader Loader
+	// The default target definition for parsing.
+	target *Type
+}
 
 // ParseState is keeping the state during the parsing process.
 type ParseState struct {
@@ -96,62 +66,134 @@ type ParseState struct {
 	// Collected errors during parsing and package loading.
 	errs []error
 	// Source provides the actual source interface setup.
-	source Type
+	source *Type
 	// Target provides the actual target interface setup.
-	target Type
+	target *Type
 }
 
-// newParseState creates a new parse state for parsing.
-func newParseState(parser *Parser) *ParseState {
-	return &ParseState{
-		loader:  parser.loader,
-		source:  Type{},
-		target:  parser.target,
-		targets: map[Type]*Mock{},
-		mocks:   []*Mock{},
-		errs:    []error{},
-	}
+// NewParser creates a new mock setup command line argument parser with loading
+// of test packages enabled or disabled.
+func NewParser(loader Loader, target *Type) *Parser {
+	return &Parser{loader: loader, target: target}
 }
 
-// parseArgType parser the actual command line argument type from the command
-// line argument and returns the argument type together with the remaining
-// argument.
-func (state *ParseState) parseArgType(arg string) (argType, string) {
-	if strings.Index(arg, "--") == 0 {
-		equal := strings.Index(arg, "=")
-		flag, sarg := arg[2:equal], arg[equal+1:]
-		switch flag {
-		case "iface":
-			return argTypeIFace, sarg
-		case "source":
-			return argTypeSource, sarg
-		case "target":
-			if token.IsIdentifier(sarg) {
-				return argTypePackage, sarg
+// parse parses the command line arguments provided and returns a list of mock
+// stubs containing the necessary source and target information without method
+// data.
+func (parser *Parser) Parse(args ...string) ([]*Mock, []error) {
+	state := newParseState(parser)
+	for pos, arg := range args {
+		switch atype, arg := parser.argType(arg); atype {
+		case argTypeSourcePkg:
+			state.ensureIFace(pos - 1)
+			state.source.Package = arg
+		case argTypeSourcePath:
+			state.ensureIFace(pos - 1)
+			state.source = &Type{Path: arg}
+		case argTypeSourceFile:
+			state.ensureIFace(pos - 1)
+			state.source = &Type{File: arg}
+		case argTypeTargetPkg:
+			state.target.Package = arg
+		case argTypeTargetPath:
+			state.target.Path = arg
+		case argTypeTargetFile:
+			state.target.File = arg
+		case argTypeIFace:
+			for _, arg := range strings.Split(arg, ",") {
+				state.creatMocks(pos, arg)
 			}
-			pkgs, err := state.loader.LoadPackage(sarg)
-			if len(pkgs) > 0 && err == nil {
-				return argTypePath, sarg
-			}
-			return argTypeFile, sarg
-		case "target-pkg":
-			return argTypePackage, sarg
-		case "target-path":
-			return argTypePath, sarg
-		case "target-file":
-			return argTypeFile, sarg
+		case argTypeNotFound:
+			err := NewErrArgNotFound(pos, arg)
+			state.errs = append(state.errs, err)
 		default:
-			return argTypeUnknown, arg
+			err := NewErrArgInvalid(pos, arg)
+			state.errs = append(state.errs, err)
 		}
 	}
 
+	state.ensureSource().ensureIFace(len(args) - 1)
+	if len(state.errs) != 0 {
+		return nil, state.errs
+	}
+	return state.mocks, nil
+}
+
+// argType evaluates the a command line argument type by analysing argument
+// value and returns the argument type with the remaining argument value.
+func (parser *Parser) argType(arg string) (argType, string) {
+	if strings.Index(arg, "--") == 0 {
+		return parser.argTypeParse(arg)
+	}
+	return parser.argTypeGuess(arg)
+}
+
+// argTypeParse parses the type from the command line argument by looking at
+// the flag and returing the remaining argument value. If the flag is open for
+// ambiguaty, the concreat type is evaluated checking argument patterns and
+// trying to load related packages.
+func (parser *Parser) argTypeParse(arg string) (argType, string) {
+	equal := strings.Index(arg, "=")
+	flag, sarg := arg[2:equal], arg[equal+1:]
+	switch flag {
+	case "source":
+		if token.IsIdentifier(sarg) {
+			return argTypeSourcePkg, sarg
+		}
+		pkgs, err := parser.loader.Load(sarg).Get()
+		if len(pkgs) > 0 && err == nil {
+			if pkgs[0].PkgPath == ReadFromFile {
+				return argTypeSourceFile, sarg
+			}
+			return argTypeSourcePath, sarg
+		}
+		return argTypeNotFound, sarg
+
+	case "source-pkg":
+		return argTypeSourcePkg, sarg
+	case "source-path":
+		return argTypeSourcePath, sarg
+	case "source-file":
+		return argTypeSourceFile, sarg
+
+	case "target":
+		if token.IsIdentifier(sarg) {
+			return argTypeTargetPkg, sarg
+		}
+		pkgs, err := parser.loader.Load(sarg).Get()
+		if len(pkgs) > 0 && err == nil {
+			if pkgs[0].PkgPath == ReadFromFile {
+				return argTypeTargetFile, sarg
+			}
+			return argTypeTargetPath, sarg
+		}
+		return argTypeTargetFile, sarg
+
+	case "target-pkg":
+		return argTypeTargetPkg, sarg
+	case "target-path":
+		return argTypeTargetPath, sarg
+	case "target-file":
+		return argTypeTargetFile, sarg
+
+	case "iface":
+		return argTypeIFace, sarg
+	default:
+		return argTypeUnknown, arg
+	}
+}
+
+// argTypeGuess evaluates the argument type by analysing the argument values
+// and guessing their meaning by checking argument patterns and trying to load
+// related packages.
+func (parser *Parser) argTypeGuess(arg string) (argType, string) {
 	if strings.ContainsAny(arg, "=,") {
 		return argTypeIFace, arg
 	} else if token.IsIdentifier(arg) {
 		if token.IsExported(arg) {
 			return argTypeIFace, arg
 		}
-		return argTypePackage, arg
+		return argTypeTargetPkg, arg
 	}
 
 	if strings.HasSuffix(arg, ".go") {
@@ -160,10 +202,30 @@ func (state *ParseState) parseArgType(arg string) (argType, string) {
 			file = arg[index+1:]
 		}
 		if strings.HasPrefix(file, "mock_") {
-			return argTypeFile, arg
+			return argTypeTargetFile, arg
 		}
 	}
-	return argTypeSource, arg
+
+	pkgs, err := parser.loader.Load(arg).Get()
+	if len(pkgs) > 0 && err == nil {
+		if pkgs[0].PkgPath == ReadFromFile {
+			return argTypeSourceFile, arg
+		}
+		return argTypeSourcePath, arg
+	}
+	return argTypeNotFound, arg
+}
+
+// newParseState creates a new parse state for parsing.
+func newParseState(parser *Parser) *ParseState {
+	return &ParseState{
+		loader:  parser.loader,
+		source:  &Type{},
+		target:  parser.target.Copy(),
+		targets: map[Type]*Mock{},
+		mocks:   []*Mock{},
+		errs:    []error{},
+	}
 }
 
 // ensureSource checks the current source setup and derives the default package
@@ -171,74 +233,51 @@ func (state *ParseState) parseArgType(arg string) (argType, string) {
 // The default name is ensured when parsing the interface specific command line
 // arguments.
 func (state *ParseState) ensureSource() *ParseState {
-	if state.source.File == "" {
-		state.source.File = DefaultDir
-	}
-	return state.ensureType(&state.source)
-}
-
-// ensureTarget checks the current target setup and derives the default package
-// name and package path from the given target file, if the setup is missing.
-// The default name is ensured when parsing the interface specific command line
-// arguments.
-func (state *ParseState) ensureTarget() *ParseState {
-	return state.ensureType(&state.target)
-}
-
-// ensureType checks the current setup and derives the default package name and
-// package path from the given file, if the setup is missing. The default name
-// is ensured when parsing the interface command line arguments.
-func (state *ParseState) ensureType(ptype *Type) *ParseState {
-	// found no way to make filepath.Abs to provide an error.
-	file, _ := filepath.Abs(ptype.File)
-	if info, err := os.Stat(file); err != nil || !info.IsDir() {
-		file = filepath.Dir(file)
-	}
-
-	if pkgs, err := state.loader.LoadPackage(file); err == nil {
-		ptype.Path = pkgs[0].PkgPath
-		// TODO: support only valid package names!
-		if ptype.Package == "" {
-			ptype.Package = pkgs[0].Name
-		}
+	source := state.source
+	if source.File == "" && source.Path == "" {
+		source.File = DirDefault
 	}
 	return state
 }
 
-// ensuresArg checks and interface command line argument and if incomplete
-// extends it with the default interface and interfac mock names.
-func (state *ParseState) ensuresArg(arg string) string {
+// ensureIFace ensures that the last source setup was used to create at least
+// one mock stub before we continue with the next source package setup. If no
+// mock stub was created, a generic mock stub is created that mocks all
+// interfaces in the source package.
+func (state *ParseState) ensureIFace(pos int) {
+	if state.source.IsPartial() {
+		state.creatMocks(pos, "")
+	}
+}
+
+// ensureState ensures that the source and target are setup with package names,
+// package paths, and source interface and target mock name patthers from the
+// provided interface command line argument. If the command line argument is
+// incomplete the names are setup with the default source and target mock names.
+func (state *ParseState) ensureState(arg string) {
+	state.source.Update(state.loader)
+	state.target.Update(state.loader)
+
 	if arg == "" {
-		state.source.Name = "*"
-		state.target.Name = "Mock*"
-		return "*"
+		state.source.Name = MatchPatternDefault
+		state.target.Name = MockPatternDefault
+		return
 	}
 
 	index := strings.IndexAny(arg, "=")
 	switch index {
 	case -1:
 		state.source.Name = arg
-		state.target.Name = "Mock" + arg
+		state.target.Name = MockPatternDefault
 	case 0:
-		state.source.Name = "*"
+		state.source.Name = MatchPatternDefault
 		state.target.Name = arg[1:]
 	case len(arg) - 1:
 		state.source.Name = arg[:index]
-		state.target.Name = "Mock*"
+		state.target.Name = MockPatternDefault
 	default:
 		state.source.Name = arg[:index]
 		state.target.Name = arg[index+1:]
-	}
-	return arg
-}
-
-// ensureIFace ensures that the last source package was used to create at least
-// oone mock stub before we continue with the next source package. If now mock
-// stub was created, a generic mock stub is created that mocks all interfaces
-// in this package.
-func (state *ParseState) ensureIFace(pos int) {
-	if state.source.File != "" && state.source.Name == "" {
-		state.creatMocks(pos, "")
 	}
 }
 
@@ -248,161 +287,24 @@ func (state *ParseState) ensureIFace(pos int) {
 // interface name/pattern is provided it is assumed to be any interface in the
 // requested package.
 func (state *ParseState) creatMocks(pos int, arg string) {
-	arg = state.ensureSource().ensureTarget().ensuresArg(arg)
+	state.ensureState(arg)
 
-	ifaces, err := state.loader.LoadIFaces(state.source)
+	ifaces, err := state.loader.IFaces(state.source)
 	if err != nil {
 		state.errs = append(state.errs, NewErrArgFailure(pos, arg, err))
 	}
 
 	for _, iface := range ifaces {
-		target := state.target
+		target := *state.target
 		target.Name = strings.ReplaceAll(target.Name, "*", iface.Source.Name)
 		if _, ok := state.targets[target]; !ok {
 			mock := &Mock{
 				Source:  iface.Source,
-				Target:  target,
+				Target:  &target,
 				Methods: iface.Methods,
 			}
 			state.targets[target] = mock
 			state.mocks = append(state.mocks, mock)
 		}
 	}
-}
-
-// Loader is the generic interface of the package and interface loader.
-type Loader interface {
-	// LoadPackage is loading the go-packages for the given path. The details
-	// depend on the backing package loader configuration.
-	LoadPackage(path string) ([]*packages.Package, error)
-	// LoadIFaces is loading the go-packages for the given source and extracts
-	// the interfaces matching the interface naming pattern.
-	LoadIFaces(source Type) ([]*IFace, error)
-}
-
-// CachingLoader allows to efficient load, parse, and analyze packages as well
-// as interfaces. The loaded packages are chached by request path for repeated
-// access and analyzing. The loader is safe to be used concurrently.
-type CachingLoader struct {
-	// Configuration for package loading.
-	Config *packages.Config
-	// Cache for packages mapped to load paths.
-	pkgs map[string][]*packages.Package
-	// Mutext to support concurrent usage.
-	mutex sync.Mutex
-}
-
-// NewLoader creates a new caching package loader, that allows efficient access
-// to types from files and packages. By default it provides also access to the
-// test packages and searches these for interfaces. To disable you need to set
-// `loader.(*CachingLoader).Config.Tests` to `false`.
-func NewLoader(dir string) Loader {
-	return &CachingLoader{
-		Config: &packages.Config{
-			Mode: packages.NeedName |
-				packages.NeedTypes |
-				packages.NeedSyntax,
-			Tests: true,
-			Dir:   dir,
-		},
-		pkgs: map[string][]*packages.Package{},
-	}
-}
-
-// LoadPackage is loading the go-packages for the given path and caching them
-// for repeated requests. The details provided by the package information
-// depend on the package loader configuration. By default only types and names
-// are loaded.
-func (loader *CachingLoader) LoadPackage(
-	path string,
-) ([]*packages.Package, error) {
-	return loader.lookupPackage(path)
-}
-
-// LoadIFaces is loading the go-packages for the given source and extracts the
-// interfaces matching the interface naming pattern.
-func (loader *CachingLoader) LoadIFaces(source Type) ([]*IFace, error) {
-	pkgs, err := loader.lookupPackage(source.File)
-	if err != nil {
-		return nil, err
-	} else if source.Name == "*" {
-		return loader.lookupIFacesAny(pkgs, source)
-	}
-	return loader.lockupIFacesNamed(pkgs, source)
-}
-
-func (loader *CachingLoader) lookupPackage(
-	path string,
-) ([]*packages.Package, error) {
-	// Ensures loading and storing of packages, not files.
-	if info, err := os.Stat(path); err == nil && !info.IsDir() {
-		path = filepath.Dir(path)
-	}
-
-	loader.mutex.Lock()
-	if pkgs, ok := loader.pkgs[path]; ok {
-		loader.mutex.Unlock()
-		return pkgs, nil
-	}
-	loader.mutex.Unlock()
-
-	if pkgs, err := packages.Load(loader.Config, path); err != nil {
-		return nil, NewErrLoading(path, err)
-	} else if err := NewErrPackageParsing(path, pkgs); err != nil {
-		return nil, err
-	} else {
-		loader.mutex.Lock()
-		loader.pkgs[path] = pkgs
-		loader.mutex.Unlock()
-		return pkgs, nil
-	}
-}
-
-func (loader *CachingLoader) lookupIFace(
-	pkg *packages.Package, name string,
-) (*types.TypeName, *types.Interface, error) {
-	if object := pkg.Types.Scope().Lookup(name); object == nil {
-		return nil, nil, NewErrNotFound(pkg.PkgPath, name)
-	} else if iface, ok := object.Type().Underlying().(*types.Interface); !ok {
-		return nil, nil, NewErrNoIFace(pkg.PkgPath, name)
-	} else if named, ok := object.(*types.TypeName); !ok {
-		return nil, nil, NewErrNoNameType(pkg.PkgPath, name)
-	} else {
-		return named, iface, nil
-	}
-}
-
-func (loader *CachingLoader) lockupIFacesNamed(
-	pkgs []*packages.Package, source Type,
-) ([]*IFace, error) {
-	ifaces := []*IFace{}
-	for _, pkg := range pkgs {
-		name, iface, err := loader.lookupIFace(pkg, source.Name)
-		if err == nil {
-			ifaces = append(ifaces, NewIFace(name, pkg.Fset, iface))
-		} else if errors.Is(err, ErrNoIFace) {
-			return nil, err
-		}
-	}
-
-	if len(ifaces) == 0 {
-		return ifaces, NewErrNotFound(source.File, source.Name)
-	}
-	return ifaces, nil
-}
-
-func (loader *CachingLoader) lookupIFacesAny(
-	pkgs []*packages.Package, source Type, //nolint:unparam
-) ([]*IFace, error) {
-	ifaces := []*IFace{}
-	for _, pkg := range pkgs {
-		for _, name := range pkg.Types.Scope().Names() {
-			name, iface, err := loader.lookupIFace(pkg, name)
-			if err == nil {
-				// TODO: filter for matching name and file patterns
-				ifaces = append(ifaces, NewIFace(name, pkg.Fset, iface))
-			}
-		}
-	}
-	return ifaces, nil
 }

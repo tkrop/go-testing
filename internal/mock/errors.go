@@ -7,46 +7,39 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var ErrFileOpening = errors.New("file opening")
+
 func NewErrFileOpening(path string, err error) error {
-	return fmt.Errorf("opening file [name: %s]: %w", path, err)
-}
-
-var ErrPackageParsing = errors.New("package parsing")
-
-func NewErrPackageParsing(path string, pkgs []*packages.Package) error {
-	errs := []packages.Error{}
-	for _, pkg := range pkgs {
-		if len(pkg.Errors) != 0 {
-			errs = append(errs, pkg.Errors...)
-		}
-	}
-
-	if len(errs) != 0 {
-		return fmt.Errorf("%w [path: %s] => %v",
-			ErrPackageParsing, path, errs)
-	}
-	return nil
+	return fmt.Errorf("%w [name: %s]: %w",
+		ErrFileOpening, path, err)
 }
 
 var ErrNotFound = errors.New("not found")
 
-func NewErrNotFound(path, name string) error {
-	return fmt.Errorf("%w [path: %s, name: %s]",
-		ErrNotFound, path, name)
+func NewErrNotFound(source *Type, name string) error {
+	return fmt.Errorf("%w [path: %s (%s), name: %s]",
+		ErrNotFound, source.Path, source.File, name)
 }
 
 var ErrNoNameType = errors.New("no name type")
 
-func NewErrNoNameType(path, name string) error {
-	return fmt.Errorf("%w [path: %s, name: %s]",
-		ErrNoNameType, path, name)
+func NewErrNoNameType(source *Type, name string) error {
+	return fmt.Errorf("%w [path: %s (%s), name: %s]",
+		ErrNoNameType, source.Path, source.File, name)
 }
 
 var ErrNoIFace = errors.New("no interface")
 
-func NewErrNoIFace(path, name string) error {
-	return fmt.Errorf("%w [path: %s, name: %s]",
-		ErrNoIFace, path, name)
+func NewErrNoIFace(source *Type, name string) error {
+	return fmt.Errorf("%w [path: %s (%s), name: %s]",
+		ErrNoIFace, source.Path, source.File, name)
+}
+
+var ErrMatcherInvalid = errors.New("matcher invalid")
+
+func NewErrMatcherInvalid(source *Type, err error) error {
+	return fmt.Errorf("%w [file: %s, name: %s]: %w",
+		ErrMatcherInvalid, source.File, source.Name, err)
 }
 
 var ErrLoading = errors.New("loading")
@@ -56,11 +49,16 @@ func NewErrLoading(path string, err error) error {
 		ErrLoading, path, err)
 }
 
-var ErrInvalidArg = errors.New("argument invalid")
+var ErrArgInvalid = errors.New("argument invalid")
 
 func NewErrArgInvalid(pos int, arg string) error {
 	return fmt.Errorf("%w [pos: %d, arg: %s]",
-		ErrInvalidArg, pos, arg)
+		ErrArgInvalid, pos, arg)
+}
+
+func NewErrArgNotFound(pos int, arg string) error {
+	return fmt.Errorf("%w [pos: %d, arg: %s]: %v",
+		ErrArgInvalid, pos, arg, ErrNotFound)
 }
 
 var ErrArgFailure = errors.New("argument failure")
@@ -82,4 +80,21 @@ var ErrIllegalImport = errors.New("illegal import")
 func NewErrIllegalImport(imprt *Import) error {
 	return fmt.Errorf("%w [alias: %s, path: %s]",
 		ErrIllegalImport, imprt.Alias, imprt.Path)
+}
+
+var ErrPackageParsing = errors.New("package parsing")
+
+func NewErrPackageParsing(path string, pkgs []*packages.Package) error {
+	errs := []packages.Error{}
+	for _, pkg := range pkgs {
+		if len(pkg.Errors) != 0 {
+			errs = append(errs, pkg.Errors...)
+		}
+	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("%w [path: %s] => %v",
+			ErrPackageParsing, path, errs)
+	}
+	return nil
 }

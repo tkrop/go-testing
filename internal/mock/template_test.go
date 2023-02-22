@@ -32,24 +32,24 @@ var (
 	}()
 )
 
-type GenerateParams struct {
+type TemplateParams struct {
 	mocks  []*Mock
 	expect string
 }
 
-var testGenerateParams = map[string]GenerateParams{
+var testTemplateParams = map[string]TemplateParams{
 	"iface no methods": {
 		mocks: []*Mock{{
 			Source: sourceIFaceAny,
-			Target: targetMockIFace.With(Type{File: "-"}),
+			Target: targetMockTestIFace.With(&Type{File: "-"}),
 		}},
 		expect: expectIFaceStub,
 	},
 	"iface with methods": {
 		mocks: []*Mock{{
 			Source:  sourceIFaceAny,
-			Target:  targetMockIFace.With(Type{File: "-"}),
-			Methods: methodsMockIFace,
+			Target:  targetMockTestIFace.With(&Type{File: "-"}),
+			Methods: methodsLoadIFace,
 		}},
 		expect: expectIFace,
 	},
@@ -59,8 +59,8 @@ func TestTemplate(t *testing.T) {
 	temp, imports, err := NewTemplate()
 	require.NoError(t, err)
 
-	test.Map(t, testGenerateParams).
-		Run(func(t test.Test, param GenerateParams) {
+	test.Map(t, testTemplateParams).
+		Run(func(t test.Test, param TemplateParams) {
 			// Given
 			imports := clone.Clone(imports).([]*Import)
 			mocks := clone.Clone(param.mocks).([]*Mock)

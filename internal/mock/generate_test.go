@@ -1,4 +1,4 @@
-package main
+package mock_test
 
 import (
 	"io"
@@ -12,35 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tkrop/go-testing/internal/mock"
 	"github.com/tkrop/go-testing/test"
+
+	. "github.com/tkrop/go-testing/internal/mock"
 )
 
-var (
-	// Test directory.
-	testDir = func() string {
-		dir, err := os.MkdirTemp("", "go-testing-*")
-		if err != nil {
-			panic(err)
-		}
-		return dir
-	}()
-
-	// Expected IFace mock.
-	expectIFace = func() string {
-		file, err := os.ReadFile("../../internal/mock/mock_iface_test.gox")
-		if err != nil {
-			panic(err)
-		}
-		return string(file)
-	}()
-
-	pathTest    = "github.com/tkrop/go-testing/internal/mock/test"
-	pathUnknown = "github.com/tkrop/go-testing/internal/mock/unknown"
-	fileUnknown = filepath.Join(testDir, "unknown", "mock_iface_test.go")
-)
-
-type MainParam struct {
+type GenerateParams struct {
 	file         string
 	args         []string
 	expectFile   string
@@ -49,40 +26,52 @@ type MainParam struct {
 	expectCode   int
 }
 
-var testMainParams = map[string]MainParam{
+var (
+	// Test directory.
+	testDirGenerate = func() string {
+		dir, err := os.MkdirTemp("", "go-testing-*")
+		if err != nil {
+			panic(err)
+		}
+		return dir
+	}()
+
+	fileFailure = filepath.Join(testDirGenerate, dirTest, fileUnknown)
+)
+
+var testGenerateParams = map[string]GenerateParams{
 	"iface": {
-		file:       filepath.Join(testDir, "mock_iface_test.go"),
+		file:       filepath.Join(testDirGenerate, MockFileDefault),
 		args:       []string{pathTest},
 		expectFile: expectIFace,
 	},
 
 	"failure parsing": {
-		file: filepath.Join(testDir, "mock_iface_test.go"),
+		file: filepath.Join(testDirGenerate, MockFileDefault),
 		args: []string{pathUnknown},
-		expectStderr: "argument failure [pos: 3, arg: *] => " +
-			"package parsing [path: " + pathUnknown + "] => " +
-			"[-: no required module provides package " + pathUnknown +
-			"; to add it:\n\tgo get " + pathUnknown + "]\n",
+		expectStderr: "argument invalid [pos: 3, arg: " + pathUnknown +
+			"]: not found\n",
 		expectCode: 1,
 	},
 
 	"failure opening": {
-		file: fileUnknown,
+		file: fileFailure,
 		args: []string{pathTest},
-		expectStderr: mock.NewErrFileOpening(fileUnknown, &fs.PathError{
-			Op: "open", Path: fileUnknown, Err: error(syscall.ENOENT),
+		expectStderr: NewErrFileOpening(fileFailure, &fs.PathError{
+			Op: "open", Path: fileFailure, Err: error(syscall.ENOENT),
 		}).Error() + "\ninvalid argument\ninvalid argument\n",
-		expectCode: 3,
+		expectCode: 2,
 	},
 }
 
-func TestMain(t *testing.T) {
-	test.Map(t, testMainParams).
-		Run(func(t test.Test, param MainParam) {
+func TestGenerate(t *testing.T) {
+	gen := NewGenerator(DirDefault, TargetDefault)
+	test.Map(t, testGenerateParams).
+		Run(func(t test.Test, param GenerateParams) {
 			// Given
 			args := []string{
-				"--target-pkg=mock",
-				"--target-path=github.com/tkrop/go-testing/internal/mock",
+				"--target-pkg=" + pkgMockTest,
+				"--target-path=" + pathMock,
 			}
 
 			if param.file != "" {
@@ -99,7 +88,7 @@ func TestMain(t *testing.T) {
 			// When
 			code := atomic.Int32{}
 			go func() {
-				ret := run(outWriter, errWriter, args...)
+				ret := gen.Generate(outWriter, errWriter, args...)
 				code.Store(int32(ret))
 				outWriter.Close()
 				errWriter.Close()
@@ -122,6 +111,6 @@ func TestMain(t *testing.T) {
 			assert.Equal(t, param.expectCode, int(code.Load()))
 		}).
 		Cleanup(func() {
-			os.RemoveAll(testDir)
+			os.RemoveAll(testDirGenerate)
 		})
 }

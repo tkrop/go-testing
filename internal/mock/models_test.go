@@ -20,6 +20,16 @@ import (
 
 //go:generate mockgen -package=mock_test -destination=mock_template_test.go -source=template.go Template
 
+var (
+	targetDefault = &Type{
+		Package: pkgMock, Path: pathMock, File: fileMock,
+	}
+	targetOtherPkg  = targetDefault.With(&Type{Package: pkgMockTest})
+	targetOtherPath = targetDefault.With(&Type{Path: pathTest})
+	targetOtherName = targetDefault.With(nameIFace)
+	targetOtherFile = targetDefault.With(&Type{File: fileOther})
+)
+
 func Execute(writer io.Writer, file *File, err error) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockTemplate).EXPECT().
@@ -40,19 +50,6 @@ type NewFilesParams struct {
 	mocks       []*Mock
 	expectFiles []*File
 }
-
-var (
-	targetDefault = Type{
-		Package: pkgMock, Path: pathMock,
-		File: filepath.Join(dirMock, fileMock),
-	}
-	targetOtherPkg  = targetDefault.With(Type{Package: pkgMockTest})
-	targetOtherPath = targetDefault.With(Type{Path: pathMockTest})
-	targetOtherName = targetDefault.With(Type{Name: iface})
-	targetOtherFile = targetDefault.With(Type{
-		File: filepath.Join(dirOther, fileOther),
-	})
-)
 
 var testNewFilesParams = map[string]NewFilesParams{
 	"target once": {
@@ -130,8 +127,11 @@ var testNewFilesParams = map[string]NewFilesParams{
 func TestNewFiles(t *testing.T) {
 	test.Map(t, testNewFilesParams).
 		Run(func(t test.Test, param NewFilesParams) {
+			// Given
+			mocks := clone.Clone(param.mocks).([]*Mock)
+
 			// When
-			files := NewFiles(param.mocks)
+			files := NewFiles(mocks)
 
 			// Then
 			assert.Equal(t, param.expectFiles, files)
@@ -140,7 +140,7 @@ func TestNewFiles(t *testing.T) {
 
 var (
 	// Test directory.
-	testDir = func() string {
+	testDirModels = func() string {
 		dir, err := os.MkdirTemp("", "go-testing-*")
 		if err != nil {
 			panic(err)
@@ -148,10 +148,10 @@ var (
 		return dir
 	}()
 
-	targetStdout = Type{Package: pkgMock, Path: pathMock, File: "-"}
-	targetCustom = Type{
+	targetStdout = &Type{Package: pkgMock, Path: pathMock, File: "-"}
+	targetCustom = &Type{
 		Package: pkgMock, Path: pathMock,
-		File: filepath.Join(testDir, fileMock),
+		File: filepath.Join(testDirModels, fileMock),
 	}
 	fileStdout   = &File{Target: targetStdout}
 	fileCustom   = &File{Target: targetCustom}
@@ -184,7 +184,7 @@ var testFileParams = map[string]FileParams{
 			Source: sourceIFaceAny,
 			Target: targetCustom,
 		}},
-		expectName: filepath.Join(testDir, fileMock),
+		expectName: filepath.Join(testDirModels, fileMock),
 	},
 
 	"file error": {
@@ -250,6 +250,6 @@ func TestFile(t *testing.T) {
 			assert.Equal(t, param.expectClose, err)
 		}).
 		Cleanup(func() {
-			os.RemoveAll(testDir)
+			os.RemoveAll(testDirModels)
 		})
 }

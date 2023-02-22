@@ -13,8 +13,8 @@ import (
 
 var (
 	importMock     = &Import{Path: pathMock}
-	importMockTest = &Import{Alias: pkgTest, Path: pathMockTest}
-	importTest     = &Import{Alias: pkgTesting, Path: pathTest}
+	importMockTest = &Import{Alias: pkgTest, Path: pathTest}
+	importTest     = &Import{Alias: pkgTesting, Path: pathTesting}
 	importIllegal  = &Import{Alias: pkgMock, Path: pathMock}
 )
 
@@ -24,7 +24,7 @@ func importAlias(alias string) *Import {
 
 type FileBuilderParams struct {
 	setup      mock.SetupFunc
-	target     Type
+	target     *Type
 	imports    []*Import
 	mocks      []*Mock
 	expectFile *File
@@ -33,7 +33,7 @@ type FileBuilderParams struct {
 var testFileBuilderParams = map[string]FileBuilderParams{
 	"import double": {
 		setup: test.Panic(NewErrAliasConflict(
-			importMockTest, pathMockTest)),
+			importMockTest, pathTest)),
 		target:  targetMockIFace,
 		imports: []*Import{importMockTest, importMockTest},
 	},
@@ -47,7 +47,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 	"no imports": {
 		target: targetMockIFace,
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 		expectFile: &File{
 			Target: targetMockIFace,
@@ -66,7 +66,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			ImportReflect, ImportGomock, ImportMock,
 		},
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 		expectFile: &File{
 			Target: targetMockIFace,
@@ -86,7 +86,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			ImportReflect, importTest, importMock, importMockTest,
 		},
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 		expectFile: &File{
 			Target: targetMockIFace,
@@ -103,13 +103,13 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 		target:  targetMockIFace,
 		imports: []*Import{importAlias(pkgTest)},
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 		expectFile: &File{
 			Target: targetMockIFace,
 			Imports: []*Import{
 				importAlias(pkgTest), {
-					Alias: aliasMock, Path: pathMockTest,
+					Alias: aliasMock, Path: pathTest,
 				}, ImportReflect, importMock, importTest,
 			},
 			Mocks: []*Mock{{
@@ -125,7 +125,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			importAlias(aliasMock),
 		},
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 		expectFile: &File{
 			Target: targetMockIFace,
@@ -133,7 +133,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 				importAlias(pkgTest),
 				importAlias(aliasMock),
 				{
-					Alias: aliasInt, Path: pathMockTest,
+					Alias: aliasInt, Path: pathTest,
 				},
 				ImportReflect, importMock, importTest,
 			},
@@ -150,7 +150,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			importAlias(aliasMock),
 		},
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 		expectFile: &File{
 			Target: targetMockIFace,
@@ -158,7 +158,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 				importAlias(pkgTest),
 				importAlias(aliasMock),
 				{
-					Alias: aliasInt, Path: pathMockTest,
+					Alias: aliasInt, Path: pathTest,
 				},
 				ImportReflect, importMock, importTest,
 			},
@@ -177,7 +177,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			importAlias(aliasRepo),
 		},
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 		expectFile: &File{
 			Target: targetMockIFace,
@@ -187,7 +187,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 				importAlias(aliasInt),
 				importAlias(aliasRepo),
 				{
-					Alias: aliasOrg, Path: pathMockTest,
+					Alias: aliasOrg, Path: pathTest,
 				},
 				ImportReflect, importMock, importTest,
 			},
@@ -199,8 +199,8 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 
 	"import conflict": {
 		setup: test.Panic(NewErrAliasConflict(&Import{
-			Alias: aliasGitHub, Path: pathMockTest,
-		}, pathMockTest)),
+			Alias: aliasGitHub, Path: pathTest,
+		}, pathTest)),
 		target: targetMockIFace,
 		imports: []*Import{
 			importAlias(pkgTest),
@@ -212,12 +212,10 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 			importAlias(aliasGitHub),
 		},
 		mocks: []*Mock{{
-			Methods: methodsMockIFace,
+			Methods: methodsLoadIFace,
 		}},
 	},
 }
-
-// TODO: var testFileBuilderXParams = map[string]FileBuilderParams{}
 
 func TestFileBuilder(t *testing.T) {
 	test.Map(t, testFileBuilderParams).

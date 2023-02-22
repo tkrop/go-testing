@@ -14,26 +14,34 @@ const (
 	pkgMock     = "mock"
 	pkgMockTest = "mock_test"
 	pkgTest     = "test"
+	pkgTestTest = "test_test"
+	pkgUnknown  = "unknown"
+	pkgInternal = "internal"
 	pkgTesting  = "testing_test"
 	pkgGoMock   = "gomock"
 
-	dirMock     = "../mock"
-	dirMockTest = "../mock/test"
-	dirOther    = "../other"
-	dirUnknown  = "../unknown"
-	dirTest     = "../../test"
+	dirUp   = ".."
+	dirTop  = "../../.."
+	dirMock = "mock"
+
+	dirTest    = "./test"
+	dirOther   = "../other"
+	dirUnknown = "../unknown"
+	dirTesting = "../../test"
 
 	pathMock     = "github.com/tkrop/go-testing/internal/mock"
-	pathMockTest = "github.com/tkrop/go-testing/internal/mock/test"
+	pathTest     = "github.com/tkrop/go-testing/internal/mock/test"
 	pathUnknown  = "github.com/tkrop/go-testing/internal/unknown"
-	pathTest     = "github.com/tkrop/go-testing/test"
+	pathInternal = "github.com/tkrop/go-testing/internal"
+	pathTesting  = "github.com/tkrop/go-testing/test"
 	pathGoMock   = "github.com/golang/mock/gomock"
 
-	fileIFace   = "iface.go"
-	fileMock    = "mock_test.go"
-	fileOther   = "mock_other_test.go"
-	fileUnknown = "unnkown_test.go"
-	fileTesting = "testing.go"
+	fileIFace    = "iface.go"
+	fileMock     = "mock_test.go"
+	fileOther    = "mock_other_test.go"
+	fileTemplate = "mock_template_test.go"
+	fileUnknown  = "unnkown_test.go"
+	fileTesting  = "testing.go"
 
 	aliasMock   = "mock_" + pkgTest
 	aliasInt    = "internal_" + aliasMock
@@ -42,22 +50,31 @@ const (
 	aliasCom    = "com_" + aliasOrg
 	aliasGitHub = "github_" + aliasCom
 
-	ifaceAny     = "*"
-	ifaceAnyMock = "Mock*"
-	iface        = "IFace"
-	ifaceMock    = "MockIFace"
-	ifaceArg     = iface + "=" + iface
+	iface     = "IFace"
+	ifaceMock = "MockIFace"
+	ifaceArg  = iface + "=" + iface
 )
 
 var (
 	errAny = errors.New("any error")
 
-	targetMockIFace = Type{
-		Package: pkgMock, Path: pathMock, Name: ifaceMock,
-	}
-	targetMockIFaceTest = Type{
-		Package: pkgMockTest, Path: pathMock, Name: ifaceMock,
-	}
+	nameIFace     = &Type{Name: iface}
+	nameIFaceMock = &Type{Name: ifaceMock}
+
+	targetTest     = &Type{Package: pkgTest, Path: pathTest}
+	targetTestTest = &Type{Package: pkgTestTest, Path: pathTest}
+	targetTesting  = &Type{Package: pkgTest, Path: pathTesting}
+	targetMock     = &Type{Package: pkgMock, Path: pathMock}
+	targetMockTest = &Type{Package: pkgMockTest, Path: pathMock}
+	targetUnknown  = &Type{Package: pkgUnknown, Path: pathUnknown}
+	targetInternal = &Type{Package: pkgInternal, Path: pathInternal}
+
+	targetTestIFace     = targetTest.With(nameIFaceMock)
+	targetTestTestIFace = targetTestTest.With(nameIFaceMock)
+
+	targetMockIFace     = targetMock.With(nameIFaceMock)
+	targetMockTestIFace = targetMockTest.With(nameIFaceMock)
+	targetTestingIFace  = targetTesting.With(nameIFaceMock)
 )
 
 func newPackage(path string) []*packages.Package {
@@ -111,38 +128,39 @@ func methodsMockIFaceFunc(mocktest, test, mock string) []*Method {
 
 var (
 	// Use two different singleton loaders.
-	loaderMock = NewLoader(".")
-	loaderTest = NewLoader(dirMockTest)
+	loaderMock = NewLoader(DirDefault)
+	loaderTest = NewLoader(dirTest)
+	loaderFail = NewLoader(dirUnknown)
 
 	// Use singleton template for testing.
 	template = MustTemplate()
 
-	pkgParsedMock   = newPackage(pathMockTest)[0]
-	pkgParsedTest   = newPackage(pathTest)[0]
+	pkgParsedMock   = newPackage(pathTest)[0]
+	pkgParsedTest   = newPackage(pathTesting)[0]
 	pkgParsedGoMock = newPackage(pathGoMock)[0]
 
-	sourceIFaceAny = Type{
-		Path: pathMockTest, File: getMethod(pkgParsedMock, iface),
+	sourceIFaceAny = &Type{
+		Path: pathTest, File: getMethod(pkgParsedMock, iface),
 		Package: pkgTest, Name: iface,
 	}
-	sourceGoMockTestReporter = Type{
+	sourceGoMockTestReporter = &Type{
 		Path: pathGoMock, Package: pkgGoMock,
 		File: getMethod(pkgParsedGoMock, "TestReporter"),
 		Name: "TestReporter",
 	}
-	sourceTestTest = Type{
-		Package: pkgTest, Path: pathTest,
+	sourceTestTest = &Type{
+		Package: pkgTest, Path: pathTesting,
 		File: getMethod(pkgParsedTest, "Test"),
 		Name: "Test",
 	}
-	sourceTestReporter = Type{
-		Path: pathTest, Package: pkgTest,
+	sourceTestReporter = &Type{
+		Path: pathTesting, Package: pkgTest,
 		File: getMethod(pkgParsedTest, "Reporter"),
 		Name: "Reporter",
 	}
 
-	methodsMockIFace = methodsMockIFaceFunc(
-		pathMockTest, pathTest, pathMock)
+	methodsLoadIFace = methodsMockIFaceFunc(
+		pathTest, pathTesting, pathMock)
 
 	methodsTestTest = []*Method{{
 		Name: "Errorf",

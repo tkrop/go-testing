@@ -6,48 +6,145 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 // Type is a generic type information.
 type Type struct {
+	// Package of the interface.
+	Package string
 	// Path of the interface.
 	Path string
 	// File name of the interface.
 	File string
-	// Package of the interface.
-	Package string
 	// Name of the interface.
 	Name string
 }
 
-// With extends a type information with the given type information in all
-// places that are not empty.
-func (t Type) With(etype Type) Type {
-	if etype.Package != "" {
-		t.Package = etype.Package
-	}
-	if etype.Path != "" {
-		t.Path = etype.Path
-	}
-	if etype.File != "" {
-		t.File = etype.File
-	}
-	if etype.Name != "" {
-		t.Name = etype.Name
-	}
-	return t
-}
-
 // NewType creates a new type information based on the given named type.
-func NewType(name *types.TypeName, fset *token.FileSet) Type {
+func NewType(name *types.TypeName, fset *token.FileSet) *Type {
 	pos := fset.Position(name.Pos())
-	return Type{
+	return &Type{
 		Path:    name.Pkg().Path(),
 		File:    fmt.Sprintf("%s:%d", filepath.Base(pos.Filename), pos.Line),
 		Package: name.Pkg().Name(),
 		Name:    name.Name(),
 	}
+}
+
+func (t *Type) Copy() *Type {
+	if t != nil {
+		return &Type{
+			Package: t.Package, Path: t.Path,
+			File: t.File, Name: t.Name,
+		}
+	}
+	return &Type{}
+}
+
+// With extends a type information with the given type information in all
+// places that are not empty.
+func (t *Type) With(etype *Type) *Type {
+	nt := t.Copy()
+	if etype.Package != "" {
+		nt.Package = etype.Package
+	}
+	if etype.Path != "" {
+		nt.Path = etype.Path
+	}
+	if etype.File != "" {
+		nt.File = etype.File
+	}
+	if etype.Name != "" {
+		nt.Name = etype.Name
+	}
+	return nt
+}
+
+// IsPartial states whether the type is prepared and needs to be processed
+// before parsing can be finihed.
+func (t *Type) IsPartial() bool {
+	return (t.Path != "" || t.File != "") && t.Name == ""
+}
+
+// Update updates the type with the information provided by given packages
+// using the package path and the package name. If a previous package name
+// is compared with names of the provided packages and only replaced against
+// the name of the first package, if it does not match any package.
+func (t *Type) Update(loader Loader) {
+	pkgs, _ := loader.Search(t).Get()
+	if len(pkgs) > 0 {
+		path := pkgs[0].PkgPath
+		if !filepath.IsAbs(path) {
+			t.Path = path
+		}
+
+		name := pkgs[0].Name
+		if !t.IsPackageMatch(pkgs) && name != "" {
+			// TODO: switch default to <pkg>_test
+			// if !strings.HasSuffix(name, "_test") {
+			// 	name = name + "_test"
+			// }
+			t.Package = name
+		}
+	}
+}
+
+// IsPackageMatch chechs whether on of the provided package names matches
+// the package name of the type. If the package has no name, the default
+// name is computed and compared.
+func (t *Type) IsPackageMatch(pkgs []*packages.Package) bool {
+	name := t.Package
+	if name == "" {
+		return false
+	}
+
+	for _, pkg := range pkgs {
+		pname := pkg.Name
+		if name == pname {
+			return true
+		} else if strings.HasSuffix(pname, "_test") {
+			if pname[:len(pname)-5] == name {
+				return true
+			}
+		} else if pname+"_test" == name {
+			return true
+		}
+	}
+	return false
+}
+
+// Create a matcher from the given type using the file path and the name
+// pattern.
+func (t *Type) Matcher() (*TypeMatcher, error) {
+	name, err := regexp.Compile(t.Name)
+	if err != nil {
+		return nil, err
+	}
+	file := ""
+	info, err := os.Stat(t.File)
+	if err == nil && !info.IsDir() {
+		file = filepath.Base(t.File)
+	}
+	return &TypeMatcher{File: file, Name: name}, nil
+}
+
+// Type matcher.
+type TypeMatcher struct {
+	// Base file name.
+	File string
+	// Name pattern matcher.
+	Name *regexp.Regexp
+}
+
+// Matches checks whether the matcher matches the given type file and name.
+func (tm *TypeMatcher) Matches(t *Type) bool {
+	return tm.Name.MatchString(t.Name) &&
+		(tm.File == DirDefault || tm.File == "" ||
+			tm.File == t.File[:strings.LastIndex(t.File, ":")])
 }
 
 // Param provides method parameterss.
@@ -112,17 +209,15 @@ func NewMethods(iface *types.Interface) []*Method {
 // Interface information.
 type IFace struct {
 	// Source interface information.
-	Source Type
+	Source *Type
 	// Methods of source/target interface.
 	Methods []*Method
 }
 
 // NewIFace creats a new interface information using given definition.
-func NewIFace(
-	name *types.TypeName, fset *token.FileSet, iface *types.Interface,
-) *IFace {
+func NewIFace(source *Type, iface *types.Interface) *IFace {
 	return &IFace{
-		Source:  NewType(name, fset),
+		Source:  source,
 		Methods: NewMethods(iface),
 	}
 }
@@ -130,9 +225,9 @@ func NewIFace(
 // Mock interface information.
 type Mock struct {
 	// Source interface information.
-	Source Type
+	Source *Type
 	// Target interface information.
-	Target Type
+	Target *Type
 	// Methods of source/target interface.
 	Methods []*Method
 }
@@ -148,7 +243,7 @@ type Import struct {
 // File information.
 type File struct {
 	// Target file information.
-	Target Type
+	Target *Type
 	// Common import data.
 	Imports []*Import
 	// Mock interface data.
@@ -166,12 +261,12 @@ func NewFiles(mocks []*Mock, imports ...*Import) []*File {
 
 	bmap := map[Type]*FileBuilder{}
 	for _, mock := range mocks {
-		target := mock.Target
+		target := mock.Target.Copy()
 		target.Name = "" // file target must ignore target name!
-		if builder, ok := bmap[target]; !ok {
+		if builder, ok := bmap[*target]; !ok {
 			builder := NewFileBuilder(target).AddMocks(mock)
 			builders = append(builders, builder)
-			bmap[target] = builder
+			bmap[*target] = builder
 		} else {
 			builder.AddMocks(mock)
 		}
@@ -188,7 +283,7 @@ func NewFiles(mocks []*Mock, imports ...*Import) []*File {
 
 // Open opens a file descriptor for writing.
 func (file *File) Open(stdout *os.File) error {
-	target := &file.Target
+	target := file.Target
 	if target.File == "-" {
 		file.Writer = stdout
 		return nil
@@ -214,7 +309,7 @@ func (file *File) Write(temp Template) error {
 
 // Close closes the file descriptor for writing.
 func (file *File) Close() error {
-	target := &file.Target
+	target := file.Target
 	if target.File == "-" {
 		return nil
 	}
