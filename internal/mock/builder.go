@@ -32,7 +32,7 @@ type indexParam struct {
 // the mock generator to create the mock source file using the template.
 type FileBuilder struct {
 	// Representation of file.
-	target  Type
+	target  *Type
 	imports []*Import
 	mocks   []*Mock
 
@@ -46,7 +46,7 @@ type FileBuilder struct {
 }
 
 // NewFileBuilder creates a new file builder.
-func NewFileBuilder(target Type) *FileBuilder {
+func NewFileBuilder(target *Type) *FileBuilder {
 	return &FileBuilder{
 		target:  target,
 		paths:   map[string]*Import{},

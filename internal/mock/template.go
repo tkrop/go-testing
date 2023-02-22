@@ -38,8 +38,8 @@ package {{.Target.Package}}
 import (
 {{.Imports | ImportsList -}}
 )
+{{- range $index, $mock := .Mocks}}
 
-{{range $index, $mock := .Mocks -}}
 // {{$mock.Target.Name}} is a mock of {{$mock.Source.Name}}.
 //
 // Source: {{$mock.Source.Path}}/{{$mock.Source.File}}.
@@ -134,9 +134,11 @@ func importArgs(imports []*Import) string {
 
 	builder := strings.Builder{}
 	for _, imprt := range imports {
+		if imprt.Alias == "" {
+			continue
+		}
 		builder.WriteRune('\t')
-		if imprt.Alias != "" &&
-			!strings.HasSuffix(imprt.Path, imprt.Alias) {
+		if !strings.HasSuffix(imprt.Path, imprt.Alias) {
 			builder.WriteString(imprt.Alias)
 			builder.WriteRune(' ')
 		}
