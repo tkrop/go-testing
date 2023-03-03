@@ -372,17 +372,17 @@ func GetSubSlice[T any](from, to int, calls []T) any {
 // getPos returns the actual call position evaluating negative positions
 // from the back of the mock call slice.
 func getPos[T any](pos int, calls []T) int {
-	len := len(calls)
+	end := len(calls)
 	if pos < 0 {
-		pos = len + pos
+		pos = end + pos
 		if pos < 0 {
 			return 0
 		}
 		return pos
-	} else if pos < len {
+	} else if pos < end {
 		return pos
 	}
-	return len - 1
+	return end - 1
 }
 
 // chainCalls joins arbitrary slices, single mock calls, and parallel mock calls

@@ -11,14 +11,16 @@ import (
 )
 
 const (
-	pkgMock     = "mock"
-	pkgMockTest = "mock_test"
-	pkgTest     = "test"
-	pkgTestTest = "test_test"
-	pkgUnknown  = "unknown"
-	pkgInternal = "internal"
-	pkgTesting  = "testing_test"
-	pkgGoMock   = "gomock"
+	pkgMock         = "mock"
+	pkgMockTest     = "mock_test"
+	pkgTest         = "test"
+	pkgTestTest     = "test_test"
+	pkgUnknown      = "unknown"
+	pkgUnknownTest  = "unknown_test"
+	pkgInternal     = "internal"
+	pkgInternalTest = "internal_test"
+	pkgTesting      = "testing_test"
+	pkgGoMock       = "gomock"
 
 	dirUp   = ".."
 	dirTop  = "../../.."
@@ -61,13 +63,18 @@ var (
 	nameIFace     = &Type{Name: iface}
 	nameIFaceMock = &Type{Name: ifaceMock}
 
-	targetTest     = &Type{Package: pkgTest, Path: pathTest}
-	targetTestTest = &Type{Package: pkgTestTest, Path: pathTest}
-	targetTesting  = &Type{Package: pkgTest, Path: pathTesting}
-	targetMock     = &Type{Package: pkgMock, Path: pathMock}
-	targetMockTest = &Type{Package: pkgMockTest, Path: pathMock}
-	targetUnknown  = &Type{Package: pkgUnknown, Path: pathUnknown}
-	targetInternal = &Type{Package: pkgInternal, Path: pathInternal}
+	typePkgTest     = &Type{Package: pkgTest}
+	typePkgTestTest = &Type{Package: pkgTestTest}
+
+	targetTest         = &Type{Package: pkgTest, Path: pathTest}
+	targetTestTest     = &Type{Package: pkgTestTest, Path: pathTest}
+	targetTesting      = &Type{Package: pkgTest, Path: pathTesting}
+	targetMock         = &Type{Package: pkgMock, Path: pathMock}
+	targetMockTest     = &Type{Package: pkgMockTest, Path: pathMock}
+	targetUnknown      = &Type{Package: pkgUnknown, Path: pathUnknown}
+	targetUnknownTest  = &Type{Package: pkgUnknownTest, Path: pathUnknown}
+	targetInternal     = &Type{Package: pkgInternal, Path: pathInternal}
+	targetInternalTest = &Type{Package: pkgInternalTest, Path: pathInternal}
 
 	targetTestIFace     = targetTest.With(nameIFaceMock)
 	targetTestTestIFace = targetTestTest.With(nameIFaceMock)

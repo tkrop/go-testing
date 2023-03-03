@@ -1,7 +1,6 @@
 package mock_test
 
 import (
-	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -153,9 +152,10 @@ var (
 		Package: pkgMock, Path: pathMock,
 		File: filepath.Join(testDirModels, fileMock),
 	}
+	targetNoFile = &Type{Package: pkgMock, Path: pathMock, File: ""}
 	fileStdout   = &File{Target: targetStdout}
 	fileCustom   = &File{Target: targetCustom}
-	fileNoTarget = &File{}
+	fileNoTarget = &File{Target: targetNoFile}
 )
 
 type FileParams struct {
@@ -195,7 +195,7 @@ var testFileParams = map[string]FileParams{
 		}},
 		expectName:  os.Stdout.Name(),
 		error:       errAny,
-		expectWrite: errAny,
+		expectWrite: NewErrFileWriting(fileStdout, errAny),
 	},
 
 	"no such directory": {
@@ -208,8 +208,8 @@ var testFileParams = map[string]FileParams{
 				Op: "open", Path: path, Err: error(syscall.ENOENT),
 			})
 		}(""),
-		expectWrite: errors.New("invalid argument"),
-		expectClose: errors.New("invalid argument"),
+		expectWrite: NewErrFileWriting(fileNoTarget, fs.ErrInvalid),
+		expectClose: NewErrFileWriting(fileNoTarget, fs.ErrInvalid),
 	},
 }
 

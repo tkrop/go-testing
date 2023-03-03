@@ -71,9 +71,10 @@ func TestTemplate(t *testing.T) {
 			writer := &bytes.Buffer{}
 
 			// When
-			temp.Execute(writer, file)
+			err := temp.Execute(writer, file)
 
 			// Then
+			assert.NoError(t, err)
 			assert.Equal(t, param.expect, writer.String())
 		})
 }

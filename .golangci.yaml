@@ -1,0 +1,99 @@
+run:
+  # Timeout for analysis, e.g. 30s, 5m.
+  # Default: 1m
+  timeout: 3m
+
+issues:
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3 (we recommend 10-20)
+  max-same-issues: 10
+
+  exclude-rules:
+    - source: "^//\\s*go:generate\\s"
+      linters: [ lll ]
+    - source: "(noinspection|TODO)"
+      linters: [ godot ]
+    - source: "//noinspection"
+      linters: [ gocritic ]
+    - path: "_test\\.go"
+      linters:
+        - bodyclose
+        - contextcheck
+        - dupl
+        - funlen
+        - goconst
+        - gosec
+        - noctx
+        - wrapcheck
+
+# This contains only configs which differ from defaults. For other configs see
+# https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
+linters-settings:
+  cyclop:
+    # The maximal code complexity to report.
+    # Default: 10 (we allow up to 20)
+    max-complexity: 20
+    # The maximal average package complexity.
+    # If it's higher than 0.0 (float) the check is enabled
+    # Default: 0.0 (we recommend 10.0 as baseline)
+    package-average: 10.0
+
+  gocognit:
+    # Minimal code complexity to report.
+    # Default: 30 (we recommend 10-20)
+    min-complexity: 20
+
+  lll:
+    # Max line length, lines longer will be reported. '\t' is counted as 1
+    # character by default, and can be changed with the tab-width option.
+    # Default: 120 (we recommend 80 but compromise at 100)
+    line-length: 100
+    # Tab width in spaces.
+    # Default: 1 (go uses 4 for visualization)
+    tab-width: 4
+
+  nolintlint:
+    # Exclude following linters from requiring an explanation.
+    # Default: [] (but some lll does not need explanation)
+    allow-no-explanation: [ lll, wrapcheck ]
+    # Enable to require an explanation of nonzero length after each nolint
+    # directive.
+    # Default: false
+    require-explanation: true
+    # Enable to require nolint directives to mention the specific linter being
+    # suppressed.
+    # Default: false
+    require-specific: true
+
+  govet:
+    # Enable all analyzers.
+    # Default: false
+    enable-all: true
+    # Disable analyzers by name.
+    # Run `go tool vet help` to see all analyzers.
+    # Default: []
+    disable:
+      - fieldalignment # too strict
+      - shadow # too strict to always work around
+
+  gocritic:
+    # Settings passed to gocritic. The settings key is the name of a supported
+    # gocritic checker. The list of supported checkers can be find in
+    # https://go-critic.github.io/overview.
+    settings:
+      captLocal:
+        # Whether to restrict checker to params only.
+        # Default: true
+        paramsOnly: false
+      underef:
+        # Whether to skip (*x).method() calls where x is a pointer receiver.
+        # Default: true
+        skipRecvDeref: false
+
+  tenv:
+    # The option `all` will run the linter on the whole test files regardless
+    # of method signatures. Otherwise, only methods that take `*testing.T`,
+    # `*testing.B`, and `testing.TB` as arguments are checked.
+    # Default: false
+    all: true

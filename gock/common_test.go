@@ -1,4 +1,4 @@
-package gock
+package gock_test
 
 import (
 	"errors"

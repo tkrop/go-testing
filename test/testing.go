@@ -206,6 +206,9 @@ func (t *Tester) FailNow() {
 	runtime.Goexit()
 }
 
+// Offset fr original stack in case of panic handling.
+const panicOriginStackOffset = 10
+
 // Panic handles failure notifications of panics that also abort the test
 // execution immediately.
 func (t *Tester) Panic(arg any) {
@@ -213,8 +216,10 @@ func (t *Tester) Panic(arg any) {
 	t.failed.Store(true)
 	defer t.unlock()
 	if t.expect == Success {
-		stack := strings.SplitN(string(debug.Stack()), "\n", 10)
-		t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[9])
+		stack := strings.SplitN(string(debug.Stack()), "\n",
+			panicOriginStackOffset)
+		t.Fatalf("panic: %v\n%s\n%s", arg, stack[0],
+			stack[panicOriginStackOffset-1])
 	} else if t.reporter != nil {
 		t.reporter.Panic(arg)
 	}

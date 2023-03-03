@@ -25,7 +25,7 @@ TEMPDIR := $(RUNDIR)/temp
 TEST_ALL := $(BUILDIR)/test-all.cover
 TEST_UNIT := $(BUILDIR)/test-unit.cover
 TEST_BENCH := $(BUILDIR)/test-bench.cover
-LINT_ALL := lint-src lint-api
+LINT_ALL := lint-base lint-apis
 
 # Include required custom variables.
 ifneq ("$(wildcard Makefile.vars)","")
@@ -44,6 +44,7 @@ TEAM ?= $(shell cat .zappr.yaml | grep "X-Zalando-Team" | \
 	sed "s/.*:[[:space:]]*\([a-z-]*\).*/\1/")
 
 TOOLS ?= github.com/golang/mock/mockgen@latest \
+	github.com/tkrop/go-testing/cmd/mock@latest \
 	github.com/zalando/zally/cli/zally@latest \
 	github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
 	golang.org/x/tools/cmd/goimports@latest \
@@ -142,9 +143,9 @@ SOURCES := $(shell find . -name "*.go" ! -name "mock_*_test.go")
 # Setup golang mock setup environment.
 MOCK_MATCH_DST := ^.\/(.*)\/(.*):\/\/go:generate.*-destination=([^ ]*).*$$
 MOCK_MATCH_SRC := ^.\/(.*)\/(.*):\/\/go:generate.*-source=([^ ]*).*$$
-MOCK_TARGETS := $(shell grep "//go:generate.*mockgen" $(SOURCES) | \
+MOCK_TARGETS := $(shell grep "//go:generate[[:space:]]*mockgen" $(SOURCES) | \
 	sed -E "s/$(MOCK_MATCH_DST)/\1\/\3=\1\/\2/;" | sort -u)
-MOCK_SOURCES := $(shell grep "//go:generate.*mockgen.*-source" $(SOURCES) | \
+MOCK_SOURCES := $(shell grep "//go:generate[[:space:]]*mockgen.*-source" $(SOURCES) | \
 	sed -E "s/$(MOCK_MATCH_SRC)/\1\/\3/;" | sort -u | \
 	xargs realpath --relative-base=.)
 MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
@@ -158,9 +159,11 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
 .PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
-.PHONY: lint lint-all lint-src lint- lint-list lint-extra lint-api format
+.PHONY: lint lint-base lint-plus lint-all lint-apis format
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
+.PHONY: install $(addprefix install-, $(COMMANDS))
+.PHONY: delete $(addprefix delete-, $(COMMANDS))
 .PHONY: image image-build image-push docker docker-build docker-push
 .PHONY: run-native run-image run-docker run-clean
 .PHONY: $(addprefix run-, $(COMMANDS) db aws)
@@ -190,6 +193,7 @@ endef
 CMDMATCH = $(or \
 	  $(findstring run-,$(MAKECMDGOALS)),\
 	  $(findstring test-,$(MAKECMDGOALS)),\
+	  $(findstring lint-,$(MAKECMDGOALS)),\
 	  $(findstring bump,$(MAKECMDGOALS)),\
 	)%
 # If any argument contains "run-", "test-", "bump" ...
@@ -257,6 +261,7 @@ update-make:
 	  cd $${TEMPDIR}; \
 	    git show HEAD:Makefile > Makefile; \
 		git show HEAD:MAKEFILE.md > MAKEFILE.md; \
+		git show HEAD:.golangci.yaml > .golangci.yaml; \
 	  cd - \
 	); cp $${TEMPDIR}/Makefile $${TEMPDIR}/MAKEFILE.md .; \
 	rm -rf $${TEMPDIR}; \
@@ -335,7 +340,7 @@ init-packages:
 
 init-sources: $(MOCKS)
 $(MOCKS): go.sum $(MOCK_SOURCES)
-	GO111MODULE=on go generate "$(shell echo $(MOCK_TARGETS) | \
+	go generate "$(shell echo $(MOCK_TARGETS) | \
 	  sed -E "s:.*$@=([^ ]*).*$$:\1:;")";
 
 
@@ -400,58 +405,69 @@ $(TEST_BENCH): $(SOURCES) init-sources
 COMMA := ,
 SPACE := $(null) #
 
-# do not use: nlreturn varnamelen tagliatelle gochecknoglobals gochecknoinits
-# exhaustruct ireturn nonamedreturns
+# disabled (deprecated): deadcode golint interfacer ifshort maligned musttag
+#   nosnakecase rowserrcheck scopelint structcheck varcheck wastedassign
+# diabled (distructive): nlreturn ireturn nonamedreturns varnamelen exhaustruct
+#   exhaustivestruct gochecknoglobals gochecknoinits tagliatelle
+# disabled (conflicting): godox paralleltest
+# not listed (unnecessary): forcetypeassert
 
-LINTERS_DISABLED ?= errcheck
-LINTERS_ENABLED ?= goimports gofumpt gofmt goheader decorder :gci \
-	godot whitespace misspell dupword goprintffuncname \
-	tenv tparallel thelper testableexamples :testpackage \
+LINTERS_DISABLED ?= nlreturn ireturn nonamedreturns varnamelen exhaustruct \
+	exhaustivestruct gochecknoglobals gochecknoinits tagliatelle paralleltest \
+	godox deadcode golint interfacer ifshort maligned musttag nosnakecase \
+	rowserrcheck scopelint structcheck varcheck wastedassign
+LINTERS_ENABLED ?= goimports :gci gofumpt gofmt goheader decorder \
+	gosec godot whitespace misspell dupword goprintffuncname \
+	tenv tparallel thelper testableexamples testpackage \
 	dupl dogsled depguard gomodguard gomoddirectives importas \
-	maintidx makezero nakedret prealloc :predeclared interfacebloat grouper \
-	nestif ineffassign reassign asasalint :forcetypeassert usestdlibvars \
-	errchkjson errname :errorlint :forbidigo nosprintfhostport \
-	nilerr nilnil nolintlint promlinter revive :bodyclose \
-	gocognit :gocritic gocyclo :cyclo :funlen :lll :wsl \
+	maintidx makezero nakedret prealloc interfacebloat grouper \
+	nestif ineffassign reassign asasalint usestdlibvars \
+	errcheck errchkjson errname errorlint forbidigo nosprintfhostport \
+	nilerr nilnil nolintlint promlinter revive bodyclose \
+	gocognit gocritic gocyclo cyclop funlen predeclared lll \
 	govet goconst gosimple :gomnd unconvert unparam unused \
-	:contextcheck containedctx :noctx execinquery :exhaustive exportloopref \
+	contextcheck containedctx noctx execinquery exportloopref \
 	asciicheck bidichk durationcheck loggercheck staticcheck stylecheck \
-	typecheck :wrapcheck :errcheck
+	typecheck
 
-LINTERS_EXTRA ?= godox :errorlint :goerr113 gosec
+LINTERS_ADVANCED ?= wrapcheck :wsl :exhaustive :goerr113
 
+LINT_FLAGS ?= --color=always
 LINT_DISABLED ?= $(subst $(SPACE),$(COMMA),$(strip \
 	$(filter-out :%,$(LINTERS_DISABLED))))
 LINT_ENABLED ?= $(subst $(SPACE),$(COMMA),$(strip \
 	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_ENABLED)))))
-LINT_EXTRA ?= $(subst $(SPACE),$(COMMA),$(strip \
-	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_EXTRA)))))
+LINT_ADVANCED ?= $(subst $(SPACE),$(COMMA),$(strip \
+	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_ADVANCED)))))
 
-LINT_LIST := linters --enable $(LINT_ENABLE) --disable $(LINT_DISABLED)
-LINT_RUN_ALL := run --enable-all --disable $(LINT_DISABLED) ./...
-ifneq ($(shell ls .golangci-lint.yaml 2>/dev/null), .golangci-lint.yaml)
-  LINT_RUN_SRC := run --no-config  --enable $(LINT_ENABLED) \
-    --disable $(LINT_DISABLED) ./...
-else
-  LINT_RUN_SRC := run --config .golangci-lint.yaml
+ifeq ($(shell ls .golangci.yaml 2>/dev/null), .golangci.yaml)
+  LINT_CONFIG := --config .golangci.yaml
 endif
-ifneq ($(shell ls .golangci-lint-extra.yaml 2>/dev/null), .golangci-lint-extra.yaml)
-  LINT_RUN_EXTRA := run --no-config --enable $(LINT_ENABLED),$(LINT_EXTRA) \
-    --disable $(LINT_DISABLED) ./...
-else
-  LINT_RUN_EXTRA := run --config .golangci-lint-extra.yaml
+
+LINT_CMD ?= run
+ifeq ($(RUNARGS),list)
+    LINT_CMD := linters
+else ifneq ($(RUNARGS),)
+	LINT_CMD := run
+	LINT_ENABLED := $(RUNARGS)
 endif
+
+LINT_BASELINE := --enable $(LINT_ENABLED) \
+	--disable $(LINT_DISABLED) $(LINT_FLAGS) $(LINT_CONFIG)
+LINT_ADVANCED := --enable $(LINT_ENABLED),$(LINT_ADVANCED) \
+    --disable $(LINT_DISABLED) $(LINT_FLAGS) $(LINT_CONFIG)
+LINT_EXPERT := --enable-all --disable $(LINT_DISABLED) \
+	$(LINT_FLAGS) $(LINT_CONFIG)
 
 lint: $(TARGETS_LINT)
-lint-list:
-	golangci-lint $(LINT_LIST);
+lint-base: init-sources
+	golangci-lint $(LINT_CMD) $(LINT_BASELINE);
+lint-plus: init-sources
+	golangci-lint $(LINT_CMD) $(LINT_ADVANCED);
 lint-all: init-sources
-	golangci-lint $(LINT_RUN_ALL);
-lint-src: init-sources
-	golangci-lint $(LINT_RUN_SRC);
-lint-extra: init-sources
-	golangci-lint $(LINT_RUN_EXTRA);
-lint-api:
+	golangci-lint $(LINT_CMD) $(LINT_EXPERT);
+
+lint-apis:
 	@LINTER="https://infrastructure-api-linter.zalandoapis.com"; \
 	if ! curl -is $${LINTER} >/dev/null; then \
 	  echo "warning: API linter not available;" >/dev/stderr; exit 0; \
@@ -465,7 +481,7 @@ lint-api:
 
 format:
 	goimports -w -local "$(REPOSITORY)" $$(find . -name "*.go" ! -name "mock_*_test.go")
-#	gci --write --local "$(REPOSITORY)" $$(find . -name "*.go" ! -name "mock_*_test.go")
+	# gci --write --local "$(REPOSITORY)" $$(find . -name "*.go" ! -name "mock_*_test.go")
 	gofumpt -w  $$(find . -name "*.go" ! -name "mock_*_test.go")
 	gofmt -w  $$(find . -name "*.go" ! -name "mock_*_test.go")
 
@@ -504,6 +520,16 @@ $(BUILDIR)/linux/%: cmd/%/main.go $(SOURCES)
 	@mkdir -p $(dir $@)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=$(GOCGO) go build \
 	  $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $@ $<;
+
+
+# Install and delete targets for local ${GOPATH}/bin.
+install: $(addprefix install-, $(COMMANDS))
+$(addprefix install-, $(COMMANDS)): install-%: build/%
+	cp $< $(GOPATH)/bin/$*;
+
+delete:  $(addprefix delete-, $(COMMANDS))
+$(addprefix delete-, $(COMMANDS)): delete-%:
+	rm $(GOPATH)/bin/$*;
 
 
 # Image build and push targets.

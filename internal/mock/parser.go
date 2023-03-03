@@ -82,8 +82,8 @@ func NewParser(loader Loader, target *Type) *Parser {
 // data.
 func (parser *Parser) Parse(args ...string) ([]*Mock, []error) {
 	state := newParseState(parser)
-	for pos, arg := range args {
-		switch atype, arg := parser.argType(arg); atype {
+	for pos, rarg := range args {
+		switch atype, arg := parser.argType(rarg); atype {
 		case argTypeSourcePkg:
 			state.ensureIFace(pos - 1)
 			state.source.Package = arg
@@ -137,18 +137,7 @@ func (parser *Parser) argTypeParse(arg string) (argType, string) {
 	flag, sarg := arg[2:equal], arg[equal+1:]
 	switch flag {
 	case "source":
-		if token.IsIdentifier(sarg) {
-			return argTypeSourcePkg, sarg
-		}
-		pkgs, err := parser.loader.Load(sarg).Get()
-		if len(pkgs) > 0 && err == nil {
-			if pkgs[0].PkgPath == ReadFromFile {
-				return argTypeSourceFile, sarg
-			}
-			return argTypeSourcePath, sarg
-		}
-		return argTypeNotFound, sarg
-
+		return parser.argTypeSource(sarg)
 	case "source-pkg":
 		return argTypeSourcePkg, sarg
 	case "source-path":
@@ -157,18 +146,7 @@ func (parser *Parser) argTypeParse(arg string) (argType, string) {
 		return argTypeSourceFile, sarg
 
 	case "target":
-		if token.IsIdentifier(sarg) {
-			return argTypeTargetPkg, sarg
-		}
-		pkgs, err := parser.loader.Load(sarg).Get()
-		if len(pkgs) > 0 && err == nil {
-			if pkgs[0].PkgPath == ReadFromFile {
-				return argTypeTargetFile, sarg
-			}
-			return argTypeTargetPath, sarg
-		}
-		return argTypeTargetFile, sarg
-
+		return parser.argTypeTarget(sarg)
 	case "target-pkg":
 		return argTypeTargetPkg, sarg
 	case "target-path":
@@ -181,6 +159,37 @@ func (parser *Parser) argTypeParse(arg string) (argType, string) {
 	default:
 		return argTypeUnknown, arg
 	}
+}
+
+// argTypeSource evaluates the concreate source argument type by trying to load
+// the related package.
+func (parser *Parser) argTypeSource(sarg string) (argType, string) {
+	if token.IsIdentifier(sarg) {
+		return argTypeSourcePkg, sarg
+	}
+	pkgs, err := parser.loader.Load(sarg).Get()
+	if len(pkgs) > 0 && err == nil {
+		if pkgs[0].PkgPath == ReadFromFile {
+			return argTypeSourceFile, sarg
+		}
+		return argTypeSourcePath, sarg
+	}
+	return argTypeNotFound, sarg
+}
+
+// argTypeTarget evaluates the actual target argument type.
+func (parser *Parser) argTypeTarget(sarg string) (argType, string) {
+	if token.IsIdentifier(sarg) {
+		return argTypeTargetPkg, sarg
+	}
+	pkgs, err := parser.loader.Load(sarg).Get()
+	if len(pkgs) > 0 && err == nil {
+		if pkgs[0].PkgPath == ReadFromFile {
+			return argTypeTargetFile, sarg
+		}
+		return argTypeTargetPath, sarg
+	}
+	return argTypeTargetFile, sarg
 }
 
 // argTypeGuess evaluates the argument type by analysing the argument values

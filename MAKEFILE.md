@@ -5,7 +5,7 @@
 This repository provides a generic [Makefile](Makefile) that is majorly working
 by the following conventions:
 
-1. Place all available commands under 'cmd/<name>/main.go'.
+1. Place all available commands under `cmd/<name>/main.go`.
 2. Use a single 'config' package to read the configuration for all commands.
 3. Use a common 'Dockerfile' to install all commands in a container image.
 
@@ -29,7 +29,9 @@ make cdp     # select of targets to init, build, and test as in pipeline
 make init    # inits project by downloading dependencies
 make test    # generates and builds sources to execute tests
 make lint    # generates and builds sources and lints sources
-make build   # creates binary files of commands/services/jobs
+make build   # creates binary files of commands
+make install # installs binary files of commands in '${GOPATH}/bin'
+make delete  # deletes binary files of commands from '${GOPATH}/bin'
 make clean   # cleans up the project removing all created files
 ```
 
@@ -64,13 +66,63 @@ The [Makefile](Makefile) supports different targets that can help with linting
 as well as with fixing the linter problems - if possible.
 
 ```bash
-make lint       # short cut to execute 'lint-src lint-api'
-make lint-all   # lints the go-code using all linters
-make lint-src   # lints the go-code using selected default linters
-make lint-warn  # lints the go-code using selected warning linters
-make lint-api   # lints the api specifications in '/zalando-apis'
-make format     # formats the code to fix selected linter violations
+make lint        # short cut to execute 'lint-base lint-apis'
+make lint-base   # lints the go-code using a baseline setting
+make lint-plus   # lints the go-code using an advanced setting
+make lint-all    # lints the go-code using an all-in expert setting
+make lint-api    # lints the api specifications in '/zalando-apis'
+
+make format      # formats the code to fix selected linter violations
 ```
+
+The `lint-*` targets allow command line arguments:
+
+1. The keyword `list` to display the linter configurations, or
+2. `<linter>,...` a list of linters to enable for a quick checks.
+
+To default target for `make lint` can be customized via `TARGETS_LINT` in
+`Makefile.vars`. The default is `lint-base lint-apis`.
+
+The default linter setup is providing a golden path with three expert levels
+out-of-the-box, i.e. a `base` setting, a challanging `plus` setting, and an
+expert `all` setting that runs all but the disabled linters.
+
+The lint expert levels can be customized in two ways.
+
+1. Linters can be enabled and disabled providing the linter names to the space
+   separated lists via the variables `LINT_ENABLED`, `LINT_DISABLED`, and
+   `LINT_ADVANCED`.
+2. The linters settings can be configuration via the `.golangci.yaml` file.
+
+Howver, customizing the `.golangci.yaml` is currently not advised, since the
+`Makefile` is updating and enforcing a common version.
+
+
+## Install targets
+
+The install targets installs the latest build version of a command in the
+`${GOPATH}/bin` directory for simple command line execution.
+
+```bash
+make install      # installs all commands using the platform binaries
+make install-(*)  # installs the matched command using the platform binary
+```
+
+If a command, service, job has not been build before, it is first build.
+
+**Note:** Please use carefully, if your project uses common command names.
+
+
+## Delete targets
+
+The delete targets delete the latest installed command from `${GOPATH}/bin`.
+
+```bash
+make install      # Deletes all commands
+make install-(*)  # Deletes the matched command
+```
+
+**Note:** Please use carefully, if your project uses common command names.
 
 
 ## Image targets
@@ -100,9 +152,9 @@ AWS container image as well as to run the commands provided by the repository.
 ```bash
 make run-db     # runs a postgres container image to provide a DBMS
 make run-aws    # runs a localstack container image to simulate AWS
-make run-(*)    # runs a command using its before build binary
-make run-go-(*) # runs a command using 'go run'
-make run-image-(*) # runs a command in the before build container image
+make run-(*)    # runs the matched command using its before build binary
+make run-go-(*) # runs the matched command using 'go run'
+make run-image-(*) # runs the matched command in the container image
 ```
 
 To run commands successfully the environment needs to be setup to run the
@@ -191,17 +243,15 @@ TODO: add content!
 
 ### Running commands
 
-TODO: improve!
+To `run-*` commands as expected, you need to setup the environment variables
+for your designated runtime by defining the custom functions for setting it up
+via `run-setup`, `run-vars`, `run-vars-local`, and `run-vars-image` in
+[Makefile.defs](Makefile.defs).
 
-To support `run-*` commands to function properly, you need to setup the
-environment variables for your designated runtime by defining the custom
-functions for setting it up via `run-setup`, `run-vars`, `run-vars-local`,
-and `run-vars-image` in [Makefile.defs](Makefile.defs).
-
-The tests are supposed to run with global defaults and should not need more
-configuration. The setup of `run-*` commands strongly depends on the command
-itself, but usual there are common patterns, e.g. setting up  in this that can
-be copied from other projects.
+While tests are supposed to run with global defaults and test specific config,
+the setup of the `run-*` commands strongly depends on the commands execution
+context and its purpose. Still, there are common patterns that can be copied
+from other commands and projects.
 
 To enable postgres database support you must add `run-db` to `TEST_DEPS` and
 RUN_DEPS as needed to [Makefile.vars](Makefile.vars).
@@ -209,10 +259,16 @@ RUN_DEPS as needed to [Makefile.vars](Makefile.vars).
 You can also override the default setup via the `DB_HOST`, `DB_PORT`,
 `DB_NAME`, `DB_USER`, and `DB_PASSWORD` variables, but this is optional.
 
-**Note**: when running test against a DB you usually have to extend the
-default `TEST_TIMEOUT` of 10s to a more reasonable value.
+**Note:** when running test against a DB you usually have to extend the
+default `TEST_TIMEOUT` of 10s to a less aggressive value.
 
-To enable AWS localstack support you have to add `run-aws` to the `TEST_DEPS`
-and `RUN_DEPS`. You may also provide a sensible setup of AWS services via the
-`AWS_SERVICES` variable (default is `sqs s3`).
+To enable AWS localstack you have to add `run-aws` to the `TEST_DEPS` and
+`RUN_DEPS`. You may also need to provide a sensible setup of AWS services via
+the `AWS_SERVICES` variable (default is `sqs s3`).
 
+**Note:** Currently, we the [Makefile](Makefile) does not support command
+specific command-line arguments or environment variables. It is assuming that
+command are following the principles of the [Twelf Factor App][12factor]
+supportig setup via application specific environment variables.
+
+[12factor]: https://12factor.net/ "Twelf Factor App"

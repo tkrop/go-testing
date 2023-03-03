@@ -9,6 +9,9 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
+// ErrCannotMatch is the re-exported error for a failed match.
+var ErrCannotMatch = gock.ErrCannotMatch
+
 // Transport is a small transport implementation delegating requests to the
 // owning HTTP request/response mock controller.
 type Transport struct {
@@ -58,7 +61,7 @@ func NewController(t test.Test) *Controller {
 	}
 	if c, ok := ctrl.t.(test.Cleanuper); ok {
 		c.Cleanup(func() {
-			ctrl.cleanup()
+			ctrl.Cleanup()
 		})
 	}
 	return ctrl
@@ -105,13 +108,13 @@ func (ctrl *Controller) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	defer ctrl.MockStore.Clean()
 
-	return gock.Responder(req, mock.Response(), nil)
+	return gock.Responder(req, mock.Response(), nil) //nolint:wrapcheck
 }
 
-// Finish checks if all the HTTP request/response mocks that were expected to
-// be called were called. This function is registered with the test controller
-// and will be called when the test is finished.
-func (ctrl *Controller) cleanup() {
+// Cleanup checks if all the HTTP request/response mocks that were expected to
+// be called have been called. This function is automatically registered with
+// the test controller and will be called when the test is finished.
+func (ctrl *Controller) Cleanup() {
 	if pending := ctrl.MockStore.Pending(); len(pending) != 0 {
 		for _, call := range pending {
 			ctrl.t.Errorf("missing call(s) to %v", call)
