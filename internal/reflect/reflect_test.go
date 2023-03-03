@@ -325,12 +325,13 @@ func TestArgOf(t *testing.T) {
 			arg := reflect.ArgOf(param.value)
 
 			// Then
-			if !param.value.IsValid() {
+			switch {
+			case !param.value.IsValid():
 				assert.Equal(t, param.expect, arg)
-			} else if param.value.Type().Kind() == reflect.Func {
+			case param.value.Type().Kind() == reflect.Func:
 				assert.NotNil(t, arg)
 				assert.True(t, reflect.TypeOf(arg).Kind() == reflect.Func)
-			} else {
+			default:
 				assert.Equal(t, param.expect, arg)
 			}
 		})

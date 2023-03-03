@@ -59,7 +59,11 @@ var testGenerateParams = map[string]GenerateParams{
 		args: []string{pathTest},
 		expectStderr: NewErrFileOpening(fileFailure, &fs.PathError{
 			Op: "open", Path: fileFailure, Err: error(syscall.ENOENT),
-		}).Error() + "\ninvalid argument\ninvalid argument\n",
+		}).Error() +
+			"\nfile writing [file: " + testDirGenerate +
+			"/test/unnkown_test.go]: invalid argument" +
+			"\nfile writing [file: " + testDirGenerate +
+			"/test/unnkown_test.go]: invalid argument\n",
 		expectCode: 2,
 	},
 }

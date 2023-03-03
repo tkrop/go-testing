@@ -8,6 +8,13 @@ import (
 const (
 	// Default mock file name.
 	MockFileDefault = "mock_all_test.go"
+
+	// Exit code for success.
+	ExitSuccess = 0
+	// Exit code for parse error.
+	ExitParseError = 1
+	// Exit code for write error.
+	ExitWriteError = 2
 )
 
 // TargetDefault provides the default target setup for the parser.
@@ -39,7 +46,7 @@ func (gen *Generator) Generate(stdout, stderr *os.File, args ...string) int {
 		for _, err := range errs {
 			fmt.Fprintf(stderr, "%s\n", err)
 		}
-		return 1
+		return ExitParseError
 	}
 
 	// Generate mock files using the default template.
@@ -63,7 +70,7 @@ func (gen *Generator) Generate(stdout, stderr *os.File, args ...string) int {
 	}
 
 	if failure {
-		return 2
+		return ExitWriteError
 	}
-	return 0
+	return ExitSuccess
 }

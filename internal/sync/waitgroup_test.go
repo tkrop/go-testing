@@ -13,7 +13,7 @@ func TestWaitGroup(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	defer func() { recover() }()
+	defer func() { _ = recover() }()
 	wg := sync.NewWaitGroup()
 
 	// When

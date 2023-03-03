@@ -40,9 +40,9 @@ func (s *MockStore) NewMock(uri string) gock.Mock {
 }
 
 // Register registers a new HTTP request/response mocks in the current stack.
-func (s *MockStore) Register(mock gock.Mock) {
+func (s *MockStore) Register(mock gock.Mock) *MockStore {
 	if s.Exists(mock) {
-		return
+		return s
 	}
 
 	// Expose mock in request/response for delegation
@@ -55,6 +55,8 @@ func (s *MockStore) Register(mock gock.Mock) {
 
 	// Registers the mock in the global store
 	s.mocks = append(s.mocks, mock)
+
+	return s
 }
 
 // Match matches the given `http.Request` with the registered HTTP request
@@ -64,7 +66,7 @@ func (s *MockStore) Match(req *http.Request) (gock.Mock, error) {
 	for _, mock := range s.All() {
 		matches, err := mock.Match(req)
 		if err != nil {
-			return nil, err
+			return nil, err //nolint:wrapcheck
 		}
 		if matches {
 			return mock, nil
@@ -88,15 +90,13 @@ func (s *MockStore) IsPending() bool {
 func (s *MockStore) All() []gock.Mock {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	return s.mocks
+	return append([]gock.Mock{}, s.mocks...)
 }
 
-// Pending returns a slice of the pending HTTP request/response mocks.
+// Pending returns a slice of the pending HTTP request/response mocks. As a
+// side effect the mock store is cleaned up similar as calling `Clean` on it.
 func (s *MockStore) Pending() []gock.Mock {
-	s.Clean()
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-	return s.mocks
+	return s.Clean().All()
 }
 
 // Exists checks if the given HTTP request/response mocks is already registered.
@@ -112,7 +112,7 @@ func (s *MockStore) Exists(m gock.Mock) bool {
 }
 
 // Remove removes a registered HTTP request/response mocks by reference.
-func (s *MockStore) Remove(m gock.Mock) {
+func (s *MockStore) Remove(m gock.Mock) *MockStore {
 	for i, mock := range s.mocks {
 		if mock == m {
 			s.mutex.Lock()
@@ -120,18 +120,22 @@ func (s *MockStore) Remove(m gock.Mock) {
 			s.mutex.Unlock()
 		}
 	}
+
+	return s
 }
 
 // Flush flushes the current stack of registered HTTP request/response mocks.
-func (s *MockStore) Flush() {
+func (s *MockStore) Flush() *MockStore {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.mocks = []gock.Mock{}
+
+	return s
 }
 
 // Clean cleans the store removing disabled or obsolete HTTP request/response
 // mocks.
-func (s *MockStore) Clean() {
+func (s *MockStore) Clean() *MockStore {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -143,4 +147,6 @@ func (s *MockStore) Clean() {
 		buf = append(buf, mock)
 	}
 	s.mocks = buf
+
+	return s
 }

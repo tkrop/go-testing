@@ -13,18 +13,9 @@ import (
 )
 
 var (
-	typeFileDflt  = &Type{File: DirDefault}
-	typeFileTest  = &Type{File: pkgTest}
-	typeFileIFace = &Type{File: filepath.Join(pkgTest, fileIFace)}
-	typeFileTestX = &Type{File: filepath.Join(pkgTest, fileUnknown)}
-	typeFileDirX  = &Type{File: dirUnknown}
-	typeFileUpX   = &Type{File: filepath.Join(dirUp, fileUnknown)}
-	typeFileTopX  = &Type{File: filepath.Join(dirTop, fileUnknown)}
-
-	typeFileDirFileX = &Type{File: filepath.Join(dirUnknown, fileUnknown)}
-
 	typePathDflt     = &Type{Path: DirDefault}
 	typePathTest     = &Type{Path: pathTest}
+	typePathTestX    = &Type{Path: pathTest + "x"}
 	typePathMock     = &Type{Path: pathMock}
 	typePathInternal = &Type{Path: pathInternal}
 	typePathMockAbs  = &Type{Path: func() string {
@@ -39,6 +30,22 @@ var (
 		path, _ := filepath.Abs(dirTop)
 		return path
 	}()}
+
+	typePkgUnknown      = &Type{Package: pkgUnknown}
+	typePkgUnknownTest  = &Type{Package: pkgUnknownTest}
+	typePkgInternal     = &Type{Package: pkgInternal}
+	typePkgInternalTest = &Type{Package: pkgInternalTest}
+
+	typeFileDflt   = &Type{File: DirDefault}
+	typeFileTest   = &Type{File: pkgTest}
+	typeFileIFace  = &Type{File: filepath.Join(pkgTest, fileIFace)}
+	typeFileIFaceX = &Type{File: filepath.Join(pkgTest+"x", fileIFace)}
+	typeFileTestX  = &Type{File: filepath.Join(pkgTest, fileUnknown)}
+	typeFileDirX   = &Type{File: dirUnknown}
+	typeFileUpX    = &Type{File: filepath.Join(dirUp, fileUnknown)}
+	typeFileTopX   = &Type{File: filepath.Join(dirTop, fileUnknown)}
+
+	typeFileDirFileX = &Type{File: filepath.Join(dirUnknown, fileUnknown)}
 )
 
 type LoaderSearchParams struct {
@@ -55,61 +62,74 @@ var testLoaderSearchParams = map[string]LoaderSearchParams{
 	},
 	"empty": {
 		loader: loaderMock,
-		expect: targetMock,
+		expect: targetMockTest,
 	},
 
-	"file default": {
+	"package default": {
 		loader: loaderMock,
 		target: typeFileDflt,
-		expect: targetMock.With(typeFileDflt),
-	},
-	"file package replace": {
-		loader: loaderMock,
-		target: typeFileDflt.With(&Type{Package: pkgTest}),
-		expect: targetMock.With(typeFileDflt),
-	},
-	"file package match": {
-		loader: loaderMock,
-		target: typeFileDflt.With(&Type{Package: pkgMockTest}),
 		expect: targetMockTest.With(typeFileDflt),
 	},
-	"file package missing": {
+	"package replace": {
 		loader: loaderMock,
-		target: typeFileDirFileX.With(&Type{Package: "unknown"}),
+		target: typeFileDflt.With(&Type{Package: pkgTest}),
+		expect: targetMockTest.With(typeFileDflt),
+	},
+	"package match": {
+		loader: loaderMock,
+		target: typeFileIFaceX.With(typePkgTest),
+		expect: targetTest.With(typePathTestX).With(typeFileIFaceX),
+	},
+	"package match test": {
+		loader: loaderMock,
+		target: typeFileIFaceX.With(typePkgTestTest),
+		expect: targetTestTest.With(typePathTestX).With(typeFileIFaceX),
+	},
+	"package unknown": {
+		loader: loaderMock,
+		target: typeFileDirFileX.With(typePkgUnknown),
 		expect: targetUnknown.With(typeFileDirFileX),
 	},
-	"file package missing test": {
+	"package unknown test": {
 		loader: loaderMock,
-		target: typeFileDirFileX.With(&Type{Package: "unknown_test"}),
-		expect: targetUnknown.With(typeFileDirFileX).
-			With(&Type{Package: "unknown_test"}),
+		target: typeFileDirFileX.With(typePkgUnknownTest),
+		expect: targetUnknownTest.With(typeFileDirFileX),
 	},
-	// TODO: add case with only <pkg>_test in package path.
+	"package internal": {
+		loader: loaderMock,
+		target: typeFileUpX.With(typePkgInternal),
+		expect: targetInternal.With(typeFileUpX),
+	},
+	"package internal test": {
+		loader: loaderMock,
+		target: typeFileUpX.With(typePkgInternalTest),
+		expect: targetInternalTest.With(typeFileUpX),
+	},
 
 	"file test": {
 		loader: loaderMock,
 		target: typeFileTest,
-		expect: targetTest.With(typeFileTest),
+		expect: targetTestTest.With(typeFileTest),
 	},
 	"file iface": {
 		loader: loaderMock,
 		target: typeFileIFace,
-		expect: targetTest.With(typeFileIFace),
+		expect: targetTestTest.With(typeFileIFace),
 	},
 	"file child-missing": {
 		loader: loaderMock,
 		target: typeFileTestX,
-		expect: targetTest.With(typeFileTestX),
+		expect: targetTestTest.With(typeFileTestX),
 	},
 	"file missing": {
 		loader: loaderMock,
 		target: typeFileDirX,
-		expect: targetInternal.With(typeFileDirX),
+		expect: targetInternalTest.With(typeFileDirX),
 	},
 	"file parent-missing": {
 		loader: loaderMock,
 		target: typeFileUpX,
-		expect: targetInternal.With(typeFileUpX),
+		expect: targetInternalTest.With(typeFileUpX),
 	},
 	"file top-missing": {
 		loader: loaderMock,
@@ -120,12 +140,12 @@ var testLoaderSearchParams = map[string]LoaderSearchParams{
 	"path default": {
 		loader: loaderMock,
 		target: typePathDflt,
-		expect: targetMock,
+		expect: targetMockTest,
 	},
 	"path package replace": {
 		loader: loaderMock,
 		target: typePathDflt.With(&Type{Package: pkgTest}),
-		expect: targetMock,
+		expect: targetMockTest,
 	},
 	"path package match": {
 		loader: loaderMock,
@@ -136,27 +156,27 @@ var testLoaderSearchParams = map[string]LoaderSearchParams{
 	"path test": {
 		loader: loaderMock,
 		target: typePathTest,
-		expect: targetTest,
+		expect: targetTestTest,
 	},
 	"path mock": {
 		loader: loaderMock,
 		target: typePathMock,
-		expect: targetMock,
+		expect: targetMockTest,
 	},
 	"path parent": {
 		loader: loaderMock,
 		target: typePathInternal,
-		expect: targetInternal,
+		expect: targetInternalTest,
 	},
 	"path mock absolute": {
 		loader: loaderMock,
 		target: typePathMockAbs,
-		expect: targetMock,
+		expect: targetMockTest,
 	},
 	"path unknown absolute": {
 		loader: loaderMock,
 		target: typePathUnknownAbs,
-		expect: targetUnknown,
+		expect: targetUnknownTest,
 	},
 	"path top absolute": {
 		loader: loaderMock,
@@ -180,14 +200,27 @@ func TestLoaderSearch(t *testing.T) {
 }
 
 type LoaderLoadParams struct {
-	loader Loader
-	source *Type
+	loader      Loader
+	source      *Type
+	expectError error
+	expectLen   int
 }
 
 var testLoaderLoadParams = map[string]LoaderLoadParams{
-	"file default": {
-		loader: loaderMock,
-		source: targetTest.With(typeFileDflt),
+	"file loading": {
+		loader:    loaderMock,
+		source:    targetTest.With(typeFileDflt),
+		expectLen: 1,
+	},
+	"failure loading": {
+		loader: loaderFail,
+		source: targetTest.With(&Type{
+			File: filepath.Join(dirUp, dirMock, dirTest, fileIFace),
+		}),
+		expectError: NewErrLoading(pathTest, fmt.Errorf(
+			"err: chdir %s: no such file or directory: stderr: ",
+			dirUnknown)),
+		expectLen: 0,
 	},
 }
 
@@ -195,10 +228,11 @@ func TestLoaderLoad(t *testing.T) {
 	test.Map(t, testLoaderLoadParams).
 		Run(func(t test.Test, param LoaderLoadParams) {
 			// When
-			param.loader.Load(param.source.Path)
+			pkgs, err := param.loader.Load(param.source.Path).Get()
 
 			// Then
-			// assert.Equal(t, param.expect, target)
+			assert.Equal(t, param.expectError, err)
+			assert.Len(t, pkgs, param.expectLen)
 		})
 }
 

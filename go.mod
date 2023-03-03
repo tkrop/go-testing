@@ -6,8 +6,8 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/h2non/gock v1.2.0
 	github.com/huandu/go-clone v1.5.0
-	github.com/stretchr/testify v1.8.1
-	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
+	github.com/stretchr/testify v1.8.2
+	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
 	golang.org/x/text v0.6.0
 	golang.org/x/tools v0.6.0
 )

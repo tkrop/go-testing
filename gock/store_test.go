@@ -1,4 +1,4 @@
-package gock
+package gock_test
 
 import (
 	"net/http"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/tkrop/go-testing/gock"
 	"github.com/tkrop/go-testing/test"
 )
 
@@ -14,82 +15,93 @@ func TestStoreRegister(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(nil)
+	store := gock.NewStore(nil)
 
 	// When
 	mock := store.NewMock("foo")
 
 	// Then
-	assert.Len(t, store.mocks, 1)
-	assert.Equal(t, store.mocks[0], mock)
+	mocks := store.All()
+	assert.Len(t, mocks, 1)
+	assert.Equal(t, mocks[0], mock)
 	assert.Equal(t, mock.Request().Mock, mock)
 	assert.Equal(t, mock.Response().Mock, mock)
 
 	// When
 	store.Register(mock)
-	assert.Len(t, store.mocks, 1)
-	assert.Equal(t, store.mocks[0], mock)
+
+	// Then
+	mocks = store.All()
+	assert.Len(t, mocks, 1)
+	assert.Equal(t, mocks[0], mock)
 }
 
 func TestStoreGetAll(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(nil)
+	store := gock.NewStore(nil)
 	mock := store.NewMock("foo")
 
-	// WHen
+	// When
 	mocks := store.All()
 
 	// Then
-	assert.Len(t, store.mocks, 1)
 	assert.Len(t, mocks, 1)
 	assert.Equal(t, mocks[0], mock)
+	assert.Len(t, store.All(), 1)
 }
 
 func TestStoreExists(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(nil)
+	store := gock.NewStore(nil)
 	mock := store.NewMock("foo")
 
 	// When
 	exists := store.Exists(mock)
 
-	assert.Len(t, store.mocks, 1)
+	// Then
+	mocks := store.All()
+	assert.Len(t, mocks, 1)
 	assert.True(t, exists, "mock exists")
+	assert.Equal(t, mocks[0], mock)
 }
 
 func TestStorePending(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(NewFooMatcher())
+	store := gock.NewStore(NewFooMatcher())
 	mock := store.NewMock("foo")
 	done := store.NewMock("http://foo.com")
 	done.Request().Get("/bar")
-	done.Match(&http.Request{Method: http.MethodGet, URL: &url.URL{
+	ok, err := done.Match(&http.Request{Method: http.MethodGet, URL: &url.URL{
 		Scheme: "http", Host: "foo.com", Path: "/baz",
 	}})
 
 	// Then
-	assert.Len(t, store.mocks, 2)
+	mocks := store.All()
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	assert.Len(t, mocks, 2)
 
 	// When
 	pending := store.Pending()
 
 	// Then
-	assert.Len(t, store.mocks, 1)
-	assert.Equal(t, store.mocks, pending)
-	assert.Equal(t, store.mocks[0], mock)
+	mocks = store.All()
+	assert.Len(t, mocks, 1)
+	assert.Equal(t, mocks, pending)
+	assert.Equal(t, mocks[0], mock)
 }
 
 func TestStoreIsPending(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(nil)
+	store := gock.NewStore(nil)
 	store.NewMock("foo")
 
 	// When
@@ -110,7 +122,7 @@ func TestStoreIsDone(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(nil)
+	store := gock.NewStore(nil)
 	store.NewMock("foo")
 
 	// When
@@ -131,14 +143,15 @@ func TestStoreRemove(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(nil)
+	store := gock.NewStore(nil)
 	mock := store.NewMock("foo")
 
 	// When
 	exists := store.Exists(mock)
 
 	// Then
-	assert.Len(t, store.mocks, 1)
+	mocks := store.All()
+	assert.Len(t, mocks, 1)
 	assert.True(t, exists, "mock exists")
 
 	// When
@@ -160,7 +173,7 @@ func TestStoreFlush(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	store := NewStore(nil)
+	store := gock.NewStore(nil)
 	mock1 := store.NewMock("foo")
 	mock2 := store.NewMock("foo")
 
@@ -209,7 +222,7 @@ func TestMatch(t *testing.T) {
 	test.Map(t, testMatchParams).
 		Run(func(t test.Test, param MatchParams) {
 			// Given
-			store := NewStore(NewFooMatcher())
+			store := gock.NewStore(NewFooMatcher())
 			mock := store.NewMock(param.url)
 
 			// When

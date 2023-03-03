@@ -58,7 +58,7 @@ func getCaller(call func(t test.Reporter)) string {
 		})
 	t.Reporter(caller)
 	func() {
-		defer func() { recover() }()
+		defer func() { _ = recover() }()
 		call(t)
 	}()
 	return caller.path

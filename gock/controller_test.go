@@ -1,13 +1,13 @@
-package gock
+package gock_test
 
 import (
 	"net/http"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/h2non/gock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/tkrop/go-testing/gock"
 	"github.com/tkrop/go-testing/test"
 )
 
@@ -44,7 +44,7 @@ func TestController(t *testing.T) {
 	test.Map(t, testControllerParams).
 		Run(func(t test.Test, param ControllerParams) {
 			// Given
-			ctrl := NewGock(gomock.NewController(t))
+			ctrl := gock.NewGock(gomock.NewController(t))
 			ctrl.MockStore.Matcher = NewFooMatcher()
 			ctrl.New("http://foo.com").Get("/bar").Times(1).Reply(200)
 			client := &http.Client{}
@@ -69,7 +69,7 @@ func TestController(t *testing.T) {
 			} else {
 				assert.False(t, ctrl.MockStore.IsDone(), "mock not done")
 			}
-			ctrl.cleanup()
+			ctrl.Cleanup()
 		})
 }
 
@@ -82,7 +82,7 @@ func TestPanic(t *testing.T) {
 	}()
 
 	// When
-	NewGock(gomock.NewController(struct{ gomock.TestReporter }{}))
+	gock.NewGock(gomock.NewController(struct{ gomock.TestReporter }{}))
 
 	// Then
 	assert.Fail(t, "did not panic")

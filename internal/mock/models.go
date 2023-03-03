@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -84,10 +85,9 @@ func (t *Type) Update(loader Loader) {
 
 		name := pkgs[0].Name
 		if !t.IsPackageMatch(pkgs) && name != "" {
-			// TODO: switch default to <pkg>_test
-			// if !strings.HasSuffix(name, "_test") {
-			// 	name = name + "_test"
-			// }
+			if !strings.HasSuffix(name, "_test") {
+				name += "_test"
+			}
 			t.Package = name
 		}
 	}
@@ -103,14 +103,14 @@ func (t *Type) IsPackageMatch(pkgs []*packages.Package) bool {
 	}
 
 	for _, pkg := range pkgs {
-		pname := pkg.Name
-		if name == pname {
+		switch pname := pkg.Name; {
+		case pname == name:
 			return true
-		} else if strings.HasSuffix(pname, "_test") {
+		case strings.HasSuffix(pname, "_test"):
 			if pname[:len(pname)-5] == name {
 				return true
 			}
-		} else if pname+"_test" == name {
+		case pname+"_test" == name:
 			return true
 		}
 	}
@@ -122,7 +122,7 @@ func (t *Type) IsPackageMatch(pkgs []*packages.Package) bool {
 func (t *Type) Matcher() (*TypeMatcher, error) {
 	name, err := regexp.Compile(t.Name)
 	if err != nil {
-		return nil, err
+		return nil, err //nolint:wrapcheck
 	}
 	file := ""
 	info, err := os.Stat(t.File)
@@ -264,7 +264,7 @@ func NewFiles(mocks []*Mock, imports ...*Import) []*File {
 		target := mock.Target.Copy()
 		target.Name = "" // file target must ignore target name!
 		if builder, ok := bmap[*target]; !ok {
-			builder := NewFileBuilder(target).AddMocks(mock)
+			builder = NewFileBuilder(target).AddMocks(mock)
 			builders = append(builders, builder)
 			bmap[*target] = builder
 		} else {
@@ -290,7 +290,8 @@ func (file *File) Open(stdout *os.File) error {
 	}
 
 	stdout, err := os.OpenFile(target.File,
-		os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o0600)
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+		syscall.S_IRUSR|syscall.S_IWUSR)
 	file.Writer = stdout
 	if err != nil {
 		return NewErrFileOpening(target.File, err)
@@ -302,7 +303,7 @@ func (file *File) Open(stdout *os.File) error {
 func (file *File) Write(temp Template) error {
 	err := temp.Execute(file.Writer, file)
 	if err != nil {
-		return err
+		return NewErrFileWriting(file, err)
 	}
 	return nil
 }
@@ -316,7 +317,7 @@ func (file *File) Close() error {
 
 	err := file.Writer.Close()
 	if err != nil {
-		return err
+		return NewErrFileWriting(file, err)
 	}
 	return nil
 }

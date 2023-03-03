@@ -14,6 +14,13 @@ func NewErrFileOpening(path string, err error) error {
 		ErrFileOpening, path, err)
 }
 
+var ErrFileWriting = errors.New("file writing")
+
+func NewErrFileWriting(file *File, err error) error {
+	return fmt.Errorf("%w [file: %s]: %w",
+		ErrFileWriting, file.Target.File, err)
+}
+
 var ErrNotFound = errors.New("not found")
 
 func NewErrNotFound(source *Type, name string) error {
@@ -57,14 +64,14 @@ func NewErrArgInvalid(pos int, arg string) error {
 }
 
 func NewErrArgNotFound(pos int, arg string) error {
-	return fmt.Errorf("%w [pos: %d, arg: %s]: %v",
+	return fmt.Errorf("%w [pos: %d, arg: %s]: %w",
 		ErrArgInvalid, pos, arg, ErrNotFound)
 }
 
 var ErrArgFailure = errors.New("argument failure")
 
 func NewErrArgFailure(pos int, arg string, err error) error {
-	return fmt.Errorf("%w [pos: %d, arg: %s] => %v",
+	return fmt.Errorf("%w [pos: %d, arg: %s] => %w",
 		ErrArgFailure, pos, arg, err)
 }
 
