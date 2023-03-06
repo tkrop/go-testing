@@ -147,7 +147,7 @@ ensure that images are only pushed for `main`-branch and local builds.
 
 ## Run targets
 
-The [Makefile](Makefile) supports targets to startup a common DB and a common 
+The [Makefile](Makefile) supports targets to startup a common DB and a common
 AWS container image as well as to run the commands provided by the repository.
 
 ```bash
@@ -241,6 +241,7 @@ behavior of the [Makefile](Makefile).
 ### Modifying variables
 
 TODO: add content!
+
 
 ### Running commands
 

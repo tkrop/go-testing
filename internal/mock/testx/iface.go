@@ -1,6 +1,6 @@
-// Package test contains an interface and types for testing the mock package
-// loading and mock file generating from template. The interface and structs
-// contain the minimal amount of features to cover all test aspects.
+// Package test_test contains an interface and types for testing the mock
+// package loading and mock file generating from template. The interface and
+// structs contain the minimal amount of features to cover all test aspects.
 package test_test
 
 import (

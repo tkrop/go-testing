@@ -17,7 +17,11 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
+//revive:disable
+
 //go:generate mockgen -package=mock_test -destination=mock_template_test.go -source=template.go Template
+
+//revive:enable
 
 var (
 	targetDefault = &Type{
