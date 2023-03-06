@@ -1,0 +1,86 @@
+# Translates the 'golangci-lint' settings into an codacy understandable format.
+
+# When set to false, ignores files with "GENERATED" header, similar to golint
+ignoreGeneratedHeader = true
+
+# Sets the default severity to "warning"
+severity = "error"
+
+# Sets the default failure confidence. This means that linting errors
+# with less than 0.8 confidence will be ignored.
+confidence = 0.8
+
+# Sets the error code for failures with severity "error"
+errorCode = 1
+
+# Sets the error code for failures with severity "warning"
+warningCode = 0
+
+# Enables all available rules
+enableAllRules = true
+
+# No need to enforce a file header.
+[rule.file-header]
+  disabled = true
+
+# Reports on each file in a package.
+[rule.package-comments]
+  disabled = true
+
+# Reports on comments mismatching comments.
+[rule.exported]
+  disabled = true
+
+# No need to exclude import shadowing.
+[rule.import-shadowing]
+  disabled = true
+
+# Fails to exclude nolint directives from reporting.
+[rule.comment-spacings]
+  disabled = true
+
+# Fails to disable writers that actually cannot return errors.
+[rule.unhandled-error]
+  disabled = true
+
+# Fails to restrict sufficiently in switches with numeric values.
+[rule.add-constant]
+  disabled = true
+
+# Rule prevents intentional usage of similar variable names.
+[rule.flag-parameter]
+  disabled = true
+
+# Enables a more experienced cyclomatic complexity (we enabled a log of rules
+# to counter-act the complexity trap).
+[rule.cyclomatic]
+  arguments = [20]
+
+# Enables a more experienced cognitive complexity (we enabled a lot of rules
+# to counter-act the complexity tryp).
+[rule.cognitive-complexity]
+  arguments = [20]
+
+# Limit line-length to increase readability.
+[rule.line-length-limit]
+  arguments = [100]
+
+# We are a bit more relexed with function length consistent with funlen.
+[rule.function-length]
+  arguments = [40,60]
+
+# Limit arguments of functions to the maximum understandable value.
+[rule.argument-limit]
+  arguments = [6]
+
+# Limit results of functions to the maximum understandable value.
+[rule.function-result-limit]
+  arguments = [4]
+
+# Raise the limit a bit to allow more complex package models.
+[rule.max-public-structs]
+  arguments = [8]
+
+# I do not know what I'm doing here...
+[rule.banned-characters]
+  arguments = ["Ω", "Σ", "σ", "7"]

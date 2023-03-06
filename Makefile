@@ -25,7 +25,7 @@ TEMPDIR := $(RUNDIR)/temp
 TEST_ALL := $(BUILDIR)/test-all.cover
 TEST_UNIT := $(BUILDIR)/test-unit.cover
 TEST_BENCH := $(BUILDIR)/test-bench.cover
-LINT_ALL := lint-base lint-apis
+LINT_ALL := lint-base lint-revive lint-apis
 
 # Include required custom variables.
 ifneq ("$(wildcard Makefile.vars)","")
@@ -47,6 +47,7 @@ TOOLS ?= github.com/golang/mock/mockgen@latest \
 	github.com/tkrop/go-testing/cmd/mock@latest \
 	github.com/zalando/zally/cli/zally@latest \
 	github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
+	github.com/mgechev/revive@latest \
 	golang.org/x/tools/cmd/goimports@latest \
 	mvdan.cc/gofumpt@latest \
 	github.com/daixiang0/gci@latest \
@@ -159,7 +160,7 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
 .PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
-.PHONY: lint lint-base lint-plus lint-all lint-apis format
+.PHONY: lint lint-base lint-plus lint-all lint-revive lint-apis format
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: install $(addprefix install-, $(COMMANDS))
@@ -262,6 +263,8 @@ update-make:
 	    git show HEAD:Makefile > Makefile; \
 		git show HEAD:MAKEFILE.md > MAKEFILE.md; \
 		git show HEAD:.golangci.yaml > .golangci.yaml; \
+		git show HEAD:.codacy.yaml > .codacy.yaml; \
+		git show HEAD:revive.toml > revive.toml; \
 	  cd - \
 	); cp $${TEMPDIR}/Makefile $${TEMPDIR}/MAKEFILE.md .; \
 	rm -rf $${TEMPDIR}; \
@@ -466,6 +469,9 @@ lint-plus: init-sources
 	golangci-lint $(LINT_CMD) $(LINT_ADVANCED);
 lint-all: init-sources
 	golangci-lint $(LINT_CMD) $(LINT_EXPERT);
+
+lint-revive: init-sources
+	revive -formatter friendly -config=revive.toml $(SOURCES);
 
 lint-apis:
 	@LINTER="https://infrastructure-api-linter.zalandoapis.com"; \

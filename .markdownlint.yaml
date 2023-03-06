@@ -1,0 +1,35 @@
+# Default state for all rules
+default: true
+
+# MD012/no-multiple-blanks - Multiple consecutive blank lines
+MD012:
+  # Consecutive blank lines
+  maximum: 3
+
+# MD013/line-length - Line length
+MD013:
+  # Number of characters
+  line_length: 80
+  # Number of characters for headings
+  heading_line_length: 80
+  # Number of characters for code blocks
+  code_block_line_length: 80
+  # Include code blocks
+  code_blocks: true
+  # Include tables
+  tables: true
+  # Include headings
+  headings: true
+  # Include headings
+  headers: true
+  # Strict length checking
+  strict: true
+  # Stern length checking
+  stern: false
+
+# MD022/blanks-around-headings/blanks-around-headers - Headings should be surrounded by blank lines
+MD022:
+  # Blank lines above heading
+  lines_above: 2
+  # Blank lines below heading
+  lines_below: 1

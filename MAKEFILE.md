@@ -66,13 +66,14 @@ The [Makefile](Makefile) supports different targets that can help with linting
 as well as with fixing the linter problems - if possible.
 
 ```bash
-make lint        # short cut to execute 'lint-base lint-apis'
-make lint-base   # lints the go-code using a baseline setting
-make lint-plus   # lints the go-code using an advanced setting
-make lint-all    # lints the go-code using an all-in expert setting
-make lint-api    # lints the api specifications in '/zalando-apis'
+make lint         # short cut to execute 'lint-base lint-revive lint-apis'
+make lint-base    # lints the go-code using a baseline settings
+make lint-plus    # lints the go-code using an advanced settings
+make lint-all     # lints the go-code using an all-in expert settings
+make lint-revive  # lints the go-code using the codacy revive settings
+make lint-api     # lints the api specifications in '/zalando-apis'
 
-make format      # formats the code to fix selected linter violations
+make format       # formats the code to fix selected linter violations
 ```
 
 The `lint-*` targets allow command line arguments:
@@ -118,8 +119,8 @@ If a command, service, job has not been build before, it is first build.
 The delete targets delete the latest installed command from `${GOPATH}/bin`.
 
 ```bash
-make install      # Deletes all commands
-make install-(*)  # Deletes the matched command
+make delete      # Deletes all commands
+make delete-(*)  # Deletes the matched command
 ```
 
 **Note:** Please use carefully, if your project uses common command names.
