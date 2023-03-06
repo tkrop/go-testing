@@ -20,14 +20,14 @@ type Caller struct {
 
 // Errorf is the caller reporter function to capture the callers file and line
 // number of the `Errorf` call.
-func (c *Caller) Errorf(format string, args ...any) {
+func (c *Caller) Errorf(_ string, _ ...any) {
 	_, path, line, _ := runtime.Caller(1)
 	c.path = path + ":" + strconv.Itoa(line)
 }
 
 // Fatalf is the caller reporter function to capture the callers file and line
 // number of the `Fatalf` call.
-func (c *Caller) Fatalf(format string, args ...any) {
+func (c *Caller) Fatalf(_ string, _ ...any) {
 	_, path, line, _ := runtime.Caller(1)
 	c.path = path + ":" + strconv.Itoa(line)
 	panic("finished") // prevents goexit.
@@ -41,7 +41,7 @@ func (c *Caller) FailNow() {
 	panic("finished") // prevents goexit.
 }
 
-func (c *Caller) Panic(arg any) {
+func (c *Caller) Panic(_ any) {
 	_, path, line, _ := runtime.Caller(1)
 	c.path = path + ":" + strconv.Itoa(line)
 	panic("finished") // prevents goexit.
