@@ -25,7 +25,7 @@ TEMPDIR := $(RUNDIR)/temp
 TEST_ALL := $(BUILDIR)/test-all.cover
 TEST_UNIT := $(BUILDIR)/test-unit.cover
 TEST_BENCH := $(BUILDIR)/test-bench.cover
-LINT_ALL := lint-base lint-revive lint-apis
+LINT_ALL := lint-base lint-revive lint-markdown lint-apis
 
 # Include required custom variables.
 ifneq ("$(wildcard Makefile.vars)","")
@@ -43,14 +43,15 @@ REPOSITORY ?= $(shell git remote get-url origin | \
 TEAM ?= $(shell cat .zappr.yaml | grep "X-Zalando-Team" | \
 	sed "s/.*:[[:space:]]*\([a-z-]*\).*/\1/")
 
-TOOLS ?= github.com/golang/mock/mockgen@latest \
+GOTOOLS ?= github.com/golang/mock/mockgen@latest \
 	github.com/tkrop/go-testing/cmd/mock@latest \
 	github.com/zalando/zally/cli/zally@latest \
 	github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
 	github.com/mgechev/revive@latest \
 	golang.org/x/tools/cmd/goimports@latest \
 	mvdan.cc/gofumpt@latest \
-	github.com/daixiang0/gci@latest \
+	github.com/daixiang0/gci@latest
+NPMTOOLS ?= markdownlint-cli
 
 IMAGE_PUSH ?= test
 IMAGE_VERSION ?= snapshot
@@ -160,8 +161,8 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
 .PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
-.PHONY: lint lint-base lint-plus lint-all lint-revive lint-apis format
-.PHONY: build build-native build-linux build-image build-docker
+.PHONY: lint lint-base lint-plus lint-all lint-revive lint-markdown lint-apis
+.PHONY: format build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: install $(addprefix install-, $(COMMANDS))
 .PHONY: delete $(addprefix delete-, $(COMMANDS))
@@ -314,10 +315,16 @@ clean-init:
 	rm -vrf .git/hooks/pre-commit;
 
 clean-tools:
-	@for TOOL in $(TOOLS); do \
+	@for TOOL in $(GOTOOLS); do \
 	  echo "go clean -i $${TOOL%%@*}"; \
 	  go clean -i $${TOOL%%@*} 2>/dev/null || true; \
-	done; \
+	done;
+	@if command -v npm &> /dev/null; then \
+	  for TOOL in $(NPMTOOLS); do \
+	    echo "npm uninstall --global $${TOOL}"; \
+	    npm install --global $${TOOL} || exit -1; \
+	  done; \
+	fi; \
 
 # Clean up all running container images.
 clean-run: $(addprefix clean-run-, $(COMMANDS) db aws)
@@ -328,11 +335,17 @@ $(addprefix clean-run-, $(COMMANDS) db aws): clean-run-%: run-clean-%
 init: clean-init init-tools init-hooks init-packages
 
 init-tools:
-	@for TOOL in $(TOOLS); do \
+	@for TOOL in $(GOTOOLS); do \
 	  echo "go install $${TOOL}"; \
 	  go install $${TOOL} || exit -1; \
 	done; \
 	go mod tidy -compat=${GOVERSION};
+	@if command -v npm &> /dev/null; then \
+	  for TOOL in $(NPMTOOLS); do \
+	    echo "npm install --global $${TOOL}"; \
+	    npm install --global $${TOOL} || exit -1; \
+	  done; \
+	fi; \
 
 init-hooks: .git/hooks/pre-commit
 .git/hooks/pre-commit:
@@ -472,6 +485,9 @@ lint-all: init-sources
 
 lint-revive: init-sources
 	revive -formatter friendly -config=revive.toml $(SOURCES);
+
+lint-markdown: init-sources
+	markdownlint --config .markdownlint.yaml .;
 
 lint-apis:
 	@LINTER="https://infrastructure-api-linter.zalandoapis.com"; \

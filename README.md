@@ -1,3 +1,4 @@
+<!-- markdownlint-disable -->
 [![Build](https://github.com/tkrop/go-testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/go-testing/actions/workflows/go.yaml)
 [![Coverage](https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/go-testing?branch=main)
 [![Libraries](https://img.shields.io/librariesio/release/github/tkrop/go-testing)](https://libraries.io/github/tkrop/go-testing)
@@ -6,6 +7,7 @@
 [![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
 [![Report](https://goreportcard.com/badge/github.com/tkrop/go-testing)](https://goreportcard.com/report/github.com/tkrop/go-testing)
 [![Docs](https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg)](https://pkg.go.dev/github.com/tkrop/go-testing)
+<!-- markdownlint-enable -->
 
 
 # Testing framework
@@ -18,6 +20,7 @@ small extensions for [testing][testing], [Gomock][gomock], and [Gock][gock] to
 enable isolated, parallel, parameterized tests using a common pattern to setup
 strongly validating mock request and response chains that work across detached
 `go` routines and various error scenarios.
+
 
 ## Example Usage
 
@@ -93,10 +96,10 @@ under test as outlined above.
 ## Why parallel tests?
 
 Running tests in parallel make the feedback loop on failures faster, help to
-detect failures from concurrent access and race conditions using `go test -race`,
-that else only appear randomly in production, and foster a design with clear
-responsibilities. This side-effects compensate for the small additional effort
-needed to write parallel tests.
+detect failures from concurrent access and race conditions using `go test
+-race`, that else only appear randomly in production, and foster a design with
+clear responsibilities. This side-effects compensate for the small additional
+effort needed to write parallel tests.
 
 
 ## Why isolation of tests?
@@ -106,7 +109,8 @@ in parallel. Isolation must happen from input perspective, i.e. the outcome of
 a test must not be affected by any previous running test, but also from output
 perspective, i.e. it must not affect any later running test. This is often
 complicated since many tools, patterns, and practices break the test isolation
-(see [requirements for parallel isolated tests](#requirements-for-parallel-isolated-tests).
+(see [requirements for parallel isolated
+tests](#requirements-for-parallel-isolated-tests).
 
 
 ## Why strong validation?
@@ -177,9 +181,9 @@ Examples for such shared resources in common frameworks are:
   and interfaces to allow for mocking.
 * Using of [Gock][gock] to mock HTTP responses on transport level - make use
   of the [gock](gock)-controller provided by this framework.
-* Using the [Gin](gin) HTTP web framework which uses a common `json`-parser
+* Using the [Gin][gin] HTTP web framework which uses a common `json`-parser
   setup instead of a service specific configuration. While this is not a huge
-  deal, the repeated global setup creates race alerts. Instead use [chi](chi)
+  deal, the repeated global setup creates race alerts. Instead use [chi][chi]
   that supports a service specific configuration.
 
 With a careful design the general pattern provided above can be used to support

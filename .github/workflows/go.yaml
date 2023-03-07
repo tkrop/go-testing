@@ -4,7 +4,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
@@ -15,9 +14,13 @@ jobs:
     - name: Build and tests
       run: make cdp
 
-#    - name: Upload coverage
-#      run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r build/test-all.cover
-
+    - name: Upload coverage
+      env:
+        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      run: |-
+        bash <(curl -Ls https://coverage.codacy.com/get.sh) report \
+          --force-coverage-parser go -r build/test-all.cover
+    
     - name: Send coverage 
       uses: shogo82148/actions-goveralls@v1
       with:
