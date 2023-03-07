@@ -33,7 +33,8 @@ func TestUnit(t *testing.T) {
 
 The controller is also fully integrated in to the [mock](../mock)-framework, so
 that you can just request the controller via the [gomock][gomock] constructor
-`mock.Get(mocks, gock.NewGock)` (see [Example](#integration-with-mock-framework))
+`mock.Get(mocks, gock.NewGock)` (see
+[Example](#integration-with-mock-framework))
 
 
 ## Migration from Gock

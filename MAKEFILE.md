@@ -66,14 +66,15 @@ The [Makefile](Makefile) supports different targets that can help with linting
 as well as with fixing the linter problems - if possible.
 
 ```bash
-make lint         # short cut to execute 'lint-base lint-revive lint-apis'
-make lint-base    # lints the go-code using a baseline settings
-make lint-plus    # lints the go-code using an advanced settings
-make lint-all     # lints the go-code using an all-in expert settings
-make lint-revive  # lints the go-code using the codacy revive settings
-make lint-api     # lints the api specifications in '/zalando-apis'
+make lint          # short cut to execute 'lint-base lint-revive lint-apis'
+make lint-base     # lints the go-code using a baseline settings
+make lint-plus     # lints the go-code using an advanced settings
+make lint-all      # lints the go-code using an all-in expert settings
+make lint-revive   # lints the go-code using the codacy revive settings
+make lint-markdown # lints the documentation using markdown settings
+make lint-api      # lints the api specifications in '/zalando-apis'
 
-make format       # formats the code to fix selected linter violations
+make format        # formats the code to fix selected linter violations
 ```
 
 The `lint-*` targets allow command line arguments:
@@ -91,8 +92,8 @@ expert `all` setting that runs all but the disabled linters.
 The lint expert levels can be customized in two ways.
 
 1. Linters can be enabled and disabled providing the linter names to the space
-   separated lists via the variables `LINT_ENABLED`, `LINT_DISABLED`, and
-   `LINT_ADVANCED`.
+  separated lists via the variables `LINT_ENABLED`, `LINT_DISABLED`, and
+  `LINT_ADVANCED`.
 2. The linters settings can be configuration via the `.golangci.yaml` file.
 
 Howver, customizing the `.golangci.yaml` is currently not advised, since the

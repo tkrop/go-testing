@@ -9,6 +9,6 @@
 * The `target package` is provided via `--target(-pkg)=...`. It can also be
   provided by a command line argument matching the regular expression
   `^[a-z_]*`.
-* The `target file` is provided via `--target(-file)=...`. It can be also be 
+* The `target file` is provided via `--target(-file)=...`. It can be also be
   provided by a command line argument matching the regular expression
   `^[a-z.].*/mock_[^/]*\.go`).
