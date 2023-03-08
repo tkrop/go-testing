@@ -78,7 +78,7 @@ func FieldArgOf(v reflect.Value, i int) any {
 
 	// Get the field value from the copy.
 	vf = vr.Field(i)
-	rf := reflect.NewAt(vf.Type(), unsafe.Pointer(vf.UnsafeAddr())).Elem()
+	rf := reflect.NewAt(vf.Type(), unsafe.Pointer(vf.UnsafeAddr())).Elem() //#nosec
 
 	var value any
 	reflect.ValueOf(&value).Elem().Set(rf)

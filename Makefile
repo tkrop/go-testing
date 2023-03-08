@@ -25,7 +25,9 @@ TEMPDIR := $(RUNDIR)/temp
 TEST_ALL := $(BUILDIR)/test-all.cover
 TEST_UNIT := $(BUILDIR)/test-unit.cover
 TEST_BENCH := $(BUILDIR)/test-bench.cover
-LINT_ALL := lint-base lint-revive lint-markdown lint-apis
+
+INIT_ALL := clean-init init-tools init-codacy init-hooks init-packages
+LINT_ALL := lint-base lint-codacy lint-markdown lint-apis
 
 # Include required custom variables.
 ifneq ("$(wildcard Makefile.vars)","")
@@ -47,10 +49,14 @@ GOTOOLS ?= github.com/golang/mock/mockgen@latest \
 	github.com/tkrop/go-testing/cmd/mock@latest \
 	github.com/zalando/zally/cli/zally@latest \
 	github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
-	github.com/mgechev/revive@latest \
 	golang.org/x/tools/cmd/goimports@latest \
 	mvdan.cc/gofumpt@latest \
-	github.com/daixiang0/gci@latest
+	github.com/daixiang0/gci@latest \
+	github.com/mgechev/revive@latest \
+	github.com/securego/gosec/v2/cmd/gosec@latest \
+	github.com/tsenart/deadcode@latest \
+	honnef.co/go/tools/cmd/staticcheck@latest \
+
 NPMTOOLS ?= markdownlint-cli
 
 IMAGE_PUSH ?= test
@@ -80,11 +86,18 @@ AWS_SERVICES ?= sqs s3
 AWS_VERSION ?= latest
 AWS_IMAGE ?= localstack/localstack:$(AWS_VERSION)
 
-# default target list for all and cdp builds.
+# Setup codacy integration.
+CODACY_CLIENTS ?= aligncheck deadcode
+CODACY_BINARIES ?= gosec staticcheck
+CODACY_GOSEC_VERSION ?= 0.4.5
+CODACY_STATICCHECK_VERSION ?= 3.0.12
+
+# Default target list for all and cdp builds.
 TARGETS_ALL ?= init test lint build
 TARGETS_CDP ?= clean clean-run init test lint \
 	$(if $(filter $(IMAGE_PUSH),never),,\
 	  $(if $(wildcard $(CONTAINER)),image-push,))
+TARGETS_INIT ?= $(INIT_ALL)
 TARGETS_LINT ?= $(LINT_ALL)
 
 
@@ -136,6 +149,10 @@ else
   $(info info: please define custom functions in Makefile.defs)
 endif
 
+# Setup conversion variables.
+define upper
+$(shell echo "$(1)" | tr '[:lower:]' '[:upper:]')
+endef
 
 # Setup default environment variables.
 COMMANDS := $(shell grep -lr "func main()" cmd/*/main.go 2>/dev/null | \
@@ -160,8 +177,11 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: clean clean-init clean-build clean-tools clean-run
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
+.PHONY: init-codacy $(addprefix init-, $(CODACY_BINARIES))
 .PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
-.PHONY: lint lint-base lint-plus lint-all lint-revive lint-markdown lint-apis
+.PHONY: lint lint-base lint-plus lint-all lint-markdown lint-apis
+.PHONY: lint-gci lint-revive lint-gosec lint-staticcheck
+.PHONY: lint-codacy $(addprefix lint-, $(CODACY_CLIENTS))
 .PHONY: format build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: install $(addprefix install-, $(COMMANDS))
@@ -332,7 +352,7 @@ $(addprefix clean-run-, $(COMMANDS) db aws): clean-run-%: run-clean-%
 
 
 # Initialize tooling and packages for building.
-init: clean-init init-tools init-hooks init-packages
+init: $(TARGETS_INIT)
 
 init-tools:
 	@for TOOL in $(GOTOOLS); do \
@@ -347,6 +367,14 @@ init-tools:
 	  done; \
 	fi; \
 
+init-codacy: $(addprefix init-, $(CODACY_BINARIES))
+$(addprefix init-, $(CODACY_BINARIES)): init-%:
+	mkdir -p $(RUNDIR); VERSION="$(CODACY_$(call upper,$*)_VERSION)"; \
+	BASE="https://github.com/codacy/codacy-$*/releases/download"; \
+	curl -sL "$${BASE}/$${VERSION}/codacy-$*-$${VERSION}" \
+		-o $(RUNDIR)/codacy-$*-$${VERSION}; \
+	chmod 700 $(RUNDIR)/codacy-$*-$${VERSION}; \
+
 init-hooks: .git/hooks/pre-commit
 .git/hooks/pre-commit:
 	@echo -ne "#!/bin/sh\nmake lint test-unit" >$@; chmod 755 $@;
@@ -360,15 +388,26 @@ $(MOCKS): go.sum $(MOCK_SOURCES)
 	  sed -E "s:.*$@=([^ ]*).*$$:\1:;")";
 
 
-test: test-all
+test: test-all test-upload
 test-all: test-clean init-sources $(TEST_ALL)
 test-unit: test-clean init-sources $(TEST_UNIT)
 test-bench: test-clean init-sources $(TEST_BENCH)
 test-clean:
 	@if [ -f "$(TEST_ALL)" ]; then rm -vf $(TEST_ALL); fi; \
 	 if [ -f "$(TEST_UNIT)" ]; then rm -vf $(TEST_UNIT); fi; \
-	 if [ -f "$(TEST_BENCH)" ]; then rm -vf $(TEST_BENCH); fi;
+	 if [ -f "$(TEST_BENCH)" ]; then rm -vf $(TEST_BENCH); fi; \
+
 test-upload:
+	@FILE=$$(ls -Art "$(TEST_ALL)" "$(TEST_UNIT)" \
+	  "$(TEST_BENCH)" 2>/dev/null); \
+	if [ -n "$(CODACY_PROJECT_TOKEN)" ]; then \
+	  bash <(curl -Ls https://coverage.codacy.com/get.sh) report \
+	    --force-coverage-parser go -r "$${FILE}"; \
+	elif [ -n "$(CODACY_API_TOKEN)" ]; then \
+	  bash <(curl -Ls https://coverage.codacy.com/get.sh) report \
+	    --force-coverage-parser go -r "$${FILE}"; \
+	fi; \
+
 test-cover:
 	@FILE=$$(ls -Art "$(TEST_ALL)" "$(TEST_UNIT)" \
 	  "$(TEST_BENCH)" 2>/dev/null); \
@@ -462,10 +501,10 @@ endif
 
 LINT_CMD ?= run
 ifeq ($(RUNARGS),list)
-    LINT_CMD := linters
+  LINT_CMD := linters
 else ifneq ($(RUNARGS),)
-	LINT_CMD := run
-	LINT_ENABLED := $(RUNARGS)
+  LINT_CMD := run
+  LINT_ENABLED := $(RUNARGS)
 endif
 
 LINT_BASELINE := --enable $(LINT_ENABLED) \
@@ -476,15 +515,56 @@ LINT_EXPERT := --enable-all --disable $(LINT_DISABLED) \
 	$(LINT_FLAGS) $(LINT_CONFIG)
 
 lint: $(TARGETS_LINT)
-lint-base: init-sources
-	golangci-lint $(LINT_CMD) $(LINT_BASELINE);
-lint-plus: init-sources
-	golangci-lint $(LINT_CMD) $(LINT_ADVANCED);
-lint-all: init-sources
-	golangci-lint $(LINT_CMD) $(LINT_EXPERT);
+lint-base: init-sources; golangci-lint $(LINT_CMD) $(LINT_BASELINE);
+lint-plus: init-sources; golangci-lint $(LINT_CMD) $(LINT_ADVANCED);
+lint-all: init-sources;	golangci-lint $(LINT_CMD) $(LINT_EXPERT);
 
-lint-revive: init-sources
-	revive -formatter friendly -config=revive.toml $(SOURCES);
+ifneq ($(CODACY_PROJECT_TOKEN),)
+  CODACY_UPLOAD := \
+    curl -XPOST -L -H "project-token: $(CODACY_PROJECT_TOKEN)" \
+      -H "Content-type: application/json" -d @- \
+      "https://api.codacy.com/2.0/commit/$(COMMIT)/issuesRemoteResults"; \
+    curl -XPOST -L -H "project-token: $(CODACY_PROJECT_TOKEN)" \
+      -H "Content-type: application/json" \
+      "https://api.codacy.com/2.0/commit/$(COMMIT)/resultsFinal"
+  LINT_STATICCHECK := staticcheck -tests -f json ./... | \
+    $(RUNDIR)/codacy-staticcheck-$(CODACY_STATICCHECK_VERSION) | $(CODACY_UPLOAD)
+  LINT_GOSEC := gosec -fmt json ./... | \
+    $(RUNDIR)/codacy-gosec-$(CODACY_GOSEC_VERSION) | $(CODACY_UPLOAD)
+else
+  LINT_STATICCHECK := staticcheck -tests ./...
+  LINT_GOSEC := gosec -log /dev/null ./...
+endif
+LINT_REVIVE := revive -formatter friendly -config=revive.toml $(SOURCES)
+
+lint-codacy: lint-revive lint-gosec lint-staticcheck
+lint-codacy: $(addprefix lint-, $(CODACY_CLIENTS)) 
+$(addprefix lint-, $(CODACY_CLIENTS)): lint-%: init-sources
+	@LARGS=("--allow-network" "--skip-uncommitted-files-check"); \
+	if [ -n "$(CODACY_PROJECT_TOKEN)" ]; then \
+	  LARGS+=("--project-token" "$(CODACY_PROJECT_TOKEN)"); \
+	  LARGS+=("--upload" "--verbose"); \
+	elif [ -n "$(CODACY_API_TOKEN)" ]; then \
+	  LARGS+=("--provider" "$(CODACY_PROVIDER)"); \
+	  LARGS+=("--username" "$(CODACY_USER)"); \
+	  LARGS+=("--project" "$(CODACY_PROJECT)"); \
+	  LARGS+=("--api-token" "$(CODACY_API_TOKEN)"); \
+	  LARGS+=("--upload" "--verbose"); \
+	fi; \
+	echo $(IMAGE_CMD) run --rm=true --env CODACY_CODE="/code" \
+	  --volume /var/run/docker.sock:/var/run/docker.sock \
+	  --volume /tmp:/tmp --volume ".":"/code" \
+	  codacy/codacy-analysis-cli analyze $${LARGS[@]} --tool $*; \
+	$(IMAGE_CMD) run --rm=true --env CODACY_CODE="/code" \
+	  --volume /var/run/docker.sock:/var/run/docker.sock \
+	  --volume /tmp:/tmp --volume ".":"/code" \
+	  codacy/codacy-analysis-cli analyze $${LARGS[@]} --tool $* \
+
+
+lint-revive: init-sources; $(LINT_REVIVE);
+lint-staticcheck: init-sources; $(LINT_STATICCHECK);
+lint-gosec: init-sources; $(LINT_GOSEC);
+
 
 lint-markdown: init-sources
 	markdownlint --config .markdownlint.yaml .;
