@@ -70,7 +70,7 @@ make lint          # short cut to execute 'lint-base lint-revive lint-apis'
 make lint-base     # lints the go-code using a baseline settings
 make lint-plus     # lints the go-code using an advanced settings
 make lint-all      # lints the go-code using an all-in expert settings
-make lint-revive   # lints the go-code using the codacy revive settings
+make lint-codacy   # lints the go-code using codacy client side settings
 make lint-markdown # lints the documentation using markdown settings
 make lint-api      # lints the api specifications in '/zalando-apis'
 
@@ -174,10 +174,11 @@ and only switch application ports and setups manually when necessary.
 The [Makefile](Makefile) supports targets for common maintainance tasks.
 
 ```bash
-make update       # short cut to execute update-deps
-make update-deps  # updates the project dependencies to the latest version
-make update-go    # updates go to the latest available version
-make update-make  # updates the Makefile to the latest available version
+make update        # short cut to execute update-deps
+make update-deps   # updates the project dependencies to the latest version
+make update-go     # updates go to the latest available version
+make update-make   # updates the Makefile to the latest available version
+make update-codacy # updates the codacy configs to latest versions
 ```
 
 It is advised to use and extend this targets when necessary.
@@ -204,8 +205,9 @@ already added as prequisits for targets that need them. So there is usually
 no need to call them directly.
 
 ```bash
-make init           # short cut for init-tools init-hooks init-packages
-make init-tools     # initializes the requeired tool using `go install`
+make init           # short cut for 'init-tools init-hooks init-packages'
+make init-tools     # initializes the tools for running the default targets
+make init-codacy    # initializes the tools for running the codacy targets
 make init-hooks     # initializes github hooks for pre-commit, etc
 make init-packages  # initializes and downloads packages dependencies
 make init-sources   # initializes sources by generating mocks, etc

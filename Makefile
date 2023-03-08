@@ -1,19 +1,5 @@
 # === do not change this Makefile! ===
-# === extended via Makefile.{vars,defs,targets} ===
-#
-# This Makefile is majorly working by convention.
-#
-# Please visit
-#
-# https://github.bus.zalan.do/builder-knowledge/go-base/MAKEFILE.md
-#
-# for more information and help.
-#
-# Note: You can discover make targets using the tab-completion of your shell.
-#
-# Warning: The Makefile automatically installs a 'pre-commit' hook (overwritng
-# any pre-existing hook) that runs 'make lint test' before allowing to commit.
-#
+# See MAKEFILE.md for documentation.
 
 SHELL := /bin/bash
 
@@ -173,7 +159,7 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 
 # Setup phony make targets to always be executed.
 .PHONY: all cdp bump release
-.PHONY: update update-go update-deps update-make
+.PHONY: update update-go update-deps update-make update-codacy
 .PHONY: clean clean-init clean-build clean-tools clean-run
 .PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-tools init-hooks init-packages init-sources
@@ -276,6 +262,17 @@ update-go:
 	  sed -E -i "s/(cdp-runtime\/go)[0-9.-]*/\1-$(GOVERSION)/" delivery.yaml; \
 	fi; \
 
+update-deps:
+	@for DIR in $$(find . -name "*.go" | xargs dirname | sort -u); do \
+	  echo -n "update: $${DIR} -> "; cd $${DIR} && \
+	  go mod tidy -v -e -compat=${GOVERSION} && go get -u && \
+	  cd -; \
+	done; \
+
+update-make-would-be-better:
+	BASEREPO=git://github.bus.zalan.do/builder-knowledge/go-base.git; \
+	git archive --remote=$${BASEREPO} HEAD Makefile | tar -xvf -; \
+
 update-make:
 	@TEMPDIR=$$(mktemp -d) && echo "update Makefile" &&  \
 	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
@@ -284,22 +281,25 @@ update-make:
 	    git show HEAD:Makefile > Makefile; \
 		git show HEAD:MAKEFILE.md > MAKEFILE.md; \
 		git show HEAD:.golangci.yaml > .golangci.yaml; \
+	  cd - \
+	); \
+	cp $${TEMPDIR}/Makefile .; \
+	cp $${TEMPDIR}/MAKEFILE.md .; \
+	cp $${TEMPDIR}/.golangci.yaml .; \
+	rm -rf $${TEMPDIR}; \
+
+update-codacy:
+	@TEMPDIR=$$(mktemp -d) && echo "update Makefile" &&  \
+	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
+	git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && ( \
+	  cd $${TEMPDIR}; \
 		git show HEAD:.codacy.yaml > .codacy.yaml; \
 		git show HEAD:revive.toml > revive.toml; \
 	  cd - \
-	); cp $${TEMPDIR}/Makefile $${TEMPDIR}/MAKEFILE.md .; \
+	); \
+	cp $${TEMPDIR}/codacy.yaml .; \
+	cp $${TEMPDIR}/revive.toml .; \
 	rm -rf $${TEMPDIR}; \
-
-update-make-would-be-better:
-	BASEREPO=git://github.bus.zalan.do/builder-knowledge/go-base.git; \
-	git archive --remote=$${BASEREPO} HEAD Makefile | tar -xvf -; \
-
-update-deps:
-	@for DIR in $$(find . -name "*.go" | xargs dirname | sort -u); do \
-	  echo -n "update: $${DIR} -> "; cd $${DIR} && \
-	  go mod tidy -v -e -compat=${GOVERSION} && go get -u && \
-	  cd -; \
-	done; \
 
 
 # Bump version to prepare release of software.
@@ -369,11 +369,14 @@ init-tools:
 
 init-codacy: $(addprefix init-, $(CODACY_BINARIES))
 $(addprefix init-, $(CODACY_BINARIES)): init-%:
-	mkdir -p $(RUNDIR); VERSION="$(CODACY_$(call upper,$*)_VERSION)"; \
-	BASE="https://github.com/codacy/codacy-$*/releases/download"; \
-	curl -sL "$${BASE}/$${VERSION}/codacy-$*-$${VERSION}" \
-		-o $(RUNDIR)/codacy-$*-$${VERSION}; \
-	chmod 700 $(RUNDIR)/codacy-$*-$${VERSION}; \
+	@VERSION="$(CODACY_$(call upper,$*)_VERSION)"; \
+	FILE="$(RUNDIR)/codacy-$*-$${VERSION}"; \
+	if [ ! -f $${FILE} ]; then mkdir -p $(RUNDIR); \
+	  BASE="https://github.com/codacy/codacy-$*/releases/download"; \
+	  echo curl -sL $${BASE}/$${VERSION}/codacy-$*-$${VERSION} -o $${FILE}; \
+	  curl -sL $${BASE}/$${VERSION}/codacy-$*-$${VERSION} -o $${FILE}; \
+	  chmod 700 $${FILE}; \
+	fi; \
 
 init-hooks: .git/hooks/pre-commit
 .git/hooks/pre-commit:
