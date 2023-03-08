@@ -1,7 +1,6 @@
 <!-- markdownlint-disable -->
 [![Build](https://github.com/tkrop/go-testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/go-testing/actions/workflows/go.yaml)
 [![Libraries](https://img.shields.io/librariesio/release/github/tkrop/go-testing)](https://libraries.io/github/tkrop/go-testing)
-<!--[![Security](https://snyk.io/test/github/tkrop/go-testing/badge.svg)](https://snyk.io/test/github/tkrop/go-testing)-->
 [![Coverage](https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/go-testing?branch=main)
 [![Coverage](https://app.codacy.com/project/badge/Coverage/cc1c47ec5ce0493caf15c08fa72fc78c)](https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&utm_medium=referral&utm_content=tkrop/go-testing&utm_campaign=Badge_Coverage)
 [![Quality](https://app.codacy.com/project/badge/Grade/cc1c47ec5ce0493caf15c08fa72fc78c)](https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=tkrop/go-testing&amp;utm_campaign=Badge_Grade)
@@ -9,6 +8,7 @@
 [![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docs](https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg)](https://pkg.go.dev/github.com/tkrop/go-testing)
+<!--[![Security](https://snyk.io/test/github/tkrop/go-testing/badge.svg)](https://snyk.io/test/github/tkrop/go-testing)-->
 <!-- markdownlint-enable -->
 
 
