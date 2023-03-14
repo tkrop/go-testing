@@ -28,6 +28,10 @@ TEST_TIMEOUT ?= 10s
 CONTAINER ?= Dockerfile
 REPOSITORY ?= $(shell git remote get-url origin | \
 	sed "s/^https:\/\///; s/^git@//; s/.git$$//; s/:/\//;")
+GITHOSTNAME ?= $(word 1,$(subst /, ,$(REPOSITORY)))
+GITORGNAME ?= $(word 2,$(subst /, ,$(REPOSITORY)))
+GITREPONAME ?= $(word 3,$(subst /, ,$(REPOSITORY)))
+
 TEAM ?= $(shell cat .zappr.yaml | grep "X-Zalando-Team" | \
 	sed "s/.*:[[:space:]]*\([a-z-]*\).*/\1/")
 
@@ -49,13 +53,13 @@ IMAGE_PUSH ?= test
 IMAGE_VERSION ?= snapshot
 
 ifeq ($(words $(subst /, ,$(IMAGE_NAME))),3)
-  IMAGE_HOST ?= $(wordlist 1,1,$(subst /, ,$(IMAGE_NAME)))
-  IMAGE_TEAM ?= $(wordlist 2,2,$(subst /, ,$(IMAGE_NAME)))
-  IMAGE_ARTIFACT ?= $(wordlist 3,3,$(subst /, ,$(IMAGE_NAME)))
+  IMAGE_HOST ?= $(word 1,$(subst /, ,$(IMAGE_NAME)))
+  IMAGE_TEAM ?= $(word 2,$(subst /, ,$(IMAGE_NAME)))
+  IMAGE_ARTIFACT ?= $(word 3,$(subst /, ,$(IMAGE_NAME)))
 else
   IMAGE_HOST ?= pierone.stups.zalan.do
   IMAGE_TEAM ?= $(TEAM)
-  IMAGE_ARTIFACT ?= $(wordlist 3,3,$(subst /, ,$(REPOSITORY)))
+  IMAGE_ARTIFACT ?= $(GITREPONAME)
 endif
 IMAGE ?= $(IMAGE_HOST)/$(IMAGE_TEAM)/$(IMAGE_ARTIFACT):$(IMAGE_VERSION)
 
@@ -73,6 +77,10 @@ AWS_VERSION ?= latest
 AWS_IMAGE ?= localstack/localstack:$(AWS_VERSION)
 
 # Setup codacy integration.
+CODACY_PROVIDER ?= ghe
+CODACY_USER ?= $(GITORGNAME)
+CODACY_PROJECT ?= $(GITREPONAME)
+CODACY_API_BASE_URL ?= https://codacy.bus.zalan.do
 CODACY_CLIENTS ?= aligncheck deadcode
 CODACY_BINARIES ?= gosec staticcheck
 CODACY_GOSEC_VERSION ?= 0.4.5
@@ -270,35 +278,30 @@ update-deps:
 	done; \
 
 update-make-would-be-better:
-	BASEREPO=git://github.bus.zalan.do/builder-knowledge/go-base.git; \
-	git archive --remote=$${BASEREPO} HEAD Makefile | tar -xvf -; \
+	BASE="https://raw.githubusercontent.com/tkrop/go-testing/main"; \
+	curl ${BASE}/Makefile > Makefile;
 
 update-make:
-	@TEMPDIR=$$(mktemp -d) && echo "update Makefile" &&  \
+	@TEMPDIR=$$(mktemp -d) && DIR="$$(shell pwd)" && \
 	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
 	git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && ( \
-	  cd $${TEMPDIR}; \
-	    git show HEAD:Makefile > Makefile; \
-		git show HEAD:MAKEFILE.md > MAKEFILE.md; \
-		git show HEAD:.golangci.yaml > .golangci.yaml; \
-	  cd - \
+	  cd $${TEMPDIR}; echo "update Makefile" &&  \
+	    git show HEAD:Makefile > $${DIR}/Makefile; \
+	    git show HEAD:MAKEFILE.md > $${DIR}/MAKEFILE.md; \
+	    git show HEAD:.golangci.yaml > $${DIR}/.golangci.yaml; \
+	  cd $${DIR} \
 	); \
-	cp $${TEMPDIR}/Makefile .; \
-	cp $${TEMPDIR}/MAKEFILE.md .; \
-	cp $${TEMPDIR}/.golangci.yaml .; \
 	rm -rf $${TEMPDIR}; \
 
 update-codacy:
-	@TEMPDIR=$$(mktemp -d) && echo "update Makefile" &&  \
+	@TEMPDIR=$$(mktemp -d) && DIR="$$(shell pwd)" && \
 	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
 	git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && ( \
-	  cd $${TEMPDIR}; \
-		git show HEAD:.codacy.yaml > .codacy.yaml; \
-		git show HEAD:revive.toml > revive.toml; \
-	  cd - \
+	  cd $${TEMPDIR}; echo "update Makefile" &&  \
+	    git show HEAD:.codacy.yaml > .$${DIR}/codacy.yaml; \
+	    git show HEAD:revive.toml > $${DIR}/revive.toml; \
+	  cd $${DIR} \
 	); \
-	cp $${TEMPDIR}/codacy.yaml .; \
-	cp $${TEMPDIR}/revive.toml .; \
 	rm -rf $${TEMPDIR}; \
 
 
@@ -526,10 +529,10 @@ ifneq ($(CODACY_PROJECT_TOKEN),)
   CODACY_UPLOAD := \
     curl -XPOST -L -H "project-token: $(CODACY_PROJECT_TOKEN)" \
       -H "Content-type: application/json" -d @- \
-      "https://api.codacy.com/2.0/commit/$(COMMIT)/issuesRemoteResults"; \
+      "$(CODACY_API_BASE_URL)/2.0/commit/$(COMMIT)/issuesRemoteResults"; \
     curl -XPOST -L -H "project-token: $(CODACY_PROJECT_TOKEN)" \
       -H "Content-type: application/json" \
-      "https://api.codacy.com/2.0/commit/$(COMMIT)/resultsFinal"
+      "$(CODACY_API_BASE_URL)/2.0/commit/$(COMMIT)/resultsFinal"
   LINT_STATICCHECK := staticcheck -tests -f json ./... | \
     $(RUNDIR)/codacy-staticcheck-$(CODACY_STATICCHECK_VERSION) | $(CODACY_UPLOAD)
   LINT_GOSEC := gosec -fmt json ./... | \
@@ -563,14 +566,19 @@ $(addprefix lint-, $(CODACY_CLIENTS)): lint-%: init-sources
 	  --volume /tmp:/tmp --volume ".":"/code" \
 	  codacy/codacy-analysis-cli analyze $${LARGS[@]} --tool $* \
 
-
 lint-revive: init-sources; $(LINT_REVIVE);
 lint-staticcheck: init-sources; $(LINT_STATICCHECK);
 lint-gosec: init-sources; $(LINT_GOSEC);
 
-
 lint-markdown: init-sources
-	markdownlint --config .markdownlint.yaml .;
+	@echo markdownlint --config .markdownlint.yaml .; \
+	if command -v markdownlint &> /dev/null; then \
+	  markdownlint --config .markdownlint.yaml .; \
+	else $(IMAGE_CMD) run --tty --volume .:/src:ro \
+	  container-registry.zalando.net/library/node-18-alpine:latest \
+	  /bin/sh -c "npm install --global markdownlint-cli >/dev/null 2>&1 && \
+	    cd /src && markdownlint --config .markdownlint.yaml ."; \
+	fi; \
 
 lint-apis:
 	@LINTER="https://infrastructure-api-linter.zalandoapis.com"; \
