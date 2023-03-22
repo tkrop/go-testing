@@ -5,6 +5,7 @@
 package mock
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/golang/mock/gomock"
@@ -32,8 +33,7 @@ const (
 
 // String return string representation of detach mode.
 func (m DetachMode) String() string {
-	switch m {
-	// Case is not needed, yet!
+	switch m { //nolint:exhaustive // Case is not needed, yet!
 	// case None:
 	// 	return "None"
 	case Head:
@@ -317,7 +317,7 @@ func Detach(mode DetachMode, fncall func(*Mocks) any) func(*Mocks) any {
 		case Both:
 			return []detachBoth{fncall(mocks)}
 		default:
-			panic(ErrDetachMode(mode))
+			panic(NewErrDetachMode(mode))
 		}
 	}
 }
@@ -341,15 +341,15 @@ func Sub(from, to int, fncall func(*Mocks) any) func(*Mocks) any {
 			inOrder([]*Call{}, calls)
 			return GetSubSlice(from, to, calls)
 		case []detachBoth:
-			panic(ErrDetachNotAllowed(Both))
+			panic(NewErrDetachNotAllowed(Both))
 		case []detachHead:
-			panic(ErrDetachNotAllowed(Head))
+			panic(NewErrDetachNotAllowed(Head))
 		case []detachTail:
-			panic(ErrDetachNotAllowed(Tail))
+			panic(NewErrDetachNotAllowed(Tail))
 		case nil:
 			return nil
 		default:
-			panic(ErrNoCall(calls))
+			panic(NewErrNoCall(calls))
 		}
 	}
 }
@@ -406,7 +406,7 @@ func chainCalls(calls []chain, more ...any) []chain {
 			calls = append(calls, call)
 		case nil:
 		default:
-			panic(ErrNoCall(call))
+			panic(NewErrNoCall(call))
 		}
 	}
 	return calls
@@ -432,7 +432,7 @@ func inOrder(anchors []*Call, call any) []*Call {
 	case nil:
 		return anchors
 	default:
-		panic(ErrNoCall(call))
+		panic(NewErrNoCall(call))
 	}
 }
 
@@ -498,19 +498,31 @@ func inOrderDetachTail(anchors []*Call, calls []detachTail) []*Call {
 	return anchors
 }
 
-// ErrNoCall creates an error with given call type to panic on inorrect call
-// type.
-func ErrNoCall(call any) error {
-	return fmt.Errorf("type [%v] is not based on *gomock.Call",
-		reflect.TypeOf(call))
+var (
+	// Error type for unsupported type errors.
+	ErrTypeNotSupported = errors.New("type not supported")
+
+	// Error type for unsupported mode errors.
+	ErrModeNotSupprted = errors.New("mode not supported")
+)
+
+// NewErrNoCall creates an error with given call type to panic on inorrect
+// call type.
+func NewErrNoCall(call any) error {
+	return fmt.Errorf("%w [type: %v] must be *gomock.Call",
+		ErrTypeNotSupported, reflect.TypeOf(call))
 }
 
-// ErrDetachMode creates an error that the given detach mode is not supported.
-func ErrDetachMode(mode DetachMode) error {
-	return fmt.Errorf("detach mode [%v] is not supported", mode)
+// NewErrDetachMode creates an error that the given detach mode is not
+// supported.
+func NewErrDetachMode(mode DetachMode) error {
+	return fmt.Errorf("%w [mode: %v]",
+		ErrModeNotSupprted, mode)
 }
 
-// ErrDetachNotAllowed creates an error that detach.
-func ErrDetachNotAllowed(mode DetachMode) error {
-	return fmt.Errorf("detach [%v] not supported in sub", mode)
+// NewErrDetachNotAllowed creates an error that the detach mode is not
+// supported.
+func NewErrDetachNotAllowed(mode DetachMode) error {
+	return fmt.Errorf("%w [mode: %v] not supported in sub",
+		ErrModeNotSupprted, mode)
 }

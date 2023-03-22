@@ -505,13 +505,13 @@ var testValuesInParams = map[string]ValuesParams{
 	},
 
 	"miss": {
-		setup: test.Panic(reflect.ErrInvalidType(
+		setup: test.Panic(reflect.NewErrInvalidType(
 			1, reflect.TypeOf(1), reflect.TypeOf(""))),
 		call: func(bool, int) {},
 		args: []any{true, "value"},
 	},
 	"miss-var": {
-		setup: test.Panic(reflect.ErrInvalidType(
+		setup: test.Panic(reflect.NewErrInvalidType(
 			1, reflect.TypeOf(true), reflect.TypeOf(0))),
 		call: func(bool, ...bool) {},
 		args: []any{true, 1, "value"},
@@ -574,7 +574,7 @@ var testValuesOutParams = map[string]ValuesParams{
 	},
 
 	"miss": {
-		setup: test.Panic(reflect.ErrInvalidType(
+		setup: test.Panic(reflect.NewErrInvalidType(
 			1, reflect.TypeOf(true), reflect.TypeOf(1))),
 		call: func() (bool, bool) { return true, true },
 		args: []any{true, 1},
@@ -743,13 +743,13 @@ var testMakeFuncOfParams = map[string]MakeFuncOfParams{
 	"in-2-out-2": {
 		call:       func(any, string) (int, error) { return 1, nil },
 		args:       []any{teststruct, teststring},
-		result:     []any{1, errors.New("any")},
+		result:     []any{1, errors.New("any error")},
 		expectArgs: []any{teststruct, teststring},
 	},
 	"in-2-var-out-2": {
 		call:       func(any, ...string) (int, error) { return 1, nil },
 		args:       []any{teststruct, teststring, "string-2", "string-3"},
-		result:     []any{1, errors.New("any")},
+		result:     []any{1, errors.New("any error")},
 		expectArgs: []any{teststruct, []string{teststring, "string-2", "string-3"}},
 	},
 }

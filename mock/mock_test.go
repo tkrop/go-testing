@@ -18,6 +18,8 @@ import (
 
 //go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mock_test.go  IFace
 
+var errAny = errors.New("any error")
+
 type IFace interface {
 	CallA(string)
 	CallB(string) string
@@ -385,35 +387,35 @@ type PanicParams struct {
 var testPanicParams = map[string]PanicParams{
 	"setup": {
 		setup:       mock.Setup(NoCall()),
-		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
+		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"chain": {
 		setup:       mock.Chain(NoCall()),
-		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
+		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"parallel": {
 		setup:       mock.Parallel(NoCall()),
-		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
+		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"detach": {
 		setup:       mock.Detach(4, NoCall()),
-		expectError: mock.ErrDetachMode(4),
+		expectError: mock.NewErrDetachMode(4),
 	},
 	"sub": {
 		setup:       mock.Sub(0, 0, NoCall()),
-		expectError: mock.ErrNoCall(NewMockIFace(nil).EXPECT()),
+		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
 	},
 	"sub-head": {
 		setup:       mock.Sub(0, 0, mock.Detach(mock.Head, NoCall())),
-		expectError: mock.ErrDetachNotAllowed(mock.Head),
+		expectError: mock.NewErrDetachNotAllowed(mock.Head),
 	},
 	"sub-tail": {
 		setup:       mock.Sub(0, 0, mock.Detach(mock.Tail, NoCall())),
-		expectError: mock.ErrDetachNotAllowed(mock.Tail),
+		expectError: mock.NewErrDetachNotAllowed(mock.Tail),
 	},
 	"sub-both": {
 		setup:       mock.Sub(0, 0, mock.Detach(mock.Both, NoCall())),
-		expectError: mock.ErrDetachNotAllowed(mock.Both),
+		expectError: mock.NewErrDetachNotAllowed(mock.Both),
 	},
 }
 
@@ -539,7 +541,7 @@ var testFuncParams = map[string]FuncParams{
 		call: func(any) (any, any, any, any) {
 			return nil, nil, nil, nil
 		},
-		result: []any{"string", 1, true, errors.New("any error")},
+		result: []any{"string", 1, true, errAny},
 	},
 }
 

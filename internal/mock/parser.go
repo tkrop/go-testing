@@ -106,6 +106,8 @@ func (parser *Parser) Parse(args ...string) ([]*Mock, []error) {
 		case argTypeNotFound:
 			err := NewErrArgNotFound(pos, arg)
 			state.errs = append(state.errs, err)
+		case argTypeUnknown:
+			fallthrough
 		default:
 			err := NewErrArgInvalid(pos, arg)
 			state.errs = append(state.errs, err)

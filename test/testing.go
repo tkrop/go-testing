@@ -5,6 +5,7 @@
 package test
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"runtime"
@@ -425,8 +426,7 @@ func (r *runner[P]) run( //revive:disable-line // internal implementation.
 			r.wrap(name, params, call, parallel)(r.t)
 		}
 	default:
-		panic(fmt.Errorf("unknown parameter type:  %v",
-			reflect.ValueOf(r.params).Type()))
+		panic(NewErrUnknownParameterType(r.params))
 	}
 	return r
 }
@@ -503,4 +503,15 @@ func InRun(expect Expect, test func(Test)) func(Test) {
 
 		NewTester(t, expect).Run(test, false)
 	}
+}
+
+var ( //nolint:gofumpt // requires documentation changing.
+	// Error type for unknown parameter types.
+	ErrUnkownParameterType = errors.New("unknown parameter type")
+)
+
+// NewErrUnknownParameterType creates a new unknown parameter type error.
+func NewErrUnknownParameterType(value any) error {
+	return fmt.Errorf("%w [type: %v]",
+		ErrUnkownParameterType, reflect.ValueOf(value).Type())
 }

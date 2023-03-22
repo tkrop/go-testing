@@ -4,6 +4,7 @@
 package reflect
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"unsafe"
@@ -91,7 +92,7 @@ func ArgOf(v reflect.Value) any {
 		return nil
 	}
 
-	switch v.Type().Kind() {
+	switch v.Type().Kind() { //nolint:exhaustive // covered by default
 	case reflect.Bool:
 		return v.Bool()
 	case reflect.Int:
@@ -169,7 +170,7 @@ func valuesOf(ftype func(i int) reflect.Type, args ...any) []reflect.Value {
 		} else {
 			v := reflect.ValueOf(arg)
 			if !v.Type().AssignableTo(t) {
-				panic(ErrInvalidType(i, t, v.Type()))
+				panic(NewErrInvalidType(i, t, v.Type()))
 			}
 			vs = append(vs, reflect.ValueOf(arg))
 		}
@@ -181,11 +182,13 @@ func valuesOf(ftype func(i int) reflect.Type, args ...any) []reflect.Value {
 	return vs
 }
 
-// ErrInvalidType creates a new error reporting an invalid type during value
+var errInvalidType = errors.New("invalid type")
+
+// NewErrInvalidType creates a new error reporting an invalid type during value
 // slice creation.
-func ErrInvalidType(index int, expect, actual reflect.Type) error {
-	return fmt.Errorf("invalid type at %d: expect %v got %v",
-		index, expect, actual)
+func NewErrInvalidType(index int, expect, actual reflect.Type) error {
+	return fmt.Errorf("%w at %d: expect %v got %v",
+		errInvalidType, index, expect, actual)
 }
 
 // typesOf checks the arguments length and provides the matching input type
