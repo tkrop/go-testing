@@ -26,6 +26,7 @@ issues:
         - gosec
         - noctx
         - wrapcheck
+        - goerr113
     - path: "_test\\.go"
       linters: [ revive ]
       text: "^(max-public-structs|function-length|cognitive-complexity):"

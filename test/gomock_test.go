@@ -10,6 +10,16 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
+const (
+	anyError   = "any error"
+	otherError = "other error"
+)
+
+var (
+	errAny   = errors.New(anyError)
+	errOther = errors.New(otherError)
+)
+
 type ErrorMatcherParams struct {
 	base   any
 	match  any
@@ -18,23 +28,23 @@ type ErrorMatcherParams struct {
 
 var testErrorMatcherParams = map[string]ErrorMatcherParams{
 	"success-string-string": {
-		base:   "error",
-		match:  "error",
+		base:   anyError,
+		match:  anyError,
 		result: true,
 	},
 	"success-string-error": {
-		base:   "error",
-		match:  errors.New("error"),
+		base:   anyError,
+		match:  errAny,
 		result: true,
 	},
 	"success-error-string": {
-		base:   errors.New("error"),
-		match:  "error",
+		base:   errAny,
+		match:  anyError,
 		result: true,
 	},
 	"success-error-error": {
-		base:   errors.New("error"),
-		match:  errors.New("error"),
+		base:   errAny,
+		match:  errAny,
 		result: true,
 	},
 	"success-other-other": {
@@ -44,23 +54,23 @@ var testErrorMatcherParams = map[string]ErrorMatcherParams{
 	},
 
 	"failure-string-string": {
-		base:   "error",
-		match:  "error-other",
+		base:   errAny,
+		match:  errOther,
 		result: false,
 	},
 	"failure-string-error": {
-		base:   "error",
-		match:  errors.New("error-other"),
+		base:   anyError,
+		match:  errOther,
 		result: false,
 	},
 	"failure-error-string": {
-		base:   errors.New("error"),
-		match:  "error-other",
+		base:   errAny,
+		match:  otherError,
 		result: false,
 	},
 	"failure-error-error": {
-		base:   errors.New("error"),
-		match:  errors.New("error-other"),
+		base:   errAny,
+		match:  errOther,
 		result: false,
 	},
 	"failure-other-other": {

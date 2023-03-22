@@ -9,24 +9,29 @@ by the following conventions:
 2. Use a single 'config' package to read the configuration for all commands.
 3. Use a common 'Dockerfile' to install all commands in a container image.
 
-The [Makefile](Makefile) also allows to call run the commands/services and run
-test via `make run/test-* [args]`, e.g. `make test-unit app/service` runs all
-the unit tests in the directory `app/service`.
+All targets in the [Makefile](Makefile) are designated to work out of the box
+taking care to setup the project, installing the necessary tools (except for the
+golang compiler), and triggering the precondition targets as far as required.
+
+The [Makefile](Makefile) also allows to run and install the commands/services
+provided by this project and run test using `make run/test-* [args]`, e.g. the
+command `make test-unit app/service` runs all the unit tests in the package
+`app/service`.
 
 **Warning:** The [Makefile](Makefile) installs a `pre-commit` hook overwriting
-and deleting any pre-existing hook that requires `make lint test-unit` to run
-successfully before allowing to commit.
+and deleting any pre-existing hook that enforces a basic linting and unit test
+step, i.e. `make lint-commit test-unit` to run successfully before allowing to
+commit.
 
 
 ## Standard targets
 
-The [Makefile](Makefile) supports the following often used standard targets
-beside a high number of specialized and even dynamic targets.
+The [Makefile](Makefile) supports the following often used standard targets.
 
 ```bash
 make all     # first choice target to init, build, and test
 make cdp     # select of targets to init, build, and test as in pipeline
-make init    # inits project by downloading dependencies
+make init    # initializes the project by downloading the latest required tools
 make test    # generates and builds sources to execute tests
 make lint    # generates and builds sources and lints sources
 make build   # creates binary files of commands
@@ -35,9 +40,14 @@ make delete  # deletes binary files of commands from '${GOPATH}/bin'
 make clean   # cleans up the project removing all created files
 ```
 
-All this targets are supposed to work out of the box to setup the project and
-execute the most important tasks, however, some specialized commands provide
-more features and may provide a quicker response on building and testing.
+While these targets allow to execute the most important tasks out-of-the-box,
+there exist a high number of specialized (sometimes project specific) commands
+that provide more features with quicker response times for building, testing,
+releasing, and executing of components.
+
+**Note:** All targets automatically trigger their preconditions and install the
+latest version of the required tools, if some are missing. To enforce the setup
+of a new tool, you need to run `make init` explicitly.
 
 
 ### Test targets
@@ -73,14 +83,13 @@ make lint-all      # lints the go-code using an all-in expert settings
 make lint-codacy   # lints the go-code using codacy client side settings
 make lint-markdown # lints the documentation using markdown settings
 make lint-api      # lints the api specifications in '/zalando-apis'
-
-make format        # formats the code to fix selected linter violations
 ```
 
 The `lint-*` targets allow command line arguments:
 
-1. The keyword `list` to display the linter configurations, or
-2. `<linter>,...` a list of linters to enable for a quick checks.
+1. The keyword `linters` to display the linter configurations, or
+2. The keyword `fix` enables the auto fixing while linting.
+3. `<linter>,...` a list of linters to enable for a quick checks.
 
 To default target for `make lint` can be customized via `TARGETS_LINT` in
 `Makefile.vars`. The default is `lint-base lint-apis`.
