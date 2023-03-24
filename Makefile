@@ -20,9 +20,9 @@ else
 endif
 
 # Setup sensible defaults for configuration variables.
+CODE_QUALITY ?= base
 TEST_TIMEOUT ?= 10s
 
-COMMIT ?= $(shell git log -1 --pretty=format:"%H")
 CONTAINER ?= Dockerfile
 REPOSITORY ?= $(shell git remote get-url origin | \
 	sed "s/^https:\/\///; s/^git@//; s/.git$$//; s/:/\//;")
@@ -33,20 +33,20 @@ GITREPONAME ?= $(word 3,$(subst /, ,$(REPOSITORY)))
 TEAM ?= $(shell cat .zappr.yaml | grep "X-Zalando-Team" | \
 	sed "s/.*:[[:space:]]*\([a-z-]*\).*/\1/")
 
-TOOLS_GOGEN ?= github.com/golang/mock/mockgen@latest \
-	github.com/tkrop/go-testing/cmd/mock@latest
-TOOLS_GOLINT ?= github.com/zalando/zally/cli/zally@latest \
-	github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
-	github.com/mgechev/revive@latest \
-	github.com/securego/gosec/v2/cmd/gosec@latest \
-	github.com/tsenart/deadcode@latest \
-	honnef.co/go/tools/cmd/staticcheck@latest
+TOOLS_GOGEN ?= github.com/golang/mock/mockgen \
+	github.com/tkrop/go-testing/cmd/mock
+TOOLS_GOLINT ?= github.com/zalando/zally/cli/zally \
+	github.com/golangci/golangci-lint/cmd/golangci-lint \
+	github.com/mgechev/revive \
+	github.com/securego/gosec/v2/cmd/gosec \
+	github.com/tsenart/deadcode \
+	honnef.co/go/tools/cmd/staticcheck
 TOOLS_GO := $(TOOLS_GOGEN) $(TOOLS_GOLINT)
 
 TOOLS_NMPLINT ?= markdownlint-cli
 TOOLS_NPM := $(TOOLS_NMPLINT)
 
-IMAGE_PUSH ?= test
+IMAGE_PUSH ?= pulls
 IMAGE_VERSION ?= snapshot
 
 ifeq ($(words $(subst /, ,$(IMAGE_NAME))),3)
@@ -74,6 +74,7 @@ AWS_VERSION ?= latest
 AWS_IMAGE ?= localstack/localstack:$(AWS_VERSION)
 
 # Setup codacy integration.
+CODACY ?= enabled
 CODACY_PROVIDER ?= ghe
 CODACY_USER ?= $(GITORGNAME)
 CODACY_PROJECT ?= $(GITREPONAME)
@@ -88,9 +89,47 @@ TARGETS_ALL ?= init test lint build
 TARGETS_CDP ?= clean clean-run init test lint \
 	$(if $(filter $(IMAGE_PUSH),never),,\
 	  $(if $(wildcard $(CONTAINER)),image-push,))
-TARGETS_INIT ?= clean-init init-tools init-codacy init-hooks init-packages
-TARGETS_LINT ?= lint-base lint-markdown lint-apis lint-codacy
-TARGETS_COMMIT ?= lint-base lint-markdown
+TARGETS_COMMIT ?= test-unit lint-$(CODE_QUALITY) lint-markdown
+TARGETS_INIT ?= clean-init init-hooks init-packages \
+	$(if $(filter $(CODACY),enabled),init-codacy,)
+TARGETS_TEST ?= test-all $(if $(filter $(CODACY),enabled),test-upload,)
+TARGETS_LINT ?= lint-$(CODE_QUALITY) lint-markdown lint-apis \
+	$(if $(filter $(CODACY),enabled),lint-codacy,)
+
+
+# General setup of go environment.
+
+# Initialize golang modules - if not done before.
+ifneq ($(shell ls go.mod), go.mod)
+  $(shell go mod init $(REPOSITORY))
+endif
+
+# Setup go to use desired and consistent golang versions.
+GOVERSION := $(shell go version | sed -Ee "s/.*go([0-9]+\.[0-9]+).*/\1/")
+GOVERSION_MOD := $(shell grep "^go [0-9.]*$$" go.mod | cut -f2 -d' ')
+GOVERSION_YAML := $(shell if [ -f delivery.yaml ]; then \
+    grep -o "cdp-runtime/go-[0-9.]*" delivery.yaml | grep -o "[0-9.]*" | sort -u; \
+  else echo $(GOVERSION); fi)
+ifneq (update-go,$(MAKECMDGOALS))
+  ifneq ($(firstword $(GOVERSION_YAML)), $(GOVERSION_YAML))
+    $(error "inconsistent go versions: delivery.yaml uses $(GOVERSION_YAML)")
+  endif
+  ifneq ($(GOVERSION), $(GOVERSION_YAML))
+    ifneq ($(GOVERSION_YAML),)
+      $(error "no cdp-runtime go version $(GOVERSION): delivery.yaml likely uses stil overlay")
+    else
+      $(error "unsupported go version $(GOVERSION): delivery.yaml requires $(GOVERSION_YAML)")
+    endif
+  endif
+  ifneq ($(GOVERSION), $(GOVERSION_MOD))
+    $(error "unsupported go version $(GOVERSION): go.mod requires $(GOVERSION_MOD)")
+  endif
+endif
+
+# Export private repositories not to be downloaded.
+export GOPRIVATE := github.bus.zalan.do
+export GOBIN ?= $(shell go env GOPATH)/bin
+
 
 # General setup of tokens for run-targets (not to be modified)
 
@@ -145,13 +184,14 @@ define upper
 $(shell echo "$(1)" | tr '[:lower:]' '[:upper:]')
 endef
 
+
 # Setup default environment variables.
 COMMANDS := $(shell grep -lr "func main()" cmd/*/main.go 2>/dev/null | \
 	sed -E "s/^cmd\/([^/]*)\/main.go$$/\1/;" | sort -u)
 SOURCES := $(shell find . -name "*.go" ! -name "mock_*_test.go")
 
 # Setup golang mock setup environment.
-MOCK_TOOLS := $(addprefix $(GOBIN)/,$(notdir $(TOOLS_GOGEN:@latest=)))
+MOCK_TOOLS := $(addprefix $(GOBIN)/,$(notdir $(TOOLS_GOGEN)))
 MOCK_MATCH_DST := ^.\/(.*)\/(.*):\/\/go:generate.*-destination=([^ ]*).*$$
 MOCK_MATCH_SRC := ^.\/(.*)\/(.*):\/\/go:generate.*-source=([^ ]*).*$$
 MOCK_TARGETS := $(shell grep "//go:generate[[:space:]]*mockgen" $(SOURCES) | \
@@ -164,16 +204,18 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 
 
 # Setup phony make targets to always be executed.
-.PHONY: all cdp bump release
-.PHONY: update update-go update-deps update-make update-codacy
-.PHONY: clean clean-all clean-init clean-build clean-tools clean-run
-.PHONY: $(addprefix clean-run-, $(COMMANDS) db aws)
-.PHONY: init init-tools init-hooks init-packages init-sources
-.PHONY: init-codacy $(addprefix init-, $(CODACY_BINARIES))
+.PHONY: all cdp commit bump release
+.PHONY: update update-go update-deps update-make update-codacy update-tools
+.PHONY: clean clean-all clean-init clean-build clean-tools
+.PHONY: clean-codacy $(addprefix clean-, $(CODACY_BINARIES))
+.PHONY: clean-run $(addprefix clean-run-, $(COMMANDS) db aws)
+.PHONY: init init-hooks init-packages init-sources init-codacy
+.PHONY: $(addprefix init-, $(CODACY_BINARIES))
 .PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
-.PHONY: lint lint-commit lint-base lint-plus lint-all
-.PHONY: lint-revive lint-gosec lint-staticcheck lint-markdown lint-apis
-.PHONY: lint-codacy $(addprefix lint-, $(CODACY_CLIENTS))
+.PHONY: lint lint-min lint-base lint-plus lint-max lint-all
+.PHONY: lint-markdown lint-apis lint-codacy lint-revive
+.PHONY: $(addprefix lint-, $(CODACY_CLIENTS))
+.PHONY: $(addprefix lint-, $(CODACY_BINARIES))
 .PHONY: build build-native build-linux build-image build-docker
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: install $(addprefix install-, $(COMMANDS))
@@ -205,12 +247,15 @@ endef
 
 # match commands that support arguments ...
 CMDMATCH = $(or \
-	  $(findstring run,$(MAKECMDGOALS)),\
-	  $(findstring test,$(MAKECMDGOALS)),\
-	  $(findstring lint,$(MAKECMDGOALS)),\
+	  $(findstring run-,$(MAKECMDGOALS)),\
+	  $(findstring run ,$(MAKECMDGOALS)),\
+	  $(findstring test-,$(MAKECMDGOALS)),\
+	  $(findstring test ,$(MAKECMDGOALS)),\
+	  $(findstring lint-,$(MAKECMDGOALS)),\
+	  $(findstring lint ,$(MAKECMDGOALS)),\
 	  $(findstring bump,$(MAKECMDGOALS)),\
 	)%
-# If any argument contains "run-", "test-", "bump" ...
+# If any argument contains "run*", "test*", "lint*", "bump" ...
 ifneq ($(CMDMATCH),%)
   CMD := $(filter $(CMDMATCH),$(MAKECMDGOALS))
   POS = $(call pos,$(CMD), $(MAKECMDGOALS))
@@ -224,40 +269,10 @@ ifneq ($(CMDMATCH),%)
 endif
 
 
-# Initialize golang modules - if not done before.
-ifneq ($(shell ls go.mod), go.mod)
-  $(shell go mod init $(REPOSITORY))
-endif
-
-# Setup go to use desired and consistent golang versions.
-GOVERSION := $(shell go version | sed -Ee "s/.*go([0-9]+\.[0-9]+).*/\1/")
-GOVERSION_MOD := $(shell grep "^go [0-9.]*$$" go.mod | cut -f2 -d' ')
-GOVERSION_YAML := $(shell if [ -f delivery.yaml ]; then \
-    grep -o "cdp-runtime/go-[0-9.]*" delivery.yaml | grep -o "[0-9.]*" | sort -u; \
-  else echo $(GOVERSION); fi)
-ifneq (update-go,$(MAKECMDGOALS))
-  ifneq ($(firstword $(GOVERSION_YAML)), $(GOVERSION_YAML))
-    $(error "inconsistent go versions: delivery.yaml uses $(GOVERSION_YAML)")
-  endif
-  ifneq ($(GOVERSION), $(GOVERSION_YAML))
-    ifneq ($(GOVERSION_YAML),)
-      $(error "no cdp-runtime go version $(GOVERSION): delivery.yaml likely uses stil overlay")
-    else
-      $(error "unsupported go version $(GOVERSION): delivery.yaml requires $(GOVERSION_YAML)")
-    endif
-  endif
-  ifneq ($(GOVERSION), $(GOVERSION_MOD))
-    $(error "unsupported go version $(GOVERSION): go.mod requires $(GOVERSION_MOD)")
-  endif
-endif
-
-# Export private repositories not to be downloaded.
-export GOPRIVATE := github.bus.zalan.do
-
-
 # Standard targets for default build processes.
 all: $(TARGETS_ALL)
 cdp: $(TARGETS_CDP)
+commit: $(TARGETS_COMMIT)
 
 
 # Update dependencies of all packages.
@@ -274,6 +289,19 @@ update-deps:
 	  echo "update: $${DIR}"; cd $${ROOT}/$${DIR##./} && \
 	  go mod tidy -v -e -compat=${GOVERSION} && go get -u || exit -1; \
 	done; \
+
+update-tools:
+	@for TOOL in $(TOOLS_GO); do \
+	  echo "go install $${TOOL}"; \
+	  go install $${TOOL}@latest || exit -1; \
+	done; \
+	go mod tidy -compat=${GOVERSION};
+	@if command -v npm &> /dev/null; then \
+	  for TOOL in $(TOOLS_NMPLINT); do \
+	    echo "npm install --global $${TOOL}"; \
+	    npm install --global $${TOOL} || exit -1; \
+	  done; \
+	fi; \
 
 update-make-would-be-better:
 	BASE="https://raw.githubusercontent.com/tkrop/go-testing/main"; \
@@ -296,7 +324,7 @@ update-codacy:
 	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
 	git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && ( \
 	  cd $${TEMPDIR}; echo "update Makefile" &&  \
-	    git show HEAD:.codacy.yaml > .$${DIR}/codacy.yaml; \
+	    git show HEAD:.codacy.yaml > .$${DIR}/.codacy.yaml; \
 	    git show HEAD:revive.toml > $${DIR}/revive.toml; \
 	  cd $${DIR} \
 	); \
@@ -328,7 +356,7 @@ release:
 
 # Default cleanup of sources.
 clean: clean-build
-clean-all: clean-build clean-init clean-tools clean-run
+clean-all: clean-build clean-init clean-tools clean-codacy clean-run
 clean-build: clean-init
 	find . -name "mock_*_test.go" -exec rm -v {} \;; \
 
@@ -338,8 +366,9 @@ clean-init:
 
 clean-tools:
 	@for TOOL in $(TOOLS_GO); do \
-	  echo "go clean -i $${TOOL%%@*}"; \
-	  go clean -i $${TOOL%%@*} 2>/dev/null || true; \
+	  echo "go clean -i $${TOOL}"; \
+	  go clean -i $${TOOL} 2>/dev/null; \
+	  rm $${GOBIN}/$${TOOL##*/}; \
 	done;
 	@if command -v npm &> /dev/null; then \
 	  for TOOL in $(TOOLS_NPM); do \
@@ -348,6 +377,12 @@ clean-tools:
 	  done; \
 	fi; \
 
+clean-codacy: $(addprefix clean-, $(CODACY_BINARIES))
+$(addprefix clean-, $(CODACY_BINARIES)): clean-%:
+	@VERSION="$(CODACY_$(call upper,$*)_VERSION)"; \
+	rm "$(GOBIN)/codacy-$*-$${VERSION}"; \
+
+
 # Clean up all running container images.
 clean-run: $(addprefix clean-run-, $(COMMANDS) db aws)
 $(addprefix clean-run-, $(COMMANDS) db aws): clean-run-%: run-clean-%
@@ -355,23 +390,8 @@ $(addprefix clean-run-, $(COMMANDS) db aws): clean-run-%: run-clean-%
 
 # Initialize tooling and packages for building.
 init: $(TARGETS_INIT)
-
-init-tools:
-	@for TOOL in $(TOOLS_GO); do \
-	  echo "go install $${TOOL}"; \
-	  go install $${TOOL} || exit -1; \
-	done; \
-	go mod tidy -compat=${GOVERSION};
-	@if command -v npm &> /dev/null; then \
-	  for TOOL in $(TOOLS_NMPLINT); do \
-	    echo "npm install --global $${TOOL}"; \
-	    npm install --global $${TOOL} || exit -1; \
-	  done; \
-	fi; \
-
-
-$(addprefix $(GOBIN)/,$(notdir $(TOOLS_GO:@latest=))): $(GOBIN)/%:
-	go install $(filter %/$*@latest,$(TOOLS_GO));
+$(addprefix $(GOBIN)/,$(notdir $(TOOLS_GO))): $(GOBIN)/%:
+	go install $(filter %/$*,$(TOOLS_GO))@latest;
 $(addprefix $(NVM_BIN)/,$(TOOLS_NPM:-cli=)): $(NVM_BIN)/%:
 	@if command -v npm &> /dev/null; then \
 	    echo "npm install --global $*"; \
@@ -381,8 +401,8 @@ $(addprefix $(NVM_BIN)/,$(TOOLS_NPM:-cli=)): $(NVM_BIN)/%:
 init-codacy: $(addprefix init-, $(CODACY_BINARIES))
 $(addprefix init-, $(CODACY_BINARIES)): init-%:
 	@VERSION="$(CODACY_$(call upper,$*)_VERSION)"; \
-	FILE="$(RUNDIR)/codacy-$*-$${VERSION}"; \
-	if [ ! -f $${FILE} ]; then mkdir -p $(RUNDIR); \
+	FILE="$(GOBIN)/codacy-$*-$${VERSION}"; \
+	if [ ! -f $${FILE} ]; then \
 	  BASE="https://github.com/codacy/codacy-$*/releases/download"; \
 	  echo curl -sL $${BASE}/$${VERSION}/codacy-$*-$${VERSION} -o $${FILE}; \
 	  curl -sL $${BASE}/$${VERSION}/codacy-$*-$${VERSION} -o $${FILE}; \
@@ -391,7 +411,7 @@ $(addprefix init-, $(CODACY_BINARIES)): init-%:
 
 init-hooks: .git/hooks/pre-commit
 .git/hooks/pre-commit:
-	@echo -ne "#!/bin/sh\nmake lint-commit test-unit" >$@; chmod 755 $@;
+	@echo -ne "#!/bin/sh\nmake commit" >$@; chmod 755 $@;
 
 init-packages:
 	go build ./...;
@@ -414,14 +434,19 @@ test-clean:
 test-upload:
 	@FILE=$$(ls -Art "$(TEST_ALL)" "$(TEST_UNIT)" \
 	  "$(TEST_BENCH)" 2>/dev/null); \
+	COMMIT="$$(git log -1 --pretty=format:"%H")"; \
 	if [ -n "$(CODACY_PROJECT_TOKEN)" ]; then \
-	  CODACY_API_BASE_URL=$(CODACY_API_BASE_URL) \
 	  bash <(curl -Ls https://coverage.codacy.com/get.sh) report \
-	    --force-coverage-parser go -r "$${FILE}"; \
+		--project-token $(CODACY_PROJECT_TOKEN) --commit-uuid $${COMMIT} \
+	    --codacy-api-base-url $(CODACY_API_BASE_URL) --language go \
+	    --force-coverage-parser go --coverage-reports "$${FILE}"; \
 	elif [ -n "$(CODACY_API_TOKEN)" ]; then \
-	  CODACY_API_BASE_URL=$(CODACY_API_BASE_URL) \
 	  bash <(curl -Ls https://coverage.codacy.com/get.sh) report \
-	    --force-coverage-parser go -r "$${FILE}"; \
+		--organization-provider $(CODACY_PROVIDER) \
+		--username $(CODACY_USER) --project-name $(CODACY_PROJECT) \
+		--api-token $(CODACY_API_TOKEN) --commit-uuid $${COMMIT} \
+	    --codacy-api-base-url $(CODACY_API_BASE_URL) --language go \
+	    --force-coverage-parser go --coverage-reports "$${FILE}"; \
 	fi; \
 
 test-cover:
@@ -481,39 +506,51 @@ SPACE := $(null) #
 # diabled (distructive): nlreturn ireturn nonamedreturns varnamelen exhaustruct
 #   exhaustivestruct gochecknoglobals gochecknoinits tagliatelle
 # disabled (conflicting): godox gci paralleltest
-# not listed (unnecessary): forcetypeassert
+# not listed (unnecessary): forcetypeassert wsl
 
-LINTERS_DISABLED ?= nlreturn ireturn nonamedreturns varnamelen exhaustruct \
-	exhaustivestruct gochecknoglobals gochecknoinits tagliatelle paralleltest \
-	godox gci deadcode golint interfacer ifshort maligned musttag nosnakecase \
-	rowserrcheck scopelint structcheck varcheck wastedassign
-LINTERS_ENABLED ?= goimports gofumpt gofmt goheader decorder \
-	gosec godot whitespace misspell dupword goprintffuncname \
-	tenv tparallel thelper testableexamples testpackage \
-	dupl dogsled depguard gomodguard gomoddirectives importas \
-	maintidx makezero nakedret prealloc interfacebloat grouper \
-	nestif ineffassign reassign asasalint usestdlibvars exhaustive \
-	errcheck errchkjson errname errorlint forbidigo nosprintfhostport \
-	nilerr nilnil nolintlint promlinter revive bodyclose \
-	gocognit gocritic gocyclo cyclop funlen predeclared lll \
-	govet goconst gosimple gomnd unconvert unparam unused \
-	contextcheck containedctx noctx execinquery exportloopref \
-	asciicheck bidichk durationcheck loggercheck staticcheck stylecheck \
-	typecheck
-
-LINTERS_ADVANCED ?= wrapcheck goerr113 :wsl
+LINTERS_DISABLED ?= \
+	deadcode exhaustivestruct exhaustruct gci gochecknoglobals gochecknoinits \
+	godox golint ifshort interfacer ireturn maligned musttag nlreturn \
+	nonamedreturns nosnakecase paralleltest rowserrcheck scopelint structcheck \
+	tagliatelle varcheck varnamelen wastedassign
+LINTERS_DEFAULT ?= \
+	errcheck gosimple govet ineffassign staticcheck typecheck unused
+LINTERS_MINIMUM ?= \
+	asasalint asciicheck bidichk bodyclose dogsled dupl dupword durationcheck \
+	errchkjson execinquery exportloopref funlen gocognit goconst gocyclo \
+	godot gofmt gofumpt goimports importas maintidx makezero misspell nestif \
+	nilerr noctx prealloc predeclared promlinter reassign sqlclosecheck \
+	unconvert unparam unused usestdlibvars whitespace
+LINTERS_BASELINE ?= \
+	containedctx contextcheck cyclop decorder depguard errname forbidigo \
+	ginkgolinter gocheckcompilerdirectives goheader gomoddirectives gomodguard \
+	goprintffuncname gosec grouper interfacebloat lll loggercheck nakedret \
+	nilnil nolintlint nosprintfhostport revive
+LINTERS_EXPERT ?= \
+	errorlint exhaustive gocritic goerr113 gomnd stylecheck tenv \
+	testableexamples testpackage thelper tparallel wrapcheck
 
 LINT_FLAGS ?= --color=always
-LINT_DISABLED ?= $(subst $(SPACE),$(COMMA),$(strip \
-	$(filter-out :%,$(LINTERS_DISABLED))))
-LINT_ENABLED ?= $(subst $(SPACE),$(COMMA),$(strip \
-	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_ENABLED)))))
-LINT_ADVANCED ?= $(subst $(SPACE),$(COMMA),$(strip \
-	$(filter-out :%,$(filter-out $(LINTERS_DISABLED),$(LINTERS_ADVANCED)))))
+LINT_DISABLED ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_DISABLED)))
+LINT_DEFAULT ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_DEFAULT)))
+LINT_MINIMUM ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_MINIMUM) $(LINT_DEFAULT)))
+LINT_BASELINE ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_BASELINE) $(LINT_MINIMUM)))
+LINT_EXPERT ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_EXPERT) $(LINT_BASELINE)))
 
 ifeq ($(shell ls .golangci.yaml 2>/dev/null), .golangci.yaml)
   LINT_CONFIG := --config .golangci.yaml
 endif
+
+LINT_MIN := --enable $(LINT_MINIMUM) --disable $(LINT_DISABLED) \
+	$(LINT_FLAGS) $(LINT_CONFIG)
+LINT_BASE := --enable $(LINT_BASELINE) --disable $(LINT_DISABLED) \
+	$(LINT_FLAGS) $(LINT_CONFIG)
+LINT_PLUS := --enable $(LINT_EXPERT) --disable $(LINT_DISABLED) \
+	$(LINT_FLAGS) $(LINT_CONFIG)
+LINT_MAX := --enable-all --disable $(LINT_DISABLED) \
+	$(LINT_FLAGS) $(LINT_CONFIG)
+LINT_ALL := --enable $(LINT_EXPERT),$(LINT_DISABLED) --disable-all \
+	$(LINT_FLAGS) $(LINT_CONFIG)
 
 LINT_CMD ?= run
 ifeq ($(RUNARGS),linters)
@@ -522,27 +559,28 @@ else ifeq ($(RUNARGS),fix)
   LINT_CMD := run --fix
 else ifneq ($(RUNARGS),)
   LINT_CMD := run
-  LINT_ENABLED := $(RUNARGS)
+  LINT_MIN := --disable-all --enable $(RUNARGS)
+  LINT_BASE := --disable-all --enable $(RUNARGS)
+  LINT_PLUS := --disable-all --enable $(RUNARGS)
+  LINT_MAX := --disable-all --enable $(RUNARGS)
+  LINT_ALL := --disable-all --enable $(RUNARGS)
 endif
 
-LINT_BASELINE := --enable $(LINT_ENABLED) \
-	--disable $(LINT_DISABLED) $(LINT_FLAGS) $(LINT_CONFIG)
-LINT_ADVANCED := --enable $(LINT_ENABLED),$(LINT_ADVANCED) \
-    --disable $(LINT_DISABLED) $(LINT_FLAGS) $(LINT_CONFIG)
-LINT_EXPERT := --enable-all --disable $(LINT_DISABLED) \
-	$(LINT_FLAGS) $(LINT_CONFIG)
-
 lint: $(TARGETS_LINT)
-lint-commit: $(TARGETS_COMMIT)
+lint-min: init-sources $(GOBIN)/golangci-lint
+	golangci-lint $(LINT_CMD) $(LINT_MIN);
 lint-base: init-sources $(GOBIN)/golangci-lint
-	golangci-lint $(LINT_CMD) $(LINT_BASELINE);
+	golangci-lint $(LINT_CMD) $(LINT_BASE);
 lint-plus: init-sources $(GOBIN)/golangci-lint
-	golangci-lint $(LINT_CMD) $(LINT_ADVANCED);
+	golangci-lint $(LINT_CMD) $(LINT_PLUS);
+lint-max: init-sources $(GOBIN)/golangci-lint;
+	golangci-lint $(LINT_CMD) $(LINT_MAX);
 lint-all: init-sources $(GOBIN)/golangci-lint;
-	golangci-lint $(LINT_CMD) $(LINT_EXPERT);
+	golangci-lint $(LINT_CMD) $(LINT_ALL);
 
-lint-codacy: lint-revive lint-gosec lint-staticcheck
+lint-codacy: lint-revive 
 lint-codacy: $(addprefix lint-, $(CODACY_CLIENTS))
+lint-codacy: $(addprefix lint-, $(CODACY_BINARIES))
 $(addprefix lint-, $(CODACY_CLIENTS)): lint-%: init-sources
 	@LARGS=("--allow-network" "--skip-uncommitted-files-check"); \
 	LARGS+=("--codacy-api-base-url" "$(CODACY_API_BASE_URL)"); \
@@ -556,39 +594,49 @@ $(addprefix lint-, $(CODACY_CLIENTS)): lint-%: init-sources
 	  LARGS+=("--api-token" "$(CODACY_API_TOKEN)"); \
 	  LARGS+=("--upload" "--verbose"); \
 	fi; \
-	echo $(IMAGE_CMD) run --rm=true --env CODACY_CODE="/code" \
+	echo """$(IMAGE_CMD) run --rm=true --env CODACY_CODE="/code" \
 	  --volume /var/run/docker.sock:/var/run/docker.sock \
 	  --volume /tmp:/tmp --volume ".":"/code" \
-	  codacy/codacy-analysis-cli analyze $${LARGS[@]} --tool $*; \
+	  codacy/codacy-analysis-cli analyze "$${LARGS[@]}" --tool $*"""; \
 	$(IMAGE_CMD) run --rm=true --env CODACY_CODE="/code" \
 	  --volume /var/run/docker.sock:/var/run/docker.sock \
 	  --volume /tmp:/tmp --volume ".":"/code" \
-	  codacy/codacy-analysis-cli analyze $${LARGS[@]} --tool $* \
+	  codacy/codacy-analysis-cli analyze "$${LARGS[@]}" --tool $* \
+
+LINT_ARGS_GOSEC_LOCAL := -log /dev/null -exclude G105,G307 ./...
+LINT_ARGS_GOSEC_UPLOAD := -log /dev/null -exclude G105,G307 -fmt json ./...
+LINT_ARGS_STATICCHECK_LOCAL := -tests ./...
+LINT_ARGS_STATICCHECK_UPLOAD := -tests -f json ./...
+
+$(addprefix lint-, $(CODACY_BINARIES)): lint-%: init-sources $(GOBIN)/% init-%
+	@COMMIT=$$(git log -1 --pretty=format:"%H"); \
+	VERSION="$(CODACY_$(call upper,$*)_VERSION)"; \
+	LARGS=("-XPOST" "-L" "-H" "Content-type: application/json"); \
+	if [ -n "$(CODACY_PROJECT_TOKEN)" ]; then \
+	  BASE="$(CODACY_API_BASE_URL)/2.0/commit/$${COMMIT}"; \
+	  LARGS+=("-H" "project-token: $(CODACY_PROJECT_TOKEN)"); \
+	elif [ -n "$(CODACY_API_TOKEN)" ]; then \
+	  SPATH="$(CODACY_PROVIDER)/$(CODACY_USER)/$(CODACY_PROJECT)"; \
+	  BASE="$(CODACY_API_BASE_URL)/2.0/$${SPATH}/commit/$${COMMIT}"; \
+	  LARGS+=("-H" "api-token: $(CODACY_API_TOKEN)"); \
+	fi; \
+	if [ -n "$${BASE}" ]; then \
+	  echo -e """$(GOBIN)/$* $(LINT_ARGS_$(call upper,$*)_UPLOAD) | \
+	    $(GOBIN)/codacy-$*-$${VERSION} | \
+	    curl "$${LARGS[@]}" -d @- "$${BASE}/issuesRemoteResults"; \
+	    curl "$${LARGS[@]}" "$${BASE}/resultsFinal""""; \
+	  $(GOBIN)/$* $(LINT_ARGS_$(call upper,$*)_UPLOAD) | \
+	    $(GOBIN)/codacy-$*-$${VERSION} | \
+	    curl "$${LARGS[@]}" -d @- "$${BASE}/issuesRemoteResults"; echo; \
+	    curl "$${LARGS[@]}" "$${BASE}/resultsFinal"; echo; \
+	else \
+	  echo $(GOBIN)/$* $(LINT_ARGS_$(call upper,$*)_LOCAL); \
+	  $(GOBIN)/$* $(LINT_ARGS_$(call upper,$*)_LOCAL); \
+	fi; \
+
 
 lint-revive: init-sources $(GOBIN)/revive
 	revive -formatter friendly -config=revive.toml $(SOURCES);
-
-ifneq ($(CODACY_PROJECT_TOKEN),)
-  CODACY_UPLOAD := \
-    curl -XPOST -L -H "project-token: $(CODACY_PROJECT_TOKEN)" \
-      -H "Content-type: application/json" -d @- \
-      "$(CODACY_API_BASE_URL)/2.0/commit/$(COMMIT)/issuesRemoteResults"; \
-    curl -XPOST -L -H "project-token: $(CODACY_PROJECT_TOKEN)" \
-      -H "Content-type: application/json" \
-      "$(CODACY_API_BASE_URL)/2.0/commit/$(COMMIT)/resultsFinal"
-  LINT_STATICCHECK := staticcheck -tests -f json ./... | \
-    $(RUNDIR)/codacy-staticcheck-$(CODACY_STATICCHECK_VERSION) | $(CODACY_UPLOAD)
-  LINT_GOSEC := gosec -fmt json ./... | \
-    $(RUNDIR)/codacy-gosec-$(CODACY_GOSEC_VERSION) | $(CODACY_UPLOAD)
-else
-  LINT_STATICCHECK := staticcheck -tests ./...
-  LINT_GOSEC := gosec -log /dev/null ./...
-endif
-
-lint-staticcheck: init-sources $(GOBIN)/staticcheck init-staticcheck;
-	$(LINT_STATICCHECK);
-lint-gosec: init-sources $(GOBIN)/gosec init-gosec
-	$(LINT_GOSEC);
 
 lint-markdown: init-sources $(NVM_BIN)/markdownlint
 	@echo markdownlint --config .markdownlint.yaml .; \
@@ -649,14 +697,12 @@ $(BUILDIR)/linux/%: cmd/%/main.go $(SOURCES)
 	  $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $@ $<;
 
 
-# Install and delete targets for local ${GOPATH}/bin.
+# Install and delete targets for local ${GOBIN}.
 install: $(addprefix install-, $(COMMANDS))
-$(addprefix install-, $(COMMANDS)): install-%: build/%
-	cp $< $(GOPATH)/bin/$*;
+$(addprefix install-, $(COMMANDS)): install-%: build/%; cp $< $(GOBIN)/$*;
 
 delete:  $(addprefix delete-, $(COMMANDS))
-$(addprefix delete-, $(COMMANDS)): delete-%:
-	rm $(GOPATH)/bin/$*;
+$(addprefix delete-, $(COMMANDS)): delete-%:; rm $(GOBIN)/$*;
 
 
 # Image build and push targets.
@@ -673,7 +719,7 @@ image-push: image-build
 	  echo "We never push images, aborting."; exit 0; \
 	elif [ "$(IMAGE_VERSION)" == "snapshot" ]; then \
 	  echo "We never push snapshot images, aborting."; exit 0; \
-	elif [ -n "$(CDP_PULL_REQUEST_NUMBER)" -a "$(IMAGE_PUSH)" != "test" ]; then \
+	elif [ -n "$(CDP_PULL_REQUEST_NUMBER)" -a "$(IMAGE_PUSH)" != "pulls" ]; then \
 	  echo "We never push pull request images, aborting."; exit 0; \
 	fi; \
 	$(IMAGE_CMD) push $(IMAGE); \

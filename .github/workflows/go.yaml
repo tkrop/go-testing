@@ -14,7 +14,7 @@ jobs:
     - name: Build and tests
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-      run: make cdp
+      run: make cdp --trace
     
     - name: Send coverage 
       uses: shogo82148/actions-goveralls@v1

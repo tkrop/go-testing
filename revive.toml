@@ -51,6 +51,10 @@ enableAllRules = true
 [rule.flag-parameter]
   disabled = true
 
+# Rule prevents intentional usage of similar private method names.
+[rule.confusing-naming]
+  disabled = true
+
 # Enables a more experienced cyclomatic complexity (we enabled a log of rules
 # to counter-act the complexity trap).
 [rule.cyclomatic]

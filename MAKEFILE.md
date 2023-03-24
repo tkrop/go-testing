@@ -29,11 +29,22 @@ commit.
 The [Makefile](Makefile) supports the following often used standard targets.
 
 ```bash
-make all     # first choice target to init, build, and test
-make cdp     # select of targets to init, build, and test as in pipeline
-make init    # initializes the project by downloading the latest required tools
-make test    # generates and builds sources to execute tests
-make lint    # generates and builds sources and lints sources
+make all     # short cut target to init, test, and build binaries locally
+make cdp     # short cut target to init, test, and build contianers in pipeline
+make commit  # short cut target to execute pr-commit test and lint steps
+make init    # short cut target to setup the project installing the latest tools
+make test    # short cut target to generates sources to execute tests
+make lint    # short cut target to generates and lints sources
+```
+
+The short cut targets can be customized by setting up the variables `TARGETS_*`
+(in upper letters), according to your preferrences in `Makefile.vars` or in
+your environment.
+
+Other less customizable commands are targets to build, install, delete, and
+cleanup project resources:
+
+```bash
 make build   # creates binary files of commands
 make install # installs binary files of commands in '${GOPATH}/bin'
 make delete  # deletes binary files of commands from '${GOPATH}/bin'
@@ -65,47 +76,56 @@ make test-cover  # opens the test coverage report in the browser
 In addition, it is possible to restrict test target execution to packages,
 files and test cases as follows:
 
-* For a single package use `make test-(unit|all) <package> ...`).
-* For a single test file (`make test[-(unit|all) <package>/<file>_test.go ...`).
-* For a single test case (`make test[-(unit|all) <package>/<test-name> ...`).
+* For a single package use `make test-(unit|all) <package> ...`.
+* For a single test file `make test[-(unit|all) <package>/<file>_test.go ...`.
+* For a single test case `make test[-(unit|all) <package>/<test-name> ...`.
 
 
 ### Linter targets
 
-The [Makefile](Makefile) supports different targets that can help with linting
-as well as with fixing the linter problems - if possible.
+The [Makefile](Makefile) supports different targets that help with linting
+according to different quality levels, i.e. `min`,`base` (default), `plus`,
+`max`, (and `all`) as well as automatically fixing the issues.
 
 ```bash
-make lint          # short cut to execute 'lint-base lint-revive lint-apis'
-make lint-base     # lints the go-code using a baseline settings
-make lint-plus     # lints the go-code using an advanced settings
-make lint-all      # lints the go-code using an all-in expert settings
-make lint-codacy   # lints the go-code using codacy client side settings
-make lint-markdown # lints the documentation using markdown settings
+make lint          # short cut to execute the default lint targets
+make lint-min      # lints the go-code using a minimal config
+make lint-base     # lints the go-code using a baseline config
+make lint-plus     # lints the go-code using an advanced config
+make lint-max      # lints the go-code using an expert config
+make lint-all      # lints the go-code using an insane all-in config
+make lint-codacy   # lints the go-code using codacy client side tools
+make lint-markdown # lints the documentation using markdownlint
 make lint-api      # lints the api specifications in '/zalando-apis'
 ```
 
-The `lint-*` targets allow command line arguments:
+The `lint-*` targets allow some command line arguments:
 
 1. The keyword `linters` to display the linter configurations, or
 2. The keyword `fix` enables the auto fixing while linting.
 3. `<linter>,...` a list of linters to enable for a quick checks.
 
-To default target for `make lint` can be customized via `TARGETS_LINT` in
-`Makefile.vars`. The default is `lint-base lint-apis`.
+To default target for `make lint` is determined by the setup of the `QUALITY`
+level and the `CODACY` setup, but can also be customized via `TARGETS_LINT` in
+`Makefile.vars`. The default is `lint-base lint-apis lint-markdown lint-codacy`.
 
-The default linter setup is providing a golden path with three expert levels
-out-of-the-box, i.e. a `base` setting, a challanging `plus` setting, and an
-expert `all` setting that runs all but the disabled linters.
+The default linter setup is providing a golden path with different levels
+out-of-the-box, i.e. a `min` for legacy code, `base` as standard for active
+projects, and `plus` for experts and new projects, and `max` enabling all
+but the conflicting disabled linters. Besides, there is an `all` level that
+allows to experience the full linting capability.
 
-The lint expert levels can be customized in two ways.
+Independen of the golden path this setting provides, the lint expert levels
+can be customized in two ways.
 
-1. Linters can be enabled and disabled providing the linter names to the space
-  separated lists via the variables `LINT_ENABLED`, `LINT_DISABLED`, and
-  `LINT_ADVANCED`.
-2. The linters settings can be configuration via the `.golangci.yaml` file.
+1. Linters can be enabled and disabled by providing the linter names to the
+  space separated lists in the variables `LINTERS_DISABLED`, `LINTERS_DEFAULT`,
+  `LINTERS_MINIMUM`, `LINTERS_BASELINE`, and `LINTERS_EXPERT`.
+2. The linters configs can be mainly changed via `.golangci.yaml`, as well as
+  via `.codacy.yaml`, `.markdownlint.yaml`, and `revive.toml`, for Codacy
+  linters.
 
-Howver, customizing the `.golangci.yaml` is currently not advised, since the
+However, customizing `.golangci.yaml` is currently not advised, since the
 `Makefile` is updating and enforcing a common version.
 
 
@@ -184,10 +204,11 @@ The [Makefile](Makefile) supports targets for common maintainance tasks.
 
 ```bash
 make update        # short cut to execute update-deps
+make update-go     # updates go version to reflect the current compiler
 make update-deps   # updates the project dependencies to the latest version
-make update-go     # updates go to the latest available version
-make update-make   # updates the Makefile to the latest available version
-make update-codacy # updates the codacy configs to latest versions
+make update-tools  # updates the project tools to the latest versions
+make update-make   # updates the Makefile to the latest version
+make update-codacy # updates the codacy configs to the latest versions
 ```
 
 It is advised to use and extend this targets when necessary.
@@ -215,7 +236,6 @@ no need to call them directly.
 
 ```bash
 make init           # short cut for 'init-tools init-hooks init-packages'
-make init-tools     # initializes the tools for running the default targets
 make init-codacy    # initializes the tools for running the codacy targets
 make init-hooks     # initializes github hooks for pre-commit, etc
 make init-packages  # initializes and downloads packages dependencies

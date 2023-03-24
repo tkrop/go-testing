@@ -1,7 +1,3 @@
-// Package test contains the main collection of functions and types for setting
-// up the basic isolated test environment. It is part of the public interface
-// and starting to get stable, however, we are still experimenting to optimize
-// the interface and the user experience.
 package test
 
 import (
@@ -136,7 +132,7 @@ func (t *Tester) Parallel() {
 
 // WaitGroup adds wait group to unlock in case of a failure.
 //
-//revive:disable-next-line // is using a wrapper interface similar named.
+//revive:disable-next-line:waitgroup-by-value // own wrapper interface.
 func (t *Tester) WaitGroup(wg sync.WaitGroup) {
 	t.wg = wg
 }
@@ -274,7 +270,7 @@ func (t *Tester) register() {
 }
 
 // cleanup runs the cleanup methods registered on the isolated test environment.
-func (t *Tester) cleanup() { //revive:disable-line // internal implementation.
+func (t *Tester) cleanup() {
 	t.mu.Lock()
 	cleanups := slices.Reverse(t.cleanups)
 	t.mu.Unlock()
@@ -306,7 +302,7 @@ func (t *Tester) finish() {
 func (t *Tester) recover() {
 	t.Helper()
 
-	//revive:disable-next-line // this is inside the defered function.
+	//revive:disable-next-line:defer // is inside the defered function.
 	if arg := recover(); arg != nil {
 		t.Panic(arg)
 	}
@@ -390,7 +386,7 @@ func (r *runner[P]) RunSeq(call func(t Test, param P)) Runner[P] {
 }
 
 // Run runs the test parameter sets either parallel or in sequence.
-func (r *runner[P]) run( //revive:disable-line // internal implementation.
+func (r *runner[P]) run(
 	call func(t Test, param P), parallel bool,
 ) Runner[P] {
 	switch params := r.params.(type) {
@@ -447,7 +443,7 @@ func (r *runner[P]) wrap(
 }
 
 // name resolves the test case name from the parameter set.
-func (r *runner[P]) name(param P) Name { //revive:disable-line // generic.
+func (*runner[P]) name(param P) Name {
 	name, ok := reflect.FindArgOf(param, unknownName, "name").(Name)
 	if ok && name != "" {
 		return name
@@ -456,7 +452,7 @@ func (r *runner[P]) name(param P) Name { //revive:disable-line // generic.
 }
 
 // expect resolves the test case expectation from the parameter set.
-func (r *runner[P]) expect(param P) Expect { //revive:disable-line // generic.
+func (*runner[P]) expect(param P) Expect {
 	if expect, ok := reflect.FindArgOf(param, Success, "expect").(Expect); ok {
 		return expect
 	}
@@ -466,8 +462,6 @@ func (r *runner[P]) expect(param P) Expect { //revive:disable-line // generic.
 // Run creates an isolated (by default) parallel test environment running the
 // given test function with given expectation. When executed via `t.Run()` it
 // checks whether the result is matching the expectation.
-//
-//revive:disable-next-line // external interface without receiver.
 func Run(expect Expect, test func(Test)) func(*testing.T) {
 	return run(expect, test, Parallel)
 }
@@ -475,8 +469,6 @@ func Run(expect Expect, test func(Test)) func(*testing.T) {
 // RunSeq creates an isolated, test environment for the given test function
 // with given expectation. When executed via `t.Run()` it checks whether the
 // result is matching the expectation.
-//
-//revive:disable-next-line // external interface without receiver.
 func RunSeq(expect Expect, test func(Test)) func(*testing.T) {
 	return run(expect, test, false)
 }
@@ -484,8 +476,6 @@ func RunSeq(expect Expect, test func(Test)) func(*testing.T) {
 // Run creates an isolated parallel or sequential test environment running the
 // given test function with given expectation. When executed via `t.Run()` it
 // checks whether the result is matching the expectation.
-//
-//revive:disable-next-line // internal implementation.
 func run(expect Expect, test func(Test), parallel bool) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()

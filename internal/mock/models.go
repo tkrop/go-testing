@@ -117,8 +117,8 @@ func (t *Type) IsPackageMatch(pkgs []*packages.Package) bool {
 	return false
 }
 
-// Create a matcher from the given type using the file path and the name
-// pattern.
+// Matcher create a matcher from the given type using the file path and the
+// name pattern.
 func (t *Type) Matcher() (*TypeMatcher, error) {
 	name, err := regexp.Compile(t.Name)
 	if err != nil {
@@ -132,7 +132,7 @@ func (t *Type) Matcher() (*TypeMatcher, error) {
 	return &TypeMatcher{File: file, Name: name}, nil
 }
 
-// Type matcher.
+// TypeMatcher contains type matcher information.
 type TypeMatcher struct {
 	// Base file name.
 	File string
@@ -147,7 +147,7 @@ func (tm *TypeMatcher) Matches(t *Type) bool {
 			tm.File == t.File[:strings.LastIndex(t.File, ":")])
 }
 
-// Param provides method parameterss.
+// Param provides method parameters.
 type Param struct {
 	// Method parameter.
 	Name string
@@ -206,7 +206,7 @@ func NewMethods(iface *types.Interface) []*Method {
 	return methods
 }
 
-// Interface information.
+// IFace contains interface information.
 type IFace struct {
 	// Source interface information.
 	Source *Type

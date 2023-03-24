@@ -77,7 +77,7 @@ func NewParser(loader Loader, target *Type) *Parser {
 	return &Parser{loader: loader, target: target}
 }
 
-// parse parses the command line arguments provided and returns a list of mock
+// Parse parses the command line arguments provided and returns a list of mock
 // stubs containing the necessary source and target information without method
 // data.
 func (parser *Parser) Parse(args ...string) ([]*Mock, []error) {

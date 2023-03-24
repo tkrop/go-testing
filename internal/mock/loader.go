@@ -36,9 +36,9 @@ type PkgResponse struct {
 	err error
 }
 
-// Defaults calculates the default package values required by users, i.e. the
-// derived default package names - usually ony applied on not-now-existing
-// packages.
+// NewPkgResponse calculates a new package response using given path, package
+// list and error information. The method also derives the package path and
+// package names using this information.
 func NewPkgResponse(
 	_ string, pkgs []*packages.Package, err error,
 ) *PkgResponse {
@@ -176,8 +176,6 @@ func (loader *CachedLoader) byPath(path string) *PkgResponse {
 // file, the package is resolved but will not provide the package repository
 // path nor the standardized package name by default. The method compensates
 // this partially be calculating default package names on a best effort basis.
-//
-//revive:disable-next-line // internal implementation.
 func (loader *CachedLoader) load(path string) *PkgResponse {
 	pkgs, err := packages.Load(loader.Config, path)
 	if err != nil {
@@ -240,7 +238,7 @@ func (loader *CachedLoader) ifacesAny(
 
 // iface looks up a single interface from the given package that matches the
 // provided interface name.
-func (loader *CachedLoader) iface( //revive:disable-line // keep namespace clean.
+func (*CachedLoader) iface(
 	pkg *packages.Package, source *Type, name string,
 ) (*types.TypeName, *types.Interface, error) {
 	if object := pkg.Types.Scope().Lookup(name); object == nil {
@@ -268,9 +266,7 @@ func (loader *CachedLoader) normalize(path string) string {
 // trimfile removes the last part of the file path, if it is a file or if the
 // part does not exist. This is following the assumption that a valid target
 // package needs to exist to generate code or read a package.
-//
-//revive:disable-next-line // keep namespace clean.
-func (loader *CachedLoader) trimfile(path string) string {
+func (*CachedLoader) trimfile(path string) string {
 	info, err := os.Stat(path)
 	if err != nil || !info.IsDir() {
 		return filepath.Dir(path)
