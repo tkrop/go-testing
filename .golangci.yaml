@@ -9,27 +9,34 @@ issues:
   # Default: 3 (we recommend 10-20)
   max-same-issues: 10
 
+  # Use default exclusions for common false positives as defined in
+  # https://golangci-lint.run/usage/false-positives/#default-exclusions
+  # Default: true (we use false to sync behavior with Codacy)
+  exclude-use-default: false
+
+  # Defining manually exclusions that make sense.
   exclude-rules:
+    # Exclude go:generate directives from line length checking.
     - source: "^//\\s*go:generate\\s"
       linters: [ lll, revive ]
+    # Exlude magic number in time setups and bit shifting.
+    - source: "[0-9]+ ?\\* ?time\\.|(<<|>>) ?[0-9]+|[0-9]+ ?(<<|>>)"
+      linters: [ gomnd ]
+    # Eclude certain standards from being applied in test.
+    - path: "_test\\.go"
+      linters: [ bodyclose, contextcheck, dupl, funlen, goconst, gosec, noctx,
+        goerr113, wrapcheck ]
+
+    # Exclude error return value check because of to many false positivs.
+    - text: 'Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked'
+      linters: [ errcheck ]
+    # Exclude certain revive standards from being applied in tests.
+    - path: "_test\\.go"
+      text: "^(max-public-structs|function-length|cognitive-complexity):"
+      linters: [ revive ]
+    # Exclude dots in unfinished thouthgs.
     - source: "(noinspection|TODO)"
       linters: [ godot ]
-    - source: "//noinspection"
-      linters: [ gocritic ]
-    - path: "_test\\.go"
-      linters:
-        - bodyclose
-        - contextcheck
-        - dupl
-        - funlen
-        - goconst
-        - gosec
-        - noctx
-        - wrapcheck
-        - goerr113
-    - path: "_test\\.go"
-      linters: [ revive ]
-      text: "^(max-public-structs|function-length|cognitive-complexity):"
 
 
 # This contains only configs which differ from defaults. For other configs see
@@ -82,6 +89,12 @@ linters-settings:
       - fieldalignment # too strict
       - shadow # too strict to always work around
 
+  gosec:
+    # To specify a set of rules to explicitly exclude.
+    # Available rules: https://github.com/securego/gosec#available-rules
+    # Default: []
+    excludes: [ G105, G307 ]
+
   gocritic:
     # Settings passed to gocritic. The settings key is the name of a supported
     # gocritic checker. The list of supported checkers can be find in
@@ -115,6 +128,7 @@ linters-settings:
     # See https://github.com/mgechev/revive#configuration
     # Default: warning
     severity: error
+
     rules:
       # No need to enforce a file header.
       - name: file-header
@@ -140,6 +154,9 @@ linters-settings:
       # Rule prevents intentional usage of similar variable names.
       - name: flag-parameter
         disabled: true
+      # Rule prevents intentional usage of similar private method names.
+      - name: confusing-naming
+        disabled: true
 
       # Enables a more experienced cyclomatic complexity (we enabled a log of
       # rules to counter-act the complexity trap).
@@ -151,7 +168,6 @@ linters-settings:
         arguments: [20]
       # Limit line-length to increase readability.
       - name: line-length-limit
-        disabled: false
         arguments: [100]
       # We are a bit more relexed with function length consistent with funlen.
       - name: function-length

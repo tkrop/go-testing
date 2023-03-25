@@ -1,3 +1,8 @@
+// Package perm provides a small framework to simplify permutation tests, i.e.
+// a consistent test set where conditions can be checked in all known orders
+// with different outcome. This is very handy in combination with [test](test)
+// to validated the [mock](mock) framework, but may be useful in other cases
+// too.
 package perm
 
 import (

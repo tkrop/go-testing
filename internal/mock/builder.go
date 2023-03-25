@@ -73,7 +73,7 @@ func (b *FileBuilder) AddImports(imports ...*Import) *FileBuilder {
 	return b
 }
 
-// Builds the actual file information.
+// Build builds the actual file information.
 func (b *FileBuilder) Build() *File {
 	for _, mock := range b.mocks {
 		for _, method := range mock.Methods {

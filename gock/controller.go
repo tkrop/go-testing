@@ -85,7 +85,7 @@ func (ctrl *Controller) InterceptClient(client *http.Client) {
 
 // RestoreClient allows to disable and restore the original transport in the
 // given http.Client.
-func (ctrl *Controller) RestoreClient(client *http.Client) { //revive:disable-line
+func (*Controller) RestoreClient(client *http.Client) {
 	if transport, ok := client.Transport.(*Transport); ok {
 		client.Transport = transport.transport
 	}

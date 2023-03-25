@@ -1,4 +1,4 @@
-//revive:disable:max-public-structs
+//revive:disable-next-line:max-public-structs // structs for testing
 package reflect_test
 
 import (

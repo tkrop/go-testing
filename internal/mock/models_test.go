@@ -17,11 +17,11 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-//revive:disable
+//revive:disable:line-length-limit // go:generate line length
 
 //go:generate mockgen -package=mock_test -destination=mock_template_test.go -source=template.go Template
 
-//revive:enable
+//revive:enable:line-length-limit
 
 var (
 	targetDefault = &Type{
