@@ -33,7 +33,7 @@ const (
 
 // String return string representation of detach mode.
 func (m DetachMode) String() string {
-	switch m { //nolint:exhaustive // Case is not needed, yet!
+	switch m { //nolint:exhaustive // case is not needed, yet!
 	// case None:
 	// 	return "None"
 	case Head:

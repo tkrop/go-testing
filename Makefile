@@ -23,9 +23,12 @@ endif
 CODE_QUALITY ?= base
 TEST_TIMEOUT ?= 10s
 
-CONTAINER ?= Dockerfile
+FILE_CONTAINER ?= Dockerfile
+FILE_GOLANGCI ?= .golangci.yaml
+FILE_DELIVERY ?= delivery.yaml
+FILE_DELIVERY_REGEX ?= (cdp-runtime\/go-|go-version: \^)
 REPOSITORY ?= $(shell git remote get-url origin | \
-	sed "s/^https:\/\///; s/^git@//; s/.git$$//; s/:/\//;")
+	sed "s/^https:\/\///; s/^git@//; s/.git$$//; s/:/\//")
 GITHOSTNAME ?= $(word 1,$(subst /, ,$(REPOSITORY)))
 GITORGNAME ?= $(word 2,$(subst /, ,$(REPOSITORY)))
 GITREPONAME ?= $(word 3,$(subst /, ,$(REPOSITORY)))
@@ -88,43 +91,22 @@ CODACY_STATICCHECK_VERSION ?= 3.0.12
 TARGETS_ALL ?= init test lint build
 TARGETS_CDP ?= clean clean-run init test lint \
 	$(if $(filter $(IMAGE_PUSH),never),,\
-	  $(if $(wildcard $(CONTAINER)),image-push,))
-TARGETS_COMMIT ?= test-unit lint-$(CODE_QUALITY) lint-markdown
+	  $(if $(wildcard $(FILE_CONTAINER)),image-push,))
+TARGETS_COMMIT ?= test-go test-unit lint-$(CODE_QUALITY) lint-markdown
+TARGETS_TEST ?= test-go test-all test-upload
 TARGETS_INIT ?= clean-init init-hooks init-packages \
 	$(if $(filter $(CODACY),enabled),init-codacy,)
 TARGETS_TEST ?= test-all $(if $(filter $(CODACY),enabled),test-upload,)
 TARGETS_LINT ?= lint-$(CODE_QUALITY) lint-markdown lint-apis \
 	$(if $(filter $(CODACY),enabled),lint-codacy,)
 
-
-# General setup of go environment.
-
 # Initialize golang modules - if not done before.
 ifneq ($(shell ls go.mod), go.mod)
   $(shell go mod init $(REPOSITORY))
 endif
 
-# Setup go to use desired and consistent golang versions.
-GOVERSION := $(shell go version | sed -Ee "s/.*go([0-9]+\.[0-9]+).*/\1/")
-GOVERSION_MOD := $(shell grep "^go [0-9.]*$$" go.mod | cut -f2 -d' ')
-GOVERSION_YAML := $(shell if [ -f delivery.yaml ]; then \
-    grep -o "cdp-runtime/go-[0-9.]*" delivery.yaml | grep -o "[0-9.]*" | sort -u; \
-  else echo $(GOVERSION); fi)
-ifneq (update-go,$(MAKECMDGOALS))
-  ifneq ($(firstword $(GOVERSION_YAML)), $(GOVERSION_YAML))
-    $(error "inconsistent go versions: delivery.yaml uses $(GOVERSION_YAML)")
-  endif
-  ifneq ($(GOVERSION), $(GOVERSION_YAML))
-    ifneq ($(GOVERSION_YAML),)
-      $(error "no cdp-runtime go version $(GOVERSION): delivery.yaml likely uses stil overlay")
-    else
-      $(error "unsupported go version $(GOVERSION): delivery.yaml requires $(GOVERSION_YAML)")
-    endif
-  endif
-  ifneq ($(GOVERSION), $(GOVERSION_MOD))
-    $(error "unsupported go version $(GOVERSION): go.mod requires $(GOVERSION_MOD)")
-  endif
-endif
+# Setup go to use desired and consistent go versions.
+GOVERSION := $(shell go version | sed -E "s/.*go([0-9]+\.[0-9]+).*/\1/")
 
 # Export private repositories not to be downloaded.
 export GOPRIVATE := github.bus.zalan.do
@@ -187,7 +169,7 @@ endef
 
 # Setup default environment variables.
 COMMANDS := $(shell grep -lr "func main()" cmd/*/main.go 2>/dev/null | \
-	sed -E "s/^cmd\/([^/]*)\/main.go$$/\1/;" | sort -u)
+	sed -E "s/^cmd\/([^/]*)\/main.go$$/\1/" | sort -u)
 SOURCES := $(shell find . -name "*.go" ! -name "mock_*_test.go")
 
 # Setup golang mock setup environment.
@@ -195,10 +177,10 @@ MOCK_TOOLS := $(addprefix $(GOBIN)/,$(notdir $(TOOLS_GOGEN)))
 MOCK_MATCH_DST := ^.\/(.*)\/(.*):\/\/go:generate.*-destination=([^ ]*).*$$
 MOCK_MATCH_SRC := ^.\/(.*)\/(.*):\/\/go:generate.*-source=([^ ]*).*$$
 MOCK_TARGETS := $(shell grep "//go:generate[[:space:]]*mockgen" $(SOURCES) | \
-	sed -E "s/$(MOCK_MATCH_DST)/\1\/\3=\1\/\2/;" | sort -u)
+	sed -E "s/$(MOCK_MATCH_DST)/\1\/\3=\1\/\2/" | sort -u)
 MOCK_SOURCES := $(shell grep "//go:generate[[:space:]]*mockgen.*-source" $(SOURCES) | \
-	sed -E "s/$(MOCK_MATCH_SRC)/\1\/\3/;" | sort -u | \
-	xargs realpath --relative-base=.)
+	sed -E "s/$(MOCK_MATCH_SRC)/\1\/\3/" | sort -u | xargs realpath | \
+	sed "s|$(PWD)/||g")
 MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 	do echo "$${TARGET%%=*}"; done | sort -u)
 
@@ -211,17 +193,17 @@ MOCKS := $(shell for TARGET in $(MOCK_TARGETS); \
 .PHONY: clean-run $(addprefix clean-run-, $(COMMANDS) db aws)
 .PHONY: init init-hooks init-packages init-sources init-codacy
 .PHONY: $(addprefix init-, $(CODACY_BINARIES))
-.PHONY: test test-all test-unit test-bench test-clean test-upload test-cover
-.PHONY: lint lint-min lint-base lint-plus lint-max lint-all
+.PHONY: test test-all test-unit test-bench test-go test-clean test-upload test-cover
+.PHONY: lint lint-min lint-base lint-plus lint-max lint-all lint-config
 .PHONY: lint-markdown lint-apis lint-codacy lint-revive
 .PHONY: $(addprefix lint-, $(CODACY_CLIENTS))
 .PHONY: $(addprefix lint-, $(CODACY_BINARIES))
-.PHONY: build build-native build-linux build-image build-docker
+.PHONY: build build-native build-linux build-image
 .PHONY: $(addprefix build-, $(COMMANDS))
 .PHONY: install $(addprefix install-, $(COMMANDS))
 .PHONY: delete $(addprefix delete-, $(COMMANDS))
-.PHONY: image image-build image-push docker docker-build docker-push
-.PHONY: run-native run-image run-docker run-clean
+.PHONY: image image-build image-push
+.PHONY: run-native run-image run-clean
 .PHONY: $(addprefix run-, $(COMMANDS) db aws)
 .PHONY: $(addprefix run-go-, $(COMMANDS))
 .PHONY: $(addprefix run-image-, $(COMMANDS))
@@ -278,19 +260,20 @@ commit: $(TARGETS_COMMIT)
 # Update dependencies of all packages.
 update: update-deps
 update-go:
-	@sed -i "s/go $(GOVERSION_MOD)/go $(GOVERSION)/" go.mod; \
-	if [ -f delivery.yaml ]; then \
-	  sed -E -i "s/(cdp-runtime\/go)[0-9.-]*/\1-$(GOVERSION)/" delivery.yaml; \
+	@sed -i -e "s/^go [0-9.]*$$/go $(GOVERSION)/" go.mod; \
+	if [ -f $(FILE_DELIVERY) ]; then \
+	  sed -E -i -e "s/$(FILE_DELIVERY_REGEX)[0-9.]*/\1$(GOVERSION)/" \
+	    $(FILE_DELIVERY); \
 	fi; \
 
-update-deps:
+update-deps: test-go
 	@ROOT=$$(pwd); \
 	for DIR in $$(find . -name "*.go" | xargs dirname | sort -u); do \
 	  echo "update: $${DIR}"; cd $${ROOT}/$${DIR##./} && \
 	  go mod tidy -v -e -compat=${GOVERSION} && go get -u || exit -1; \
 	done; \
 
-update-tools:
+update-tools: test-go
 	@for TOOL in $(TOOLS_GO); do \
 	  echo "go install $${TOOL}"; \
 	  go install $${TOOL}@latest || exit -1; \
@@ -308,23 +291,25 @@ update-make-would-be-better:
 	curl ${BASE}/Makefile > Makefile;
 
 update-make:
-	@TEMPDIR=$$(mktemp -d) && DIR="$$(shell pwd)" && \
+	@DIR="$$(pwd)" && \
+	TEMPDIR=$$(mktemp -d) && trap "rm -rf $${TEMPDIR}" INT TERM EXIT && \
 	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
 	git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && ( \
 	  cd $${TEMPDIR}; echo "update Makefile" &&  \
 	    git show HEAD:Makefile > $${DIR}/Makefile; \
 	    git show HEAD:MAKEFILE.md > $${DIR}/MAKEFILE.md; \
-	    git show HEAD:.golangci.yaml > $${DIR}/.golangci.yaml; \
+	    git show HEAD:$(FILE_GOLANGCI) > $${DIR}/$(FILE_GOLANGCI); \
 	  cd $${DIR} \
 	); \
 	rm -rf $${TEMPDIR}; \
 
 update-codacy:
-	@TEMPDIR=$$(mktemp -d) && DIR="$$(shell pwd)" && \
+	@DIR="$$(pwd)" && \
+	TEMPDIR=$$(mktemp -d) && trap "rm -rf $${TEMPDIR}" INT TERM EXIT && \
 	BASEREPO=git@github.bus.zalan.do:builder-knowledge/go-base.git && \
 	git clone --no-checkout --depth 1 $${BASEREPO} $${TEMPDIR} 2>/dev/null && ( \
-	  cd $${TEMPDIR}; echo "update Makefile" &&  \
-	    git show HEAD:.codacy.yaml > .$${DIR}/.codacy.yaml; \
+	  cd $${TEMPDIR}; echo "update Codacy" &&  \
+	    git show HEAD:.codacy.yaml > $${DIR}/.codacy.yaml; \
 	    git show HEAD:revive.toml > $${DIR}/revive.toml; \
 	  cd $${DIR} \
 	); \
@@ -422,10 +407,41 @@ $(MOCKS): go.sum $(MOCK_SOURCES) $(MOCK_TOOLS)
 	  sed -E "s:.*$@=([^ ]*).*$$:\1:;")";
 
 
-test: test-all test-upload
+test: $(TARGETS_TEST)
 test-all: test-clean init-sources $(TEST_ALL)
 test-unit: test-clean init-sources $(TEST_UNIT)
 test-bench: test-clean init-sources $(TEST_BENCH)
+test-go:
+	@ERROR="error: local go version is $(GOVERSION)"; \
+	VERSION=$$(grep "^go [0-9.]*$$" go.mod | cut -f2 -d' '); \
+	if [ "$(GOVERSION)" != "$${VERSION}" ]; then \
+	  echo "$${ERROR}: 'go.mod' requires $${VERSION}!" >/dev/stderr; \
+	  if [[ "$(GOVERSION)" < "$${VERSION}" ]]; then \
+	    GOCHANGE="upgrade"; CHANGE="downgrade"; \
+	  else \
+	    GOCHANGE="downgrade"; CHANGE="upgrade"; \
+	  fi; \
+	  echo -e "\t$${GOCHANGE} your local go version to $${VERSION} or "; \
+	  echo -e "\trun 'make update-go' to $${CHANGE} the project!"; \
+	  exit -1; \
+	fi; \
+	VERSIONS="$$(if [ -f $(FILE_DELIVERY) ]; then \
+	    grep -Eo "$(FILE_DELIVERY_REGEX)[0-9.]*" $(FILE_DELIVERY) | \
+	    grep -Eo "[0-9.]*" | sort -u; else echo ${VERSION}; fi)"; \
+	for VERSION in $${VERSIONS}; do \
+	  if [ "$(GOVERSION)" != "$${VERSION}" ]; then \
+	    echo "$${ERROR}: $(FILE_DELIVERY) requires $${VERSION}!" >/dev/stderr; \
+	    if [[ "$(GOVERSION)" < "$${VERSION}" ]]; then \
+	      GOCHANGE="upgrade"; CHANGE="downgrade"; \
+	    else \
+	      GOCHANGE="downgrade"; CHANGE="upgrade"; \
+	    fi; \
+	    echo -e "\t$${GOCHANGE} your local go version to $${VERSION} or "; \
+	    echo -e "\trun 'make update-go' to $${CHANGE} the project!"; \
+	    exit -1; \
+	  fi; \
+	done; \
+
 test-clean:
 	@if [ -f "$(TEST_ALL)" ]; then rm -vf $(TEST_ALL); fi; \
 	 if [ -f "$(TEST_UNIT)" ]; then rm -vf $(TEST_UNIT); fi; \
@@ -462,7 +478,7 @@ define testargs
 	  find $$(dirname $(RUNARGS) | sort -u) \
 		-maxdepth 1 -a -name "*.go" -a ! -name "*_test.go" \
 		-o -name "common_test.go" -o -name "mock_*_test.go" | \
-		sed -e "s/^/.\//"; \
+		sed "s|^|./|"; \
 	  echo $(addprefix ./,$(RUNARGS)); \
 	elif [[ -d "$${ARGS[0]}" && ! -f "$${ARGS[0]}" ]]; then \
 	  echo $(addprefix ./,$(RUNARGS)); \
@@ -473,7 +489,7 @@ define testargs
 		if [ -z "$${TESTCASE}" ]; then TESTCASES="-run $${ARG##*/}"; \
 		else TESTCASES="$${TESTCASES} -run $${ARG##*/}"; fi; \
 	  done; \
-	  echo -en "$${PACKAGES}" | sort -u | sed "s/^/.\//"; \
+	  echo -en "$${PACKAGES}" | sort -u | sed "s|^|./|"; \
 	  echo "$${TESTCASES}"; \
 	else
 	  echo "warning: invalid test parameters [$${ARGS[@]}]" > /dev/stderr;
@@ -520,45 +536,56 @@ LINTERS_MINIMUM ?= \
 	errchkjson execinquery exportloopref funlen gocognit goconst gocyclo \
 	godot gofmt gofumpt goimports importas maintidx makezero misspell nestif \
 	nilerr noctx prealloc predeclared promlinter reassign sqlclosecheck \
-	unconvert unparam unused usestdlibvars whitespace
+	unconvert unparam usestdlibvars whitespace
 LINTERS_BASELINE ?= \
 	containedctx contextcheck cyclop decorder depguard errname forbidigo \
-	ginkgolinter gocheckcompilerdirectives goheader gomoddirectives gomodguard \
+	ginkgolinter gocheckcompilerdirectives goheader gomodguard \
 	goprintffuncname gosec grouper interfacebloat lll loggercheck nakedret \
 	nilnil nolintlint nosprintfhostport revive
 LINTERS_EXPERT ?= \
-	errorlint exhaustive gocritic goerr113 gomnd stylecheck tenv \
-	testableexamples testpackage thelper tparallel wrapcheck
+	errorlint exhaustive gocritic goerr113 gomnd gomoddirectives stylecheck \
+	tenv testableexamples testpackage thelper tparallel wrapcheck
 
-LINT_FLAGS ?= --color=always
-LINT_DISABLED ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_DISABLED)))
-LINT_DEFAULT ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_DEFAULT)))
-LINT_MINIMUM ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_MINIMUM) $(LINT_DEFAULT)))
-LINT_BASELINE ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_BASELINE) $(LINT_MINIMUM)))
-LINT_EXPERT ?= $(subst $(SPACE),$(COMMA),$(strip $(LINTERS_EXPERT) $(LINT_BASELINE)))
+LINT_DISABLED ?= $(subst $(SPACE),$(COMMA),$(strip \
+	$(filter-out $(LINTERS_CUSTOM),$(LINTERS_DISABLED))))
+LINT_DEFAULT ?= $(subst $(SPACE),$(COMMA),$(strip \
+	$(filter-out $(LINTERS_CUSTOM),$(LINTERS_DEFAULT)) $(LINTERS_CUSTOM)))
+LINT_MINIMUM ?= $(subst $(SPACE),$(COMMA),$(strip $(LINT_DEFAULT) \
+	$(filter-out $(LINTERS_CUSTOM),$(LINTERS_MINIMUM))))
+LINT_BASELINE ?= $(subst $(SPACE),$(COMMA),$(strip $(LINT_MINIMUM) \
+	$(filter-out $(LINTERS_CUSTOM),$(LINTERS_BASELINE))))
+LINT_EXPERT ?= $(subst $(SPACE),$(COMMA),$(strip $(LINT_BASELINE) \
+	$(filter-out $(LINTERS_CUSTOM),$(LINTERS_EXPERT))))
 
-ifeq ($(shell ls .golangci.yaml 2>/dev/null), .golangci.yaml)
-  LINT_CONFIG := --config .golangci.yaml
+ifeq ($(shell ls $(FILE_GOLANGCI) 2>/dev/null), $(FILE_GOLANGCI))
+  LINT_CONFIG := --config $(FILE_GOLANGCI)
 endif
 
-LINT_MIN := --enable $(LINT_MINIMUM) --disable $(LINT_DISABLED) \
-	$(LINT_FLAGS) $(LINT_CONFIG)
-LINT_BASE := --enable $(LINT_BASELINE) --disable $(LINT_DISABLED) \
-	$(LINT_FLAGS) $(LINT_CONFIG)
-LINT_PLUS := --enable $(LINT_EXPERT) --disable $(LINT_DISABLED) \
-	$(LINT_FLAGS) $(LINT_CONFIG)
-LINT_MAX := --enable-all --disable $(LINT_DISABLED) \
-	$(LINT_FLAGS) $(LINT_CONFIG)
-LINT_ALL := --enable $(LINT_EXPERT),$(LINT_DISABLED) --disable-all \
-	$(LINT_FLAGS) $(LINT_CONFIG)
+LINT_MIN := --enable $(LINT_MINIMUM) --disable $(LINT_DISABLED)
+LINT_BASE := --enable $(LINT_BASELINE) --disable $(LINT_DISABLED)
+LINT_PLUS := --enable $(LINT_EXPERT) --disable $(LINT_DISABLED)
+LINT_MAX := --enable-all --disable $(LINT_DISABLED)
+LINT_ALL := --enable $(LINT_EXPERT),$(LINT_DISABLED) --disable-all
 
-LINT_CMD ?= run
+LINT_FLAGS ?=  --sort-results --color always
+LINT_CMD ?= golangci-lint run $(LINT_CONFIG) $(LINT_FLAGS)
 ifeq ($(RUNARGS),linters)
-  LINT_CMD := linters
+  LINT_CMD := golangci-lint linters $(LINT_CONFIG) $(LINT_FLAGS)
+else ifeq ($(RUNARGS),config)
+  LINT_CMD := @
+  LINT_MIN := LINT_ENABLED=$(LINT_MINIMUM) \
+    LINT_DISABLED=$(LINT_DISABLED) make lint-config
+  LINT_BASE := LINT_ENABLED=$(LINT_BASELINE) \
+    LINT_DISABLED=$(LINT_DISABLED) make lint-config
+  LINT_PLUS := LINT_ENABLED=$(LINT_EXPERT) \
+    LINT_DISABLED=$(LINT_DISABLED) make lint-config
+  LINT_MAX := LINT_DISABLED=$(LINT_DISABLED) make lint-config
+  LINT_ALL := LINT_ENABLED=$(LINT_EXPERT),$(LINT_DISABLED) \
+    make lint-config
 else ifeq ($(RUNARGS),fix)
-  LINT_CMD := run --fix
+  LINT_CMD := golangci-lint run $(LINT_CONFIG) $(LINT_FLAGS) --fix
 else ifneq ($(RUNARGS),)
-  LINT_CMD := run
+  LINT_CMD := golangci-lint run $(LINT_CONFIG) $(LINT_FLAGS)
   LINT_MIN := --disable-all --enable $(RUNARGS)
   LINT_BASE := --disable-all --enable $(RUNARGS)
   LINT_PLUS := --disable-all --enable $(RUNARGS)
@@ -567,16 +594,76 @@ else ifneq ($(RUNARGS),)
 endif
 
 lint: $(TARGETS_LINT)
-lint-min: init-sources $(GOBIN)/golangci-lint
-	golangci-lint $(LINT_CMD) $(LINT_MIN);
-lint-base: init-sources $(GOBIN)/golangci-lint
-	golangci-lint $(LINT_CMD) $(LINT_BASE);
-lint-plus: init-sources $(GOBIN)/golangci-lint
-	golangci-lint $(LINT_CMD) $(LINT_PLUS);
-lint-max: init-sources $(GOBIN)/golangci-lint;
-	golangci-lint $(LINT_CMD) $(LINT_MAX);
-lint-all: init-sources $(GOBIN)/golangci-lint;
-	golangci-lint $(LINT_CMD) $(LINT_ALL);
+lint-min: init-sources $(GOBIN)/golangci-lint; $(LINT_CMD) $(LINT_MIN)
+lint-base: init-sources $(GOBIN)/golangci-lint;	$(LINT_CMD) $(LINT_BASE)
+lint-plus: init-sources $(GOBIN)/golangci-lint;	$(LINT_CMD) $(LINT_PLUS)
+lint-max: init-sources $(GOBIN)/golangci-lint; $(LINT_CMD) $(LINT_MAX)
+lint-all: init-sources $(GOBIN)/golangci-lint; $(LINT_CMD) $(LINT_ALL)
+
+lint-config:
+	@LINT_START=$$(awk '($$0 == "linters:"){print NR-1}' $(FILE_GOLANGCI)); \
+	LINT_STOP=$$(awk '(start && $$0 ~ "^[^ ]+:$$"){print NR; start=0} \
+	  ($$0 == "linters:"){start=1}' $(FILE_GOLANGCI)); \
+	(sed -ne '1,'$${LINT_START}'p' $(FILE_GOLANGCI); \
+	echo -e "linters:\n  enable:"; \
+	for LINTER in "# Set of minimal enabled linters (min)" \
+	    $(LINTERS_DEFAULT) $(LINTERS_MINIMUM) \
+		"# Set of expected linters (base)" $(LINTERS_BASELINE) \
+		"# Set of expert linters (plus)" $(LINTERS_EXPERT); do \
+	  if [ "$${LINTER:0:1}" == "#" ]; then X=""; else X="- "; fi; \
+	  echo -e "    $${X}$${LINTER}"; \
+	done; echo -e "\n  disable:"; \
+	for LINTER in "# Set of disabled linters (default)" \
+	    $(LINTERS_DISABLED); do \
+	  if [ "$${LINTER:0:1}" == "#" ]; then X=""; else X="- "; fi; \
+	  echo -e "    $${X}$${LINTER}"; \
+	done; \
+	echo; sed -ne $${LINT_STOP}',$$p' $(FILE_GOLANGCI)) | \
+	awk -v enabled=$${LINT_ENABLED} -v disabled=$${LINT_DISABLED} ' \
+	  ((start == 2) && ($$1 == "-")) { \
+	    enabled = enable[$$2]; disabled = disable[$$2]; \
+	    if (enabled && disabled) { \
+	      print $$0 "  # (conflicting)" \
+	    } else if (!enabled && disabled) { \
+	      print gensub("-","# -", 1) "  # (disabled)" \
+	    } else if (!enabled && !disabled && enone) { \
+	      print gensub("-","# -", 1) "  # (missing)" \
+	    } else { print $$0 } \
+	    enable[$$2] = 2; next; \
+	  } \
+	  ((start == 3) && ($$1 == "-")) { \
+	    enabled = enable[$$2]; disabled = disable[$$2]; \
+	    if (enabled && disabled) { \
+	      print gensub("-","# -", 1) "  # (conflicting)" \
+	    } else if (enabled && !disabled) { \
+	      print gensub("-","# -", 1) "  # (enabled)" \
+	    } else if (!enabled && !disabled && dnone) { \
+	      print gensub("-","# -", 1) "  # (missing)" \
+	    } else { print $$0 } \
+	    disable[$$2] = 2; next; \
+	  } \
+	  ((start != 0) && ($$0 ~ "^[^ ]+:$$")) { start=0 } \
+	  ((start >= 2) && ($$0 ~ "^  [^ ]+:$$")) { none=1; \
+	    if (start == 2) { for (key in enable) { \
+	      if (key && enable[key] == 1) { \
+	        if (none) { print "    # Additional linters" } \
+	        print "    - " key; none=0 \
+	      } \
+	    } } else if (start == 3) { for (key in disable) { \
+	      if (key && disable[key] == 1) { \
+	        if (none) { print "    # Additional linters" } \
+	        print "    - " key; none=0 \
+	      } \
+	    } } \
+	  } \
+	  ((start != 0) && ($$0 == "  disable:")) { start = 3 }\
+	  ((start != 0) && ($$0 == "  enable:")) { start = 2 } \
+	  ((start == 0) && ($$0 == "linters:")) { start = 1; \
+	    enone = split(enabled, array, ","); \
+		for (i in array){ enable[array[i]] = 1 } \
+	    dnone = split(disabled, array, ","); \
+		for (i in array){ disable[array[i]] = 1 } \
+	  } { print $$0 }' \
 
 lint-codacy: lint-revive 
 lint-codacy: $(addprefix lint-, $(CODACY_CLIENTS))
@@ -600,7 +687,7 @@ $(addprefix lint-, $(CODACY_CLIENTS)): lint-%: init-sources
 	  codacy/codacy-analysis-cli analyze "$${LARGS[@]}" --tool $*"""; \
 	$(IMAGE_CMD) run --rm=true --env CODACY_CODE="/code" \
 	  --volume /var/run/docker.sock:/var/run/docker.sock \
-	  --volume /tmp:/tmp --volume ".":"/code" \
+	  --volume /tmp:/tmp --volume "$$(pwd):/code" \
 	  codacy/codacy-analysis-cli analyze "$${LARGS[@]}" --tool $* \
 
 LINT_ARGS_GOSEC_LOCAL := -log /dev/null -exclude G105,G307 ./...
@@ -642,7 +729,7 @@ lint-markdown: init-sources $(NVM_BIN)/markdownlint
 	@echo markdownlint --config .markdownlint.yaml .; \
 	if command -v markdownlint &> /dev/null; then \
 	  markdownlint --config .markdownlint.yaml .; \
-	else $(IMAGE_CMD) run --tty --volume .:/src:ro \
+	else $(IMAGE_CMD) run --tty --volume $$(pwd):/src:ro \
 	  container-registry.zalando.net/library/node-18-alpine:latest \
 	  /bin/sh -c "npm install --global markdownlint-cli >/dev/null 2>&1 && \
 	    cd /src && markdownlint --config .markdownlint.yaml ."; \
@@ -662,8 +749,8 @@ lint-apis: $(GOBIN)/zally
 
 
 # Setup container specific build flags
-BUILDOS ?= ${shell grep "^FROM [^ ]*$$" $(CONTAINER) 2>/dev/null | \
-	grep -v " as " | sed -e "s/.*\(alpine\|ubuntu\).*/\1/g"}
+BUILDOS ?= ${shell grep "^FROM [^ ]*$$" $(FILE_CONTAINER) 2>/dev/null | \
+	grep -v " as " | sed "s/.*\(alpine\|ubuntu\).*/\1/g"}
 BUILDARCH ?= amd64
 ifeq ($(BUILDOS),alpine)
   BUILDFLAGS ?= -v -mod=readonly
@@ -707,7 +794,7 @@ $(addprefix delete-, $(COMMANDS)): delete-%:; rm $(GOBIN)/$*;
 
 # Image build and push targets.
 image: image-build
-image-build: $(CONTAINER) build-linux
+image-build: $(FILE_CONTAINER) build-linux
 	@if [ "$(IMAGE_PUSH)" == "never" ]; then \
 	  echo "We never build images, aborting."; exit 0; \
 	else \

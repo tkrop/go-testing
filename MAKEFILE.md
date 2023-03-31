@@ -9,19 +9,134 @@ by the following conventions:
 2. Use a single 'config' package to read the configuration for all commands.
 3. Use a common 'Dockerfile' to install all commands in a container image.
 
-All targets in the [Makefile](Makefile) are designated to work out of the box
+All targets in the [Makefile](Makefile) are designated to work out-of-the-box
 taking care to setup the project, installing the necessary tools (except for the
 golang compiler), and triggering the precondition targets as far as required.
 
-The [Makefile](Makefile) also allows to run and install the commands/services
-provided by this project and run test using `make run/test-* [args]`, e.g. the
-command `make test-unit app/service` runs all the unit tests in the package
-`app/service`.
+The [Makefile](Makefile) supports targets to `test`, `lint`, and `build` the
+source code to create commands (services), `install` the commands local or to a
+container (`image-build`) and `run` them using with a customized setup. Targets
+for running and testing allow to add arguments, e.g. `make run/test-* [args]`.
+
+**Example:** `make test-unit base` runs all the unit tests in the package
+`base`.
 
 **Warning:** The [Makefile](Makefile) installs a `pre-commit` hook overwriting
-and deleting any pre-existing hook that enforces a basic linting and unit test
-step, i.e. `make lint-commit test-unit` to run successfully before allowing to
-commit.
+and deleting any pre-existing hook, i.e. `make commit`, that enforces a basic
++unit testing and linting to run successfully before allowing to commit, i.e.
+`test-go`, `test-unit`, `lint-base` (or what code quality level is defined),
+and `lint-markdown`.
+
+
+## Setup and customization
+
+The [Makefile](Makefile) is using sensitive defaults that are supposed to work
+out-of-the-box for most targets. Please see documentation of the target groups
+for more information on setup and customization:
+
+* [Standard targets](#standard-targets)
+* [Test targets](#test-targets)
+* [Linter targets](#linter-targets)
+* [Install targets](#install-targets)
+* [Delete targets](#delete-targets)
+* [Image targets](#image-targets)
+* [Update targets](#update-targets)
+* [Cleanup targets](#cleanup-targets)
+* [Init targets](#init-targets)
+* [Release targets](#release-targets)
+
+To customize the behavior of the Makefile there exist multiple extension points
+that can be used to setup additional variables, definitions, and targets that
+modify the behavior of the [Makefile](Makefile).
+
+* [Makefile.vars](Makefile.vars) allows to modify the behavior of standard
+  targets by customizing and defining additional variables (see section
+  [Modifying variables](#modifying-variables) for more details).
+* [Makefile.defs](Makefile.defs) allows to customize the runtime environment
+  for executing of commands (see Section [Running commands](#running-commands)
+  for more details).
+* [Makefile.targets](Makefile.targets) is an optional extension point that
+  allows to define arbitrary custom targets.
+
+
+### Modifying variables
+
+While there exist sensible defaults for all configurations variables, some of
+them might need to be adjusted. The following list provides an overview of the
+most prominent ones
+
+```Makefile
+# Setup code quality level (default: base).
+CODE_QUALITY := plus
+# Setup codacy integration (default: enabled [enabled, disabled]).
+CODACY := enabled
+
+# Setup required targets before testing (default: <empty>).
+TEST_DEPS := run-db
+# Setup required targets before running commands (default: <empty>).
+RUN_DEPS := run-db
+# Setup required aws services for testing (default: <empty>).
+AWS_SERVICES :=
+
+# Setup when to push images (default: pulls [never, pulls, merges])
+IMAGE_PUSH ?= never
+
+# Setup default test timeout (default: 10s).
+TEST_TIMEOUT := 15s
+
+# Setup custom delivery file (default: delivery.yaml).
+FILE_DELIVERY := delivery-template.yaml
+# Setup custom local build targets (default: init test lint build).
+TARGETS_ALL := init delivery test lint build
+
+# Custom linters applied to prepare next level (default: <empty>).
+LINTERS_CUSTOM := nonamedreturns gochecknoinits tagliatelle
+```
+
+You can easily lookup a list using `grep -r " ?= " Makefile`, however, most
+will not be officially supported unless mentioned in the above list.
+
+
+### Running commands
+
+To `run-*` commands as expected, you need to setup the environment variables
+for your designated runtime by defining the custom functions for setting it up
+via `run-setup`, `run-vars`, `run-vars-local`, and `run-vars-image` in
+[Makefile.defs](Makefile.defs).
+
+While tests are supposed to run with global defaults and test specific config,
+the setup of the `run-*` commands strongly depends on the commands execution
+context and its purpose. Still, there are common patterns that can be copied
+from other commands and projects.
+
+To enable postgres database support you must add `run-db` to `TEST_DEPS` and
+`RUN_DEPS` variables to [Makefile.vars](Makefile.vars).
+
+You can also override the default setup via the `DB_HOST`, `DB_PORT`, `DB_NAME`,
+`DB_USER`, and `DB_PASSWORD` variables, but this is optional.
+
+**Note:** when running test against a DB you usually have to extend the default
+`TEST_TIMEOUT` of 10s to a less aggressive value.
+
+To enable AWS localstack you have to add `run-aws` to the default`TEST_DEPS` and
+`RUN_DEPS` variables, as well as to add your list of required aws services to
+the `AWS_SERVICES` variable.
+
+```Makefile
+# Setup required targets before testing (default: <empty>).
+TEST_DEPS := run-aws
+# Setup required targets before running commands (default: <empty>).
+RUN_DEPS := run-aws
+# Setup required aws services for testing (default: <empty>).
+AWS_SERVICES := s3 sns
+```
+
+**Note:** Currently, the [Makefile](Makefile) does not support all command-line
+arguments since make swallows arguments starting with `-`. To compensate this
+shortcoming the commands need to support setpu via command specific environment
+variables following the principles of the [Twelf Factor App][12factor].
+
+[12factor]: https://12factor.net/ "Twelf Factor App"
 
 
 ## Standard targets
@@ -30,7 +145,7 @@ The [Makefile](Makefile) supports the following often used standard targets.
 
 ```bash
 make all     # short cut target to init, test, and build binaries locally
-make cdp     # short cut target to init, test, and build contianers in pipeline
+make cdp     # short cut target to init, test, and build containers in pipeline
 make commit  # short cut target to execute pr-commit test and lint steps
 make init    # short cut target to setup the project installing the latest tools
 make test    # short cut target to generates sources to execute tests
@@ -38,8 +153,8 @@ make lint    # short cut target to generates and lints sources
 ```
 
 The short cut targets can be customized by setting up the variables `TARGETS_*`
-(in upper letters), according to your preferrences in `Makefile.vars` or in
-your environment.
+(in upper letters), according to your preferences in `Makefile.vars` or in your
++environment.
 
 Other less customizable commands are targets to build, install, delete, and
 cleanup project resources:
@@ -63,14 +178,17 @@ of a new tool, you need to run `make init` explicitly.
 
 ### Test targets
 
-Often it is more efficient or even necessary to execute the finegrained test
+Often it is more efficient or even necessary to execute the fine grained test
 targets to complete a task.
 
 ```bash
-make test        # short cut for 'test-all'
+make test        # short cut for default test targets
 make test-all    # executes the complete tests suite
 make test-unit   # executes only unit tests by setting the short flag
 make test-cover  # opens the test coverage report in the browser
+make test-upload # uploads the test coverage files
+make test-clean  # cleans up the test files
+make test-go     # test go versions
 ```
 
 In addition, it is possible to restrict test target execution to packages,
@@ -79,6 +197,9 @@ files and test cases as follows:
 * For a single package use `make test-(unit|all) <package> ...`.
 * For a single test file `make test[-(unit|all) <package>/<file>_test.go ...`.
 * For a single test case `make test[-(unit|all) <package>/<test-name> ...`.
+
+The default test target can be customized by defining the `TARGETS_TEST`
+variable in `Makefile.vars`. Usually this is not necessary.
 
 
 ### Linter targets
@@ -99,37 +220,42 @@ make lint-markdown # lints the documentation using markdownlint
 make lint-api      # lints the api specifications in '/zalando-apis'
 ```
 
-The `lint-*` targets allow some command line arguments:
+The default target for `make lint` is determined by the selected `CODE_QUALITY`
+level (`min`, `base`, `plus`, and `max`), and the `CODACY` setup (`enabled`,
+`disabled`). The default setup is to run the targets `lint-base`, `lint-apis`,
+`lint-markdown`, and `lint-codacy`. It can be further customized via changing
+the `TARGETS_LINT` in `Makefile.vars` - if necessary.
 
-1. The keyword `linters` to display the linter configurations, or
-2. The keyword `fix` enables the auto fixing while linting.
-3. `<linter>,...` a list of linters to enable for a quick checks.
+The `lint-*` targets for `golangci-lint` allow some command line arguments:
 
-To default target for `make lint` is determined by the setup of the `QUALITY`
-level and the `CODACY` setup, but can also be customized via `TARGETS_LINT` in
-`Makefile.vars`. The default is `lint-base lint-apis lint-markdown lint-codacy`.
+1. The keyword `fix` to lint with auto fixing enabled (when supported),
+2. The keyword `config` to shows the effective linter configuration,
+3. The keyword `linters` to display the linters with description, or
+4. `<linter>,...` comma separated list of linters to enable for a quick checks.
 
-The default linter setup is providing a golden path with different levels
+The default linter config is providing a golden path with different levels
 out-of-the-box, i.e. a `min` for legacy code, `base` as standard for active
 projects, and `plus` for experts and new projects, and `max` enabling all
 but the conflicting disabled linters. Besides, there is an `all` level that
 allows to experience the full linting capability.
 
 Independen of the golden path this setting provides, the lint expert levels
-can be customized in two ways.
+can be customized in three ways.
 
-1. Linters can be enabled and disabled by providing the linter names to the
-  space separated lists in the variables `LINTERS_DISABLED`, `LINTERS_DEFAULT`,
-  `LINTERS_MINIMUM`, `LINTERS_BASELINE`, and `LINTERS_EXPERT`.
-2. The linters configs can be mainly changed via `.golangci.yaml`, as well as
-  via `.codacy.yaml`, `.markdownlint.yaml`, and `revive.toml`, for Codacy
-  linters.
+1. The default way is to add additional linters for any level by setting the
+  `LINTERS_CUSTOM` variable adding a white space separated list of linters.
+2. Less comfortable and a bit trickier is the approach to override the linter
+  config variables `LINTERS_DISABLED`, `LINTERS_DEFAULT`, `LINTERS_MINIMUM`,
+  `LINTERS_BASELINE`, and `LINTERS_EXPERT`, to change the standards.
+3. Last the linter configs can be changed via `.golangci.yaml`, as well as
+  via `.codacy.yaml`, `.markdownlint.yaml`, and `revive.toml`.
 
-However, customizing `.golangci.yaml` is currently not advised, since the
-`Makefile` is updating and enforcing a common version.
+However, customizing `.golangci.yaml` and other config files is currently not
+advised, since the `Makefile` is designed to update and enforce a common
+version on running `update-*` targets.
 
 
-## Install targets
+### Install targets
 
 The install targets installs the latest build version of a command in the
 `${GOPATH}/bin` directory for simple command line execution.
@@ -144,7 +270,7 @@ If a command, service, job has not been build before, it is first build.
 **Note:** Please use carefully, if your project uses common command names.
 
 
-## Delete targets
+### Delete targets
 
 The delete targets delete the latest installed command from `${GOPATH}/bin`.
 
@@ -156,7 +282,7 @@ make delete-(*)  # Deletes the matched command
 **Note:** Please use carefully, if your project uses common command names.
 
 
-## Image targets
+### Image targets
 
 Based on the convention that all binaries are installed in a single container
 image, the [Makefile](Makefile) supports to create and push the container image
@@ -175,7 +301,7 @@ this behavior by setting `IMAGE_PUSH` to `never` or `test` to disable pushing
 ensure that images are only pushed for `main`-branch and local builds.
 
 
-## Run targets
+### Run targets
 
 The [Makefile](Makefile) supports targets to startup a common DB and a common
 AWS container image as well as to run the commands provided by the repository.
@@ -214,7 +340,7 @@ make update-codacy # updates the codacy configs to the latest versions
 It is advised to use and extend this targets when necessary.
 
 
-### Cleaning targets
+### Cleanup targets
 
 The [Makefile](Makefile) is designed to clean up everything it has created by
 executing the following targets.
@@ -228,11 +354,12 @@ make clean-run(-*) # cleans up all resources created for the run targets
 ```
 
 
-## Initialization targets
+### Init targets
 
-The [Makefile](Makefile) supports initialization targets that are usally
-already added as prequisits for targets that need them. So there is usually
+The [Makefile](Makefile) supports initialization targets that are usually
+already added as perquisites for targets that need them. So there is usually
 no need to call them directly.
+
 
 ```bash
 make init           # short cut for 'init-tools init-hooks init-packages'
@@ -243,66 +370,34 @@ make init-sources   # initializes sources by generating mocks, etc
 ```
 
 
-## Releasing targets
+### Release targets
 
-Finally, the [Makefile](Makefile) supports targets for releasing the
-provided packages as library.
+Finally, the [Makefile](Makefile) supports targets for releasing the provided
+packages as library.
 
 ```bash
-make bump      # bumps version to prepare release
-make release   # creates release tags in repository
+make bump <version>  # bumps version to prepare a new release
+make release         # creates the release tags in the repository
 ```
 
 
-## Setup and customization
+## Compatibility
 
-To customize the behavior of the Makefile there exist multiple extension points
-that can be used to setup additional variables and targets that modify the
-behavior of the [Makefile](Makefile).
-
-* [Makefile.vars](Makefile.vars) allows to modify the behavior of standard
-  targets by customizing and defining additional variables (see Section
-  [Modifying variables](#modifying-variables) for more details).
-* [Makefile.defs](Makefile.defs) allows to customize the runtime environment
-  for executing of commands (see Section [Running commands](#running-commands)
-  for more details).
-* [Makefile.targets](Makefile.targets) is an optional extension point that
-  allows to define arbitrary custom targets.
+This [Makefile](Makefile) is making extensive use of GNU tools but is supposed
+to be compatible to all recent Linux and MacOS versions. Since MacOS is usually
+a couple of years behind in applying the GNU standards, we document the
+restrictions this requires here.
 
 
-### Modifying variables
+### `sed` in place substitution
 
-TODO: add content!
+In MacOS we need to execute need to add `-e '<cmd>'` after `sed -i` since else
+the command section is not automatically restricted to a single argument. In
+linux this restriction is automatically applied to the first argument.
 
 
-### Running commands
+### `realpath` not supporting relative offsets
 
-To `run-*` commands as expected, you need to setup the environment variables
-for your designated runtime by defining the custom functions for setting it up
-via `run-setup`, `run-vars`, `run-vars-local`, and `run-vars-image` in
-[Makefile.defs](Makefile.defs).
-
-While tests are supposed to run with global defaults and test specific config,
-the setup of the `run-*` commands strongly depends on the commands execution
-context and its purpose. Still, there are common patterns that can be copied
-from other commands and projects.
-
-To enable postgres database support you must add `run-db` to `TEST_DEPS` and
-RUN_DEPS as needed to [Makefile.vars](Makefile.vars).
-
-You can also override the default setup via the `DB_HOST`, `DB_PORT`,
-`DB_NAME`, `DB_USER`, and `DB_PASSWORD` variables, but this is optional.
-
-**Note:** when running test against a DB you usually have to extend the
-default `TEST_TIMEOUT` of 10s to a less aggressive value.
-
-To enable AWS localstack you have to add `run-aws` to the `TEST_DEPS` and
-`RUN_DEPS`. You may also need to provide a sensible setup of AWS services via
-the `AWS_SERVICES` variable (default is `sqs s3`).
-
-**Note:** Currently, we the [Makefile](Makefile) does not support command
-specific command-line arguments or environment variables. It is assuming that
-command are following the principles of the [Twelf Factor App][12factor]
-supportig setup via application specific environment variables.
-
-[12factor]: https://12factor.net/ "Twelf Factor App"
+In MacOS we need to manually remove the path-prefix from `realpath`, since the
+default in-`bash` fallback version does not provide the `--relative-base`
+argument option.

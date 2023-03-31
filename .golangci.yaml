@@ -3,6 +3,9 @@ run:
   # Default: 1m
   timeout: 3m
 
+linters:
+  # Placeholder for dynamically enabled linters.
+
 issues:
   # Maximum count of issues with the same text.
   # Set to 0 to disable.

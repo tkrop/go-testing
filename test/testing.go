@@ -132,7 +132,7 @@ func (t *Tester) Parallel() {
 
 // WaitGroup adds wait group to unlock in case of a failure.
 //
-//revive:disable-next-line:waitgroup-by-value // own wrapper interface.
+//revive:disable-next-line:waitgroup-by-value // own wrapper interface
 func (t *Tester) WaitGroup(wg sync.WaitGroup) {
 	t.wg = wg
 }
@@ -302,7 +302,7 @@ func (t *Tester) finish() {
 func (t *Tester) recover() {
 	t.Helper()
 
-	//revive:disable-next-line:defer // is inside the defered function.
+	//revive:disable-next-line:defer // is inside the defered function
 	if arg := recover(); arg != nil {
 		t.Panic(arg)
 	}
