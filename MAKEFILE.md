@@ -5,9 +5,19 @@
 This repository provides a generic [Makefile](Makefile) that is majorly working
 by the following conventions:
 
-1. Place all available commands under `cmd/<name>/main.go`.
-2. Use a single 'config' package to read the configuration for all commands.
-3. Use a common 'Dockerfile' to install all commands in a container image.
+1. All commands provided in the repository must be placed as usual under `cmd`
+   using the pattern `cmd/<name>/main.go`.
+2. Library packages can be placed in sub-path of the repository, e.g. in
+   `pkg`, `app`, `internal` are commonly used patterns.
+3. The compiler provides by default build context values for the `GitHash` and
+   `Version` variables in a common `config` package as well as for the `main`
+   package.
+4. Container image build files must start with a common prefix (default
+   `Dockerfile`). The image name is derived from the team name, the repository
+   name, and the optional suffix, i.e `<team>/<repo-name>(-<suffix>)`.
+5. For running a command in a container image, make sure that the command is
+   installed in the root directory of the container image. The container image
+   must either be generated with suffix matching the command or without suffix.
 
 All targets in the [Makefile](Makefile) are designated to work out-of-the-box
 taking care to setup the project, installing the necessary tools (except for the
@@ -23,7 +33,7 @@ for running and testing allow to add arguments, e.g. `make run/test-* [args]`.
 
 **Warning:** The [Makefile](Makefile) installs a `pre-commit` hook overwriting
 and deleting any pre-existing hook, i.e. `make commit`, that enforces a basic
-+unit testing and linting to run successfully before allowing to commit, i.e.
+unit testing and linting to run successfully before allowing to commit, i.e.
 `test-go`, `test-unit`, `lint-base` (or what code quality level is defined),
 and `lint-markdown`.
 
@@ -37,13 +47,15 @@ for more information on setup and customization:
 * [Standard targets](#standard-targets)
 * [Test targets](#test-targets)
 * [Linter targets](#linter-targets)
-* [Install targets](#install-targets)
-* [Delete targets](#delete-targets)
+* [Build targets](#install-targets)
 * [Image targets](#image-targets)
+* [Release targets](#run-targets)
+* [Install targets](#install-targets)
+* [Uninstall targets](#uninstall-targets)
+* [Release targets](#release-targets)
 * [Update targets](#update-targets)
 * [Cleanup targets](#cleanup-targets)
-* [Init targets](#init-targets)
-* [Release targets](#release-targets)
+* [Init targets](#init-targets) (usually no need to call)
 
 To customize the behavior of the Makefile there exist multiple extension points
 that can be used to setup additional variables, definitions, and targets that
@@ -91,6 +103,8 @@ TARGETS_ALL := init delivery test lint build
 
 # Custom linters applied to prepare next level (default: <empty>).
 LINTERS_CUSTOM := nonamedreturns gochecknoinits tagliatelle
+# Linters swithed off to complete next level (default: <empty>).
+LINTERS_DISABLED :=
 ```
 
 You can easily lookup a list using `grep -r " ?= " Makefile`, however, most
@@ -136,7 +150,7 @@ arguments since make swallows arguments starting with `-`. To compensate this
 shortcoming the commands need to support setpu via command specific environment
 variables following the principles of the [Twelf Factor App][12factor].
 
-[12factor]: https://12factor.net/ "Twelf Factor App"
+[12factor]: https://12factor.net/
 
 
 ## Standard targets
@@ -144,12 +158,9 @@ variables following the principles of the [Twelf Factor App][12factor].
 The [Makefile](Makefile) supports the following often used standard targets.
 
 ```bash
-make all     # short cut target to init, test, and build binaries locally
-make cdp     # short cut target to init, test, and build containers in pipeline
-make commit  # short cut target to execute pr-commit test and lint steps
-make init    # short cut target to setup the project installing the latest tools
-make test    # short cut target to generates sources to execute tests
-make lint    # short cut target to generates and lints sources
+make all       # short cut target to init, test, and build binaries locally
+make all-clean # short cut target to clean, init, test, and build binaries
+make commit    # short cut target to execute pr-commit lint and test steps
 ```
 
 The short cut targets can be customized by setting up the variables `TARGETS_*`
@@ -160,10 +171,10 @@ Other less customizable commands are targets to build, install, delete, and
 cleanup project resources:
 
 ```bash
-make build   # creates binary files of commands
-make install # installs binary files of commands in '${GOPATH}/bin'
-make delete  # deletes binary files of commands from '${GOPATH}/bin'
-make clean   # cleans up the project removing all created files
+make test       # short cut to execute default test targets
+make lint       # short cut to execute default lint targets
+make build      # creates binary files of commands
+make clean      # removes all resource created during build
 ```
 
 While these targets allow to execute the most important tasks out-of-the-box,
@@ -182,9 +193,10 @@ Often it is more efficient or even necessary to execute the fine grained test
 targets to complete a task.
 
 ```bash
-make test        # short cut for default test targets
+make test        # short cut to execute default test targets
 make test-all    # executes the complete tests suite
 make test-unit   # executes only unit tests by setting the short flag
+make test-self   # executes a self-test of the build scripts
 make test-cover  # opens the test coverage report in the browser
 make test-upload # uploads the test coverage files
 make test-clean  # cleans up the test files
@@ -209,7 +221,7 @@ according to different quality levels, i.e. `min`,`base` (default), `plus`,
 `max`, (and `all`) as well as automatically fixing the issues.
 
 ```bash
-make lint          # short cut to execute the default lint targets
+make lint          # short cut to execute default lint targets
 make lint-min      # lints the go-code using a minimal config
 make lint-base     # lints the go-code using a baseline config
 make lint-plus     # lints the go-code using an advanced config
@@ -239,47 +251,37 @@ projects, and `plus` for experts and new projects, and `max` enabling all
 but the conflicting disabled linters. Besides, there is an `all` level that
 allows to experience the full linting capability.
 
-Independen of the golden path this setting provides, the lint expert levels
+Independent of the golden path this setting provides, the lint expert levels
 can be customized in three ways.
 
-1. The default way is to add additional linters for any level by setting the
-  `LINTERS_CUSTOM` variable adding a white space separated list of linters.
+1. The default way to customize linters is adding and removing linters for all
+   levels by setting the `LINTERS_CUSTOM` and `LINTERS_DISABLED` variables
+   providing a white space separated list of linters.
 2. Less comfortable and a bit trickier is the approach to override the linter
-  config variables `LINTERS_DISABLED`, `LINTERS_DEFAULT`, `LINTERS_MINIMUM`,
-  `LINTERS_BASELINE`, and `LINTERS_EXPERT`, to change the standards.
+   config variables `LINTERS_DISCOURAGED`, `LINTERS_DEFAULT`, `LINTERS_MINIMUM`,
+   `LINTERS_BASELINE`, and `LINTERS_EXPERT`, to change the standards.
 3. Last the linter configs can be changed via `.golangci.yaml`, as well as
-  via `.codacy.yaml`, `.markdownlint.yaml`, and `revive.toml`.
+   via `.codacy.yaml`, `.markdownlint.yaml`, and `revive.toml`.
 
 However, customizing `.golangci.yaml` and other config files is currently not
 advised, since the `Makefile` is designed to update and enforce a common
-version on running `update-*` targets.
+version of all configs on running `update-*` targets.
 
 
-### Install targets
+### Build targets
 
-The install targets installs the latest build version of a command in the
-`${GOPATH}/bin` directory for simple command line execution.
-
-```bash
-make install      # installs all commands using the platform binaries
-make install-(*)  # installs the matched command using the platform binary
-```
-
-If a command, service, job has not been build before, it is first build.
-
-**Note:** Please use carefully, if your project uses common command names.
-
-
-### Delete targets
-
-The delete targets delete the latest installed command from `${GOPATH}/bin`.
+The build targets can build native as well as linux platform executables using
+the default system architecture.
 
 ```bash
-make delete      # Deletes all commands
-make delete-(*)  # Deletes the matched command
+make build         # builds default executables (native)
+make build-native  # builds native executables using system architecture
+make build-linux   # builds linux executable using the default architecture
+make build-image   # builds container image (alias for image-build)
 ```
 
-**Note:** Please use carefully, if your project uses common command names.
+The platform and architecture of the created executables can be customized via
+`BUILDOS` and `BUILDARCH` environment variables.
 
 
 ### Image targets
@@ -307,11 +309,11 @@ The [Makefile](Makefile) supports targets to startup a common DB and a common
 AWS container image as well as to run the commands provided by the repository.
 
 ```bash
-make run-db     # runs a postgres container image to provide a DBMS
-make run-aws    # runs a localstack container image to simulate AWS
-make run-(*)    # runs the matched command using its before build binary
-make run-go-(*) # runs the matched command using 'go run'
-make run-image-(*) # runs the matched command in the container image
+make run-db       # runs a postgres container image to provide a DBMS
+make run-aws      # runs a localstack container image to simulate AWS
+make run-*        # runs the matched command using its before build binary
+make run-go-*     # runs the matched command using 'go run'
+make run-image-*  # runs the matched command in the container image
 ```
 
 To run commands successfully the environment needs to be setup to run the
@@ -326,18 +328,21 @@ and only switch application ports and setups manually when necessary.
 
 ### Update targets
 
-The [Makefile](Makefile) supports targets for common maintainance tasks.
+The [Makefile](Makefile) supports targets for common update tasks for package
+versions, for build, test, and linter tools, and for configuration files.
 
 ```bash
-make update        # short cut to execute update-deps
-make update-go     # updates go version to reflect the current compiler
+make update        # short cut for 'update-{go,deps,make}'
+make update-all    # short cut to execute all update targets
+make update-go     # updates the go version to the current compiler version
 make update-deps   # updates the project dependencies to the latest version
 make update-tools  # updates the project tools to the latest versions
-make update-make   # updates the Makefile to the latest version
-make update-codacy # updates the codacy configs to the latest versions
+make update-make   # updates the the build environment to the latest version
 ```
 
-It is advised to use and extend this targets when necessary.
+Many update targets support a version with `?`-suffix to test whether an
+update is available instead of executing it directly. In addition, a `major`
+command line option can be used to also apply major version upgrades.
 
 
 ### Cleanup targets
@@ -346,28 +351,45 @@ The [Makefile](Makefile) is designed to clean up everything it has created by
 executing the following targets.
 
 ```bash
-make clean         # short cut for clean-init, clean-build, and clean-test
-make clean-init    # cleans up all resources created by the init targets
-make clean-build   # cleans up all resources created by the build targets
-make clean-test    # cleans up all resources created for the test targets
-make clean-run(-*) # cleans up all resources created for the run targets
+make clean         # short cut for clean-init, clean-build
+make clean-all     # cleans up all resources, i.e. also tools installed
+make clean-init    # cleans up all resources created by init targets
+make clean-build   # cleans up all resources created by build targets
+make clean-run     # cleans up all running container images
+make clean-run-*   # cleans up matched running container image
 ```
 
 
-### Init targets
+### Install targets
 
-The [Makefile](Makefile) supports initialization targets that are usually
-already added as perquisites for targets that need them. So there is usually
-no need to call them directly.
-
+The install targets installs the latest build version of a command in the
+`${GOPATH}/bin` directory for global command line execution. Usually commands
+used by the project are installed automatically.
 
 ```bash
-make init           # short cut for 'init-tools init-hooks init-packages'
-make init-codacy    # initializes the tools for running the codacy targets
-make init-hooks     # initializes github hooks for pre-commit, etc
-make init-packages  # initializes and downloads packages dependencies
-make init-sources   # initializes sources by generating mocks, etc
+make install      # installs all software created by this project
+make install-all  # installs all software created by this project
+make install-*    # installs the matched software command or service
 ```
+
+If a command, service, job has not been build before, it is first build.
+
+**Note:** Please use carefully, if your project uses common command names.
+
+
+### Uninstall targets
+
+The uninstall targets remove the latest installed command from `${GOPATH}/bin`.
+A full uninstall of commands used by the project can also be triggered by
+`clean-all`.
+
+```bash
+make uninstall      # uninstalls all software created by this project
+make uninstall-all  # uninstalls all software created or used by this project
+make uninstall-*    # uninstalls the matched software command or service
+```
+
+**Note:** Please use carefully, if your project uses common command names.
 
 
 ### Release targets
@@ -381,23 +403,39 @@ make release         # creates the release tags in the repository
 ```
 
 
+### Init targets
+
+The [Makefile](Makefile) supports initialization targets that are added as
+perquisites for targets that require them. So there is usually no need to call
+them manually.
+
+
+```bash
+make init           # short cut for 'init-tools init-hooks init-packages'
+make init-codacy    # initializes the tools for running the codacy targets
+make init-hooks     # initializes github hooks for pre-commit, etc
+make init-packages  # initializes and downloads packages dependencies
+make init-sources   # initializes sources by generating mocks, etc
+```
+
+
 ## Compatibility
 
 This [Makefile](Makefile) is making extensive use of GNU tools but is supposed
 to be compatible to all recent Linux and MacOS versions. Since MacOS is usually
-a couple of years behind in applying the GNU standards, we document the
-restrictions this requires here.
+a couple of years behind in applying the GNU standard tools, we document the
+restrictions this creates here.
 
 
 ### `sed` in place substitution
 
-In MacOS we need to execute need to add `-e '<cmd>'` after `sed -i` since else
-the command section is not automatically restricted to a single argument. In
-linux this restriction is automatically applied to the first argument.
+In MacOS we need to add `-e '<cmd>'` after `sed -i` since else the command
+section is not automatically restricted to a single argument. In linux this
+restriction is automatically applied to the first argument.
 
 
-### `realpath` not supporting relative offsets
+### `realpath` not supported
 
-In MacOS we need to manually remove the path-prefix from `realpath`, since the
-default in-`bash` fallback version does not provide the `--relative-base`
-argument option.
+In MacOS we need to use `readlink -f` instead of `realpath`, since there may
+not even be a simplified fallback of this command available. This is not the
+preferred command in Linux, but for compatibility would be still acceptable.

@@ -1,0 +1,9 @@
+[extend]
+    useDefault = true
+
+[allowlist]
+    description = "Whitelist false positives"
+    regexTarget = "match"
+    regexes = [
+        '''(?i)(?:(?:['|\"|\s]*)secret_version(?:['|\"|\s]*):)(?:['|\"|\s]*)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:['|\"|\n|\r|\s|\x60|;]*|$)'''
+    ]
