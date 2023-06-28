@@ -233,6 +233,15 @@ changes. If this project has more than 25 Stars, I will introduce semantic
 versions for changes.
 
 
+## Building
+
+This project is using [go-make][go-make] for building, which provides default
+implementations for most common tasks. Read the [go-make manual][go-make] for
+more information about how to build, test, lint, etc.
+
+[go-make]: https://github.com/tkrop/go-make
+
+
 ## Contributing
 
 If you like to contribute, please create an issue and/or pull request with a
