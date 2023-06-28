@@ -1,20 +1,51 @@
-<!-- markdownlint-disable -->
-[![Build](https://github.com/tkrop/go-testing/actions/workflows/go.yaml/badge.svg)](https://github.com/tkrop/go-testing/actions/workflows/go.yaml)
-[![Coverage](https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main)](https://coveralls.io/github/tkrop/go-testing?branch=main)
-[![Coverage](https://app.codacy.com/project/badge/Coverage/cc1c47ec5ce0493caf15c08fa72fc78c)](https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&utm_medium=referral&utm_content=tkrop/go-testing&utm_campaign=Badge_Coverage)
-[![Quality](https://app.codacy.com/project/badge/Grade/cc1c47ec5ce0493caf15c08fa72fc78c)](https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=tkrop/go-testing&amp;utm_campaign=Badge_Grade)
-[![Report](https://goreportcard.com/badge/github.com/tkrop/go-testing)](https://goreportcard.com/report/github.com/tkrop/go-testing)
-[![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docs](https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg)](https://pkg.go.dev/github.com/tkrop/go-testing)
-<!--
-[![Libraries](https://img.shields.io/librariesio/release/github/tkrop/go-testing)](https://libraries.io/github/tkrop/go-testing)
-[![Security](https://snyk.io/test/github/tkrop/go-testing/main/badge.svg)](https://snyk.io/test/github/tkrop/go-testing)
--->
-<!-- markdownlint-enable -->
-
-
 # Testing framework
+
+[![Build][build-badge]][build-link]
+[![Coverage][coveralls-badge]][coveralls-link]
+[![Coverage][coverage-badge]][coverage-link]
+[![Quality][quality-badge]][quality-link]
+[![Report][report-badge]][report-link]
+[![FOSSA][fossa-badge]][fossa-link]
+[![License][license-badge]][license-link]
+[![Docs][docs-badge]][docs-link]
+<!--
+[![Libraries][libs-badge]][libs-link]
+[![Security][security-badge]][security-link]
+-->
+
+[build-badge]: https://github.com/tkrop/go-testing/actions/workflows/go.yaml/badge.svg
+[build-link]: https://github.com/tkrop/go-testing/actions/workflows/go.yaml
+
+[coveralls-badge]: https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main
+[coveralls-link]: https://coveralls.io/github/tkrop/go-testing?branch=main
+
+[coverage-badge]: https://app.codacy.com/project/badge/Coverage/cc1c47ec5ce0493caf15c08fa72fc78c
+[coverage-link]: https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&utm_medium=referral&utm_content=tkrop/go-testing&utm_campaign=Badge_Coverage
+
+[quality-badge]: https://app.codacy.com/project/badge/Grade/cc1c47ec5ce0493caf15c08fa72fc78c
+[quality-link]: https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=tkrop/go-testing&amp;utm_campaign=Badge_Grade
+
+[report-badge]: https://goreportcard.com/badge/github.com/tkrop/go-testing
+[report-link]: https://goreportcard.com/report/github.com/tkrop/go-testing
+
+[fossa-badge]: https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield
+[fossa-link]: https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield
+
+[license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
+[license-link]: https://opensource.org/licenses/MIT
+
+[docs-badge]: https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg
+[docs-link]: https://pkg.go.dev/github.com/tkrop/go-testing
+
+<!--
+[libs-badge]: https://img.shields.io/librariesio/release/github/tkrop/go-testing
+[libs-link]: https://libraries.io/github/tkrop/go-testing
+
+[security-badge]: https://snyk.io/test/github/tkrop/go-testing/main/badge.svg
+[security-link]: https://snyk.io/test/github/tkrop/go-testing
+-->
+
+## Introduction
 
 Goal of the `testing` framework is to provide simple and efficient tools to for
 writing effective unit and component tests in [Go][go].
@@ -26,7 +57,7 @@ strongly validating mock request and response chains that work across detached
 `go` routines and various error scenarios.
 
 
-## Example Usage
+### Example Usage
 
 The core idea of the [mock](mock)/[gock](gock) packages is to provide a short
 pragmatic domain language for defining mock requests with response that enforce
@@ -88,7 +119,7 @@ This opinionated test pattern supports a wide range of test in a standardized
 way.
 
 
-## Why parameterized test?
+### Why parameterized test?
 
 Parameterized test are an efficient way to setup a high number of related test
 cases cover the system under test in a black box mode from feature perspective.
@@ -97,7 +128,7 @@ parameterized test allow to cover all success and failure paths of a system
 under test as outlined above.
 
 
-## Why parallel tests?
+### Why parallel tests?
 
 Running tests in parallel make the feedback loop on failures faster, help to
 detect failures from concurrent access and race conditions using `go test
@@ -106,7 +137,7 @@ clear responsibilities. This side-effects compensate for the small additional
 effort needed to write parallel tests.
 
 
-## Why isolation of tests?
+### Why isolation of tests?
 
 Test isolation is a precondition to have stable running test - especially run
 in parallel. Isolation must happen from input perspective, i.e. the outcome of
@@ -117,7 +148,7 @@ complicated since many tools, patterns, and practices break the test isolation
 tests](#requirements-for-parallel-isolated-tests).
 
 
-## Why strong validation?
+### Why strong validation?
 
 Test are only meaningful, if they validate ensure pre-conditions and validate
 post-conditions sufficiently strict. Without validation test cannot ensure that
@@ -130,7 +161,7 @@ framework makes this approach as simple as possible, but it is still the
 responsibility of the developer to setup the validation correctly.
 
 
-# Framework structure
+## Framework structure
 
 The `testing` framework consists of the following sub-packages:
 
@@ -156,7 +187,7 @@ The `testing` framework consists of the following sub-packages:
 Please see the documentation of the sub-packages for more details.
 
 
-# Requirements for parallel isolated tests
+## Requirements for parallel isolated tests
 
 Running tests in parallel not only makes test faster, but also helps to detect
 race conditions that else randomly appear in production  when running tests
@@ -194,7 +225,7 @@ With a careful design the general pattern provided above can be used to support
 parallel test execution.
 
 
-# Terms of Usage
+## Terms of Usage
 
 This software is open source as is under the MIT license. If you start using
 the software, please give it a star, so that I know to be more careful with
@@ -202,7 +233,16 @@ changes. If this project has more than 25 Stars, I will introduce semantic
 versions for changes.
 
 
-# Contributing
+## Building
+
+This project is using [go-make][go-make] for building, which provides default
+implementations for most common tasks. Read the [go-make manual][go-make] for
+more information about how to build, test, lint, etc.
+
+[go-make]: https://github.com/tkrop/go-make
+
+
+## Contributing
 
 If you like to contribute, please create an issue and/or pull request with a
 proper description of your proposal or contribution. I will review it and

@@ -122,7 +122,7 @@ func (t *Type) IsPackageMatch(pkgs []*packages.Package) bool {
 func (t *Type) Matcher() (*TypeMatcher, error) {
 	name, err := regexp.Compile(t.Name)
 	if err != nil {
-		return nil, err //nolint:wrapcheck
+		return nil, err //nolint:wrapcheck // nees consideration
 	}
 	file := ""
 	info, err := os.Stat(t.File)

@@ -120,7 +120,7 @@ type Template interface {
 func NewTemplate() (Template, []*Import, error) {
 	temp, err := template.New("file").
 		Funcs(MockFileFuncMap).Parse(MockFileTemplate)
-	return temp, ImportsTemplate, err //nolint:wrapcheck
+	return temp, ImportsTemplate, err //nolint:wrapcheck  // needs consideration
 }
 
 // MustTemplate crates a new mock template panicing in case of errors.

@@ -108,7 +108,7 @@ func (ctrl *Controller) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	defer ctrl.MockStore.Clean()
 
-	return gock.Responder(req, mock.Response(), nil) //nolint:wrapcheck
+	return gock.Responder(req, mock.Response(), nil) //nolint:wrapcheck // transparent wrapper
 }
 
 // Cleanup checks if all the HTTP request/response mocks that were expected to

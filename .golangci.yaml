@@ -3,6 +3,9 @@ run:
   # Default: 1m
   timeout: 3m
 
+linters:
+  # Placeholder for dynamically enabled linters.
+
 issues:
   # Maximum count of issues with the same text.
   # Set to 0 to disable.
@@ -19,22 +22,22 @@ issues:
     # Exclude go:generate directives from line length checking.
     - source: "^//\\s*go:generate\\s"
       linters: [ lll, revive ]
-    # Exlude magic number in time setups and bit shifting.
+    # Exclude magic number in time setups and bit shifting.
     - source: "[0-9]+ ?\\* ?time\\.|(<<|>>) ?[0-9]+|[0-9]+ ?(<<|>>)"
       linters: [ gomnd ]
-    # Eclude certain standards from being applied in test.
+    # Exclude certain standards from being applied in test.
     - path: "_test\\.go"
       linters: [ bodyclose, contextcheck, dupl, funlen, goconst, gosec, noctx,
         goerr113, wrapcheck ]
 
-    # Exclude error return value check because of to many false positivs.
+    # Exclude error return value check because of too many false positives.
     - text: 'Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked'
       linters: [ errcheck ]
     # Exclude certain revive standards from being applied in tests.
     - path: "_test\\.go"
       text: "^(max-public-structs|function-length|cognitive-complexity):"
       linters: [ revive ]
-    # Exclude dots in unfinished thouthgs.
+    # Exclude dots in unfinished thoughts.
     - source: "(noinspection|TODO)"
       linters: [ godot ]
 
@@ -92,7 +95,7 @@ linters-settings:
   gosec:
     # To specify a set of rules to explicitly exclude.
     # Available rules: https://github.com/securego/gosec#available-rules
-    # Default: []
+    # Default: [] (issues are fixed)
     excludes: [ G105, G307 ]
 
   gocritic:
@@ -136,13 +139,13 @@ linters-settings:
       # Reports on each file in a package.
       - name: package-comments
         disabled: true
-      # Reports on comments mismatching comments.
+      # Reports on comments not matching the name as first word.
       - name: exported
         disabled: true
       # No need to exclude import shadowing.
       - name: import-shadowing
         disabled: true
-      # Failes to exclude nolint directives from reporting.
+      # Fails to exclude nolint directives from reporting.
       - name: comment-spacings
         disabled: true
       # Fails to disable writers that actually cannot return errors.
@@ -158,18 +161,18 @@ linters-settings:
       - name: confusing-naming
         disabled: true
 
-      # Enables a more experienced cyclomatic complexity (we enabled a log of
+      # Enables a more experienced cyclomatic complexity (we enabled a lot of
       # rules to counter-act the complexity trap).
       - name: cyclomatic
         arguments: [20]
       # Enables a more experienced cognitive complexity (we enabled a lot of
-      # rules to counter-act the complexity tryp).
+      # rules to counter-act the complexity trap).
       - name: cognitive-complexity
         arguments: [20]
       # Limit line-length to increase readability.
       - name: line-length-limit
         arguments: [100]
-      # We are a bit more relexed with function length consistent with funlen.
+      # We are a bit more relaxed with function length consistent with funlen.
       - name: function-length
         arguments: [40, 60]
       # Limit arguments of functions to the maximum understandable value.
@@ -183,4 +186,4 @@ linters-settings:
         arguments: [8]
       # I do not know what I'm doing here...
       - name: banned-characters
-        arguments: ["Ω", "Σ", "σ", "7"]
+        arguments: ["Ω", "Σ", "σ"]

@@ -66,7 +66,7 @@ func (s *MockStore) Match(req *http.Request) (gock.Mock, error) {
 	for _, mock := range s.All() {
 		matches, err := mock.Match(req)
 		if err != nil {
-			return nil, err //nolint:wrapcheck
+			return nil, err //nolint:wrapcheck // transparent wrapper
 		}
 		if matches {
 			return mock, nil
