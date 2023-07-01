@@ -59,7 +59,7 @@ func Errorf(format string, args ...any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
 			Errorf(format, args...).
-			Do(mocks.Return(Reporter.Errorf))
+			Do(mocks.Do(Reporter.Errorf))
 	}
 }
 
@@ -81,7 +81,7 @@ func (r *Recorder) Fatalf(format string, args ...any) *gomock.Call {
 func Fatalf(format string, args ...any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
-			Fatalf(format, args...).Do(mocks.Return(Reporter.Fatalf))
+			Fatalf(format, args...).Do(mocks.Do(Reporter.Fatalf))
 	}
 }
 
@@ -102,7 +102,7 @@ func (r *Recorder) FailNow() *gomock.Call {
 func FailNow() mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
-			FailNow().Do(mocks.Return(Reporter.FailNow))
+			FailNow().Do(mocks.Do(Reporter.FailNow))
 	}
 }
 
@@ -125,7 +125,7 @@ func (r *Recorder) Panic(arg any) *gomock.Call {
 func Panic(arg any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
-			Panic(Error(arg)).Do(mocks.Return(Reporter.Panic))
+			Panic(Error(arg)).Do(mocks.Do(Reporter.Panic))
 	}
 }
 

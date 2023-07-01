@@ -2,7 +2,7 @@
 
 The goal of this package is to provide a small framework to isolate the test
 execution and safely check whether a test succeeds or fails as expected. In
-combination with the [mock](../mock) package it ensures that a test finishs
+combination with the [`mock`](../mock) package it ensures that a test finishes
 reliably and reports its failure even if a system under test is spawning
 go-routines.
 
@@ -38,7 +38,7 @@ parameter set (`New`), a slice of test parameter sets (`Slice`), or a map of
 test case name to test parameter sets (`Map` - preferred pattern). The test is
 started by `Run` that accepts a simple test function as input, using a
 `test.Test` interface, that is compatible with most tools, e.g.
-[Gomock][gomock].
+[`gomock`][gomock].
 
 
 ```go
@@ -138,7 +138,7 @@ But this should usually be unnecessary.
 
 Besides just capturing the failure in the isolated test environment, it is also
 very simple possible to validate the failures/panics using the self installing
-validator that is tightly integrated with the [mock](../mock) framework.
+validator that is tightly integrated with the [`mock`](../mock) framework.
 
 ```go
 func TestUnit(t *testing.T) {
@@ -169,8 +169,8 @@ from all panics by default and converting it in a fatal error message. This is
 often most usable and sufficient to fix the issue. If you need to discover the
 source of the panic, you need to spawn a new unrecovered go-routine.
 
-**Hint:** [GoMock][gomock] uses very complicated reporting patterns that are
+**Hint:** [`gomock`][gomock] uses very complicated reporting patterns that are
 hard to recreate. Do not try it.
 
 
-[gomock]: https://github.com/golang/mock "GoMock"
+[gomock]: <https://github.com/golang/mock>

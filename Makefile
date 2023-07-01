@@ -3,7 +3,7 @@ SHELL := /bin/bash
 GOBIN ?= $(shell go env GOPATH)/bin
 GOMAKE := github.com/tkrop/go-make@latest
 TARGETS := $(shell command -v go-make >/dev/null || \
-	go install $(GOMAKE) && go-make list)
+	go install $(GOMAKE) && go-make targets)
 
 
 # Include custom variables to modify behavior.
@@ -14,10 +14,13 @@ else
 endif
 
 
-# Include standard targets from base makefile.
-.PHONY: $(TARGETS) $(addprefix targets/,$(TARGETS))
+# Include standard targets from go-make providing group targets as well as
+# single target targets. The group target is used to delegate the remaining
+# request targets, while the single target can be used to define the
+# precondition of custom target.
+.PHONY: $(TARGETS) $(addprefix target/,$(TARGETS))
 $(TARGETS):; $(GOBIN)/go-make $(MAKEFLAGS) $(MAKECMDGOALS);
-$(addprefix targets/,$(TARGETS)): targets/%:
+$(addprefix target/,$(TARGETS)): target/%:
 	$(GOBIN)/go-make $(MAKEFLAGS) $*;
 
 

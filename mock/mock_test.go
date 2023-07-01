@@ -28,7 +28,7 @@ type IFace interface {
 func CallA(input string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Do(mocks.Return(IFace.CallA))
+			CallA(input).Do(mocks.Do(IFace.CallA))
 	}
 }
 
@@ -545,6 +545,33 @@ var testFuncParams = map[string]FuncParams{
 	},
 }
 
+func TestFuncDo(t *testing.T) {
+	test.Map(t, testFuncParams).
+		Run(func(t test.Test, param FuncParams) {
+			// Given
+			mocks := MockSetup(t, nil)
+			ctype := reflect.TypeOf(param.call)
+
+			// When
+			call := mocks.Do(param.call, param.result...)
+
+			// Then
+			ftype := reflect.TypeOf(call)
+			assert.Equal(t, ctype.NumIn()-1, ftype.NumIn())
+			assert.Equal(t, ctype.NumOut(), ftype.NumOut())
+			assert.Equal(t, len(param.result), ftype.NumOut())
+
+			// When
+			result := reflect.ArgsOf(reflect.ValueOf(call).Call(
+				reflect.ValuesIn(ftype, make([]any, ftype.NumIn())...),
+			)...)
+
+			// Then
+			assert.Equal(t, param.result, result)
+			mocks.Wait()
+		})
+}
+
 func TestFuncReturn(t *testing.T) {
 	test.Map(t, testFuncParams).
 		Run(func(t test.Test, param FuncParams) {
@@ -651,6 +678,33 @@ func TestFailures(t *testing.T) {
 
 			// Then
 			mock.Get(mocks, NewMockIFace).CallA("a")
+			mocks.Wait()
+		})
+}
+
+// TODO: add more adequate testing for waiting.
+type WaitParam struct {
+	expect test.Expect
+}
+
+var testWaitParams = map[string]WaitParam{
+	"simple wait": {
+		expect: test.Success,
+	},
+}
+
+func TestFuncWait(t *testing.T) {
+	test.Map(t, testWaitParams).
+		Run(func(t test.Test, param WaitParam) {
+			// Given
+			mocks := mock.NewMocks(t)
+
+			// When
+			mocks.Add(5)
+			mocks.Times(-5)
+			mocks.Done()
+
+			// Then
 			mocks.Wait()
 		})
 }

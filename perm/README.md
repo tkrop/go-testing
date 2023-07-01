@@ -1,7 +1,7 @@
 # Package testing/perm
 
 Goal of this package is to provide a small framework to simplify tests based
-on permutating a test parameter. This is helpful when a test input must be
+on permutations of a test parameter. This is helpful when a test input must be
 checked in all known orders with differing outcomes depending on the order.
 
 This was mainly developed to validate the setup functions of the [mock](../mock)
@@ -24,7 +24,7 @@ as separator.
 keys in the `ExpectMap` are written as `a-b` and `b-a`.
 
 In a test, the `TestMap` will usually be defined via a function expecting a
-mock handler to permutate the mock call setup:
+mock handler to create a permutation of the mock call setup:
 
 ```go
 func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {

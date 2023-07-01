@@ -1,25 +1,25 @@
 # Package testing/mock
 
 Goal of this package is to provide a small extension library that provides a
-common mock controller interface for [gomock][gomock] and [Gock][gock] that
+common mock controller interface for [`gomock`][gomock] and [`gock`][gock] that
 enables a unified, highly reusable integration pattern.
 
 Unfortunately, we had to sacrifice a bit of type-safety to allow for chaining
 mock calls in an arbitrary way during setup. Anyhow, the offered in runtime
-validation is a sufficient strategy to cover for the missing type-safty.
+validation is a sufficient strategy to cover for the missing type-safety.
 
 
 ## Example usage
 
-The `mock`-framework provides a simple [gomock][gomock] handler extension to
-creates singelton mock controllers on demand by accepting mock constructors in
+The `mock`-framework provides a simple [`gomock`][gomock] handler extension to
+creates singleton mock controllers on demand by accepting mock constructors in
 its method calls. In addition, it provides a mock setup abstraction to simply
 setup complex mock request/response chains.
 
 ```go
 func TestUnit(t *testing.T) {
     // Given
-    mocks := mock.NewMock(t)
+    mocks := mock.NewMocks(t)
 
     mockSetup := mock.Get(mocks, NewServiceMock).EXPECT()...
     mocks.Expect(mockSetup)
@@ -47,7 +47,7 @@ func SetupUnit(
     t test.Test,
     mockSetup mock.SetupFunc,
 ) (*Unit, *Mocks) {
-    mocks := mock.NewMock(t).Expect(mockSetup)
+    mocks := mock.NewMocks(t).Expect(mockSetup)
 
     unit := NewUnitService(
         mock.Get(mocks, NewServiceMock)
@@ -70,9 +70,11 @@ code generation in the future.
 
 ```go
 func Call(input..., output..., error) mock.SetupFunc {
-    return func(mocks *Mocks) any {
+    return func(mocks *mock.Mocks) any {
         return mock.Get(mocks, NewServiceMock).EXPECT().Call(input...).
-            Do|DoAndReturn(mocks.Return(Service.Call, output..., error))
+            { DoAndReturn(mocks.Do(Service.Call, output..., error))
+            | Return(output..., error).Do(mocks.Do(Service.Call)) }
+        ]
     }
 }
 ```
@@ -82,7 +84,7 @@ prepared to handle tests with detached *goroutines*, i.e. functions that are
 spawned by the system-under-test without waiting for their result.
 
 The mock handler therefore provides a `WaitGroup` and automatically registers
-a single mock call on each request using `mocks.Return(...)` and notifies the
+a single mock call on each request using `mocks.Do(...)` and notifies the
 completion via `Do|DoAndReturn()`. For test with detached *goroutines* the
 test can wait via `mocks.Wait()`, before finishing and checking whether the
 mock calls are completely consumed.
@@ -130,7 +132,7 @@ With the above preparations for mocking service calls we can now define the
 *mock setup* easily  using the following ordering methods:
 
 * `Chain` allows to create an ordered chain of mock calls that can be combined
-  with other setup methods that defermine the predecessors and successor mock
+  with other setup methods that determine the predecessors and successor mock
   calls.
 
 * `Parallel` allows to creates an unordered set of mock calls that can be
@@ -212,7 +214,7 @@ var testUnitCallParams = map[string]struct {
 
 This test parameter setup can now be use for all parameterized unit test using
 the following common parallel pattern, that includes `mocks.Wait()` to handle
-detached *goroutines* as well as the isoated [test environment](../test) to
+detached *goroutines* as well as the isolated [test environment](../test) to
 unlocks the waiting group in case of failures:
 
 ```go
@@ -221,7 +223,7 @@ func TestUnitCall(t *testing.T) {
 
 for message, param := range testUnitCallParams {
         message, param := message, param
-        t.Run(message, test.Expect(param.expect, func(t test.Test) {
+        t.Run(message, test.Run(param.expect, func(t test.Test) {
             t.Parallel()
 
             // Given
@@ -249,5 +251,5 @@ for message, param := range testUnitCallParams {
 for more information on requirements in parallel parameterized tests.
 
 
-[gomock]: https://github.com/golang/mock "GoMock"
-[gock]: https://github.com/h2non/gock "Gock"
+[gomock]: <https://github.com/golang/mock>
+[gock]: <https://github.com/h2non/gock>
