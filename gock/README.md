@@ -1,10 +1,10 @@
 # Package testing/gock
 
 Goal of this package is to provide a small controller to isolate testing of
-services (gateways) by mocking the network communication using [Gock][gock].
+services (gateways) by mocking the network communication using [`gock`][gock].
 
 **Note:** Since the controller is focused on testing, it does not support the
-same networking and observation features of [Gock][gock] and requires manual
+same networking and observation features of [`gock`][gock] and requires manual
 transport interception setup. However, the interface is mainly compatible with.
 
 
@@ -31,15 +31,15 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-The controller is also fully integrated in to the [mock](../mock)-framework, so
-that you can just request the controller via the [gomock][gomock] constructor
+The controller is fully integrated in to the [`mock`](../mock)-framework, so
+that you can just request the controller via the [`gomock`][gomock] constructor
 `mock.Get(mocks, gock.NewGock)` (see
 [Example](#integration-with-mock-framework))
 
 
 ## Migration from Gock
 
-Migration from [Gock][gock] to this package is straigt forward. You just add
+Migration from [`gock`][gock] to this package is straight forward. You just add
 the controller creation at the begin of your test giving it the name `gock` and
 hand it over to all methods creating HTTP request/response mocks. The mock
 creation than happens as usual.
@@ -80,8 +80,8 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-Customized HTTP clients e.g. [resty][resty] may not give direct access to the
-transport but offer the ability to set a `http.RoundTripper`. The mcontroller
+Customized HTTP clients e.g. [`resty`][resty] may not give direct access to the
+transport but offer the ability to set a `http.RoundTripper`. The controller
 implements this interface and therefore can be simply used as drop in entity.
 
 ```go
@@ -101,16 +101,16 @@ func TestUnit(t *testing.T) {
 
 As a last resort, you can also intercept the `http.DefaultTransport`, however,
 this is not advised, since it will destroy the test isolation that is goal of
-this controller framework. In this case you should use [gock][gock] directly.
+this controller framework. In this case you should use [`gock`][gock] directly.
 
 
 ## Integration with `mock`-framework
 
 The `Gock`-controller framework supports a simple integration with the
-[mock](../mock) framework for [gomock][gomock]: it simply provides constructor
+[`mock`](../mock) framework for [gomock][gomock]: it simply provides constructor
 that accepts the `gomock`-controller. Using constructor, it is possible to
-create the usual setup methods similar as described in
-[mock](../mock#generic-mock-service-call-pattern).
+create the usual setup methods similar as described in the
+[generic mock service call pattern](../mock#generic-mock-service-call-pattern).
 
 ```go
 func GockCall(
@@ -126,9 +126,9 @@ func GockCall(
 
 **Note:** While this already nicely integrates the mock controller creation,
 call setup, and validation, it currently provides no support for call order
-validation as [GoMock][gomock] supports it.
+validation as [`gomock`][gomock] supports it.
 
 
-[gomock]: https://github.com/golang/mock "GoMock"
-[gock]: https://github.com/h2non/gock "Gock"
-[resty]: https://github.com/go-resty/resty "Resty"
+[gomock]: <https://github.com/golang/mock>
+[gock]: <https://github.com/h2non/gock>
+[resty]: <https://github.com/go-resty/resty>

@@ -48,21 +48,23 @@
 ## Introduction
 
 Goal of the `testing` framework is to provide simple and efficient tools to for
-writing effective unit and component tests in [Go][go].
+writing effective unit and component tests in [`go`][go].
 
 To accomplish this, the `testing` framework contains a couple of opinionated
-small extensions for [testing][testing], [Gomock][gomock], and [Gock][gock] to
-enable isolated, parallel, parameterized tests using a common pattern to setup
-strongly validating mock request and response chains that work across detached
-`go` routines and various error scenarios.
+small extensions for [testing][testing], [`gomock`][gomock], and [`gock`][gock]
+to enable isolated, parallel, parameterized tests using a common pattern to
+setup strongly validating mock request and response chains that work across
+detached [`go`-routines][go-routines] and various error scenarios.
+
+[go-routines]: <https://go.dev/tour/concurrency>
 
 
 ### Example Usage
 
-The core idea of the [mock](mock)/[gock](gock) packages is to provide a short
-pragmatic domain language for defining mock requests with response that enforce
-validation, while the [test](test) package provides the building blocks for
-test isolation.
+The core idea of the [`mock`](mock)/[`gock`](gock) packages is to provide a
+short pragmatic domain language for defining mock requests with response that
+enforce validation, while the [`test`](test) package provides the building
+blocks for test isolation.
 
 ```go
 type UnitParams struct {
@@ -156,32 +158,32 @@ the system under test behaves as expected - even with 100% code and branch
 coverage. As a consequence, a system may fail in unexpected ways in production.
 
 Thus it is advised to validate mock input parameters for mocked requests and
-to carefully define the order of mock requests and responses. The [mock](mock)
-framework makes this approach as simple as possible, but it is still the
-responsibility of the developer to setup the validation correctly.
+to carefully define the order of mock requests and responses. The
+[`mock`](mock) framework makes this approach as simple as possible, but it is
+still the responsibility of the developer to setup the validation correctly.
 
 
 ## Framework structure
 
 The `testing` framework consists of the following sub-packages:
 
-* [test](test) provides a small framework to simply isolate the test execution
+* [`test`](test) provides a small framework to simply isolate the test execution
   and safely check whether a test fails or succeeds as expected in coordination
-  with the [mock](mock) package - even in if a system under test spans detached
-  go-routines.
+  with the [`mock`](mock) package - even in if a system under test spans
+  detached [`go`-routines][go-routines].
 
-* [mock](mock) provides the means to setup a simple chain or a complex network
+* [`mock`](mock) provides the means to setup a simple chain or a complex network
   of expected mock calls with minimal effort. This makes it easy to extend the
   usual narrow range of mocking to larger components using a unified pattern.
 
-* [gock](gock) provides a drop-in extension for [Gock][gock] consisting of a
+* [`gock`](gock) provides a drop-in extension for [Gock][gock] consisting of a
   controller and a mock storage that allows to run tests isolated. This allows
   to parallelize simple test and parameterized tests.
 
-* [perm](perm) provides a small framework to simplify permutation tests, i.e.
+* [`perm`](perm) provides a small framework to simplify permutation tests, i.e.
   a consistent test set where conditions can be checked in all known orders
-  with different outcome. This is very handy in combination with [test](test)
-  to validated the [mock](mock) framework, but may be useful in other cases
+  with different outcome. This is very handy in combination with [`test`](test)
+  to validated the [`mock`](mock) framework, but may be useful in other cases
   too.
 
 Please see the documentation of the sub-packages for more details.
@@ -214,11 +216,11 @@ Examples for such shared resources in common frameworks are:
 * Using of [monkey patching][monkey] to modify commonly used global functions,
   e.g. `time.Now()` - implement access to these global functions using lambdas
   and interfaces to allow for mocking.
-* Using of [Gock][gock] to mock HTTP responses on transport level - make use
-  of the [gock](gock)-controller provided by this framework.
+* Using of [`gock`][gock] to mock HTTP responses on transport level - make use
+  of the [`gock`](gock)-controller provided by this framework.
 * Using the [Gin][gin] HTTP web framework which uses a common `json`-parser
   setup instead of a service specific configuration. While this is not a huge
-  deal, the repeated global setup creates race alerts. Instead use [chi][chi]
+  deal, the repeated global setup creates race alerts. Instead use [`chi`][chi]
   that supports a service specific configuration.
 
 With a careful design the general pattern provided above can be used to support
@@ -236,10 +238,11 @@ versions for changes.
 ## Building
 
 This project is using [go-make][go-make] for building, which provides default
-implementations for most common tasks. Read the [go-make manual][go-make] for
-more information about how to build, test, lint, etc.
+implementations for most common tasks. Read the [go-make manual][go-make-man]
+for more information about how to build, test, lint, etc.
 
-[go-make]: https://github.com/tkrop/go-make
+[go-make]: <https://github.com/tkrop/go-make>
+[go-make-man]: <https://github.com/tkrop/go-make/MANUAL.md>
 
 
 ## Contributing
@@ -249,10 +252,10 @@ proper description of your proposal or contribution. I will review it and
 provide feedback on it.
 
 
-[go]: https://go.dev/ "Golang"
-[testing]: https://pkg.go.dev/testing "Go Testing"
-[gomock]: https://github.com/golang/mock "GoMock"
-[gock]: https://github.com/h2non/gock "Gock"
-[monkey]: https://github.com/bouk/monkey "Monkey Patching"
-[gin]: https://github.com/gin-gonic/gin "Gin HTTP web framework"
-[chi]: https://github.com/go-chi/chi "Chi HTTP web service"
+[go]: <https://go.dev/>
+[testing]: <https://pkg.go.dev/testing>
+[gomock]: <https://github.com/golang/mock>
+[gock]: <https://github.com/h2non/gock>
+[monkey]: <https://github.com/bouk/monkey>
+[gin]: <https://github.com/gin-gonic/gin>
+[chi]: <https://github.com/go-chi/chi>

@@ -20,7 +20,7 @@ type IFace interface {
 func CallA(input string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Do(mocks.Return(IFace.CallA))
+			CallA(input).Do(mocks.Do(IFace.CallA))
 	}
 }
 

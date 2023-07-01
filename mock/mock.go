@@ -133,62 +133,77 @@ func (mocks *Mocks) Wait() {
 	mocks.wg.Wait()
 }
 
-// TODO: not needed yet - optional extension.
-//
 // Add adds the given delta on the waiting group handling the expected or
 // consumed mock calls.  This method implements the `WaitGroup` interface to
 // support testing of detached `go-routines` in an isolated [test](../test)
 // environment.
 //
-// func (mocks *Mocks) Add(delta int) {
-// 	mocks.wg.Add(delta)
-// }
+// Deprecated: `Call`, `Do`, `Return`, and `Panic` are automatically register
+// and notify call consumption, thus these extra calls are not necessary any
+// longer.
+func (mocks *Mocks) Add(delta int) int {
+	mocks.wg.Add(delta)
+	return delta
+}
 
-// TODO: not needed yet - optional extension.
-//
 // Done removes exactly one expected mock call from the wait group handling the
 // expected or consumed mock calls. This method implements the `WaitGroup`
 // interface to support testing of detached `go-routines` in an isolated
 // [test](../test) environment.
 //
-// func (mocks *Mocks) Done() {
-// 	mocks.wg.Done()
-// }
+// Deprecated: `Call`, `Do`, `Return`, and `Panic` are automatically register
+// and notify call consumption, thus these extra calls are not necessary any
+// longer.
+func (mocks *Mocks) Done() {
+	mocks.wg.Done()
+}
 
-// TODO: not needed anymore - optional extension.
-//
 // Times is creating the expectation that exactly the given number of mock call
-// are consumed. This call is best provided as input for `Times`.
-//
-// func (mocks *Mocks) Times(num int) int {
-// 	mocks.wg.Add(num - 1)
-// 	return num
-// }
-
-// Return is a convenience method providing a notification function for `Do` or
-// `DoAndReturn` to signal that a mock call setup was consumed returning the
-// given arguments as result.
-func (mocks *Mocks) Return(fn any, args ...any) any {
-	return mocks.notify(fn, nil, args...)
+// are consumed. This call is best provided as input for `Times` in combination
+// with `Call`, `Do`, `Return`, and `Panic` considering that these will add one
+// additional expected call.
+func (mocks *Mocks) Times(num int) int {
+	mocks.wg.Add(num - 1)
+	return num
 }
 
 // Call is a convenience method providing a notification function for `Do` or
 // `DoAndReturn` to signal that a mock call setup was consumed returning the
-// executing the given call back function and returning its result.
+// executing the given call back function and returning its result. This method
+// registers exactly one expected call.
 func (mocks *Mocks) Call(fn any, call func(...any) []any) any {
 	return mocks.notify(fn, call)
 }
 
+// Do is a convenience method providing a notification function for `Do` or
+// `DoAndReturn` to signal that a mock call setup was consumed returning the
+// given arguments as result - if available. This method registers exactly one
+// expected call.
+func (mocks *Mocks) Do(fn any, args ...any) any {
+	return mocks.notify(fn, nil, args...)
+}
+
+// Return is a convenience method providing a notification function for `Do` or
+// `DoAndReturn` to signal that a mock call setup was consumed returning the
+// given arguments as result - if available. This method registers exactly one
+// expected call.
+//
+// Deprecated: use shorter 'Do' method.
+func (mocks *Mocks) Return(fn any, args ...any) any {
+	return mocks.notify(fn, nil, args...)
+}
+
 // Panic is a convenience method providing a notification function for `Do` or
 // `DoAndReturn` to signal that a mock call setup was consumed while panicing
-// with given reason.
+// with given reason. This method registers exactly one expected call.
 func (mocks *Mocks) Panic(fn any, reason any) any {
 	return mocks.notify(fn, func(...any) []any { panic(reason) })
 }
 
 // notify is a generic method for providing a customized notification function
-// of given function call type with given custom call behavior and given return
-// arguments for usage in `Do` or `DoAndReturn`.
+// of the given function call type with given custom call behavior and given
+// return arguments for usage in `Do` or `DoAndReturn`. The method registers
+// exactly one expected call.
 func (mocks *Mocks) notify(
 	fn any, call func(...any) []any, args ...any,
 ) any {
