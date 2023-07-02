@@ -15,8 +15,11 @@ jobs:
     - name: Build and tests
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-      run: make all --trace
-    
+      run: make --trace all
+
+#    - name: Release and publish
+#      run: make --trace release publish
+
     - name: Send coverage report
       uses: shogo82148/actions-goveralls@v1
       with:
