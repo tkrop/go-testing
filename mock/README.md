@@ -59,7 +59,8 @@ func SetupUnit(
 
 **Note:** The `mock.Get(mocks, NewServiceMock)` is the standard pattern to
 request a new or existing mock instance from the mock controller. As input, any
-test interface or entity compatible with the `gomock.TestReporter` can be used.
+test interface or entity compatible with the [`gomock.TestReporter`][gomock-rep]
+can be used.
 
 
 ## Generic mock call setup
@@ -252,4 +253,5 @@ for more information on requirements in parallel parameterized tests.
 
 
 [gomock]: <https://github.com/golang/mock>
+[gomock-rep]: <https://github.com/golang/mock/blob/v1.6.0/gomock/controller.go#L65>
 [gock]: <https://github.com/h2non/gock>

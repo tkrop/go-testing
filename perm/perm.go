@@ -63,14 +63,14 @@ func (p *Test) Test(t test.Test, perm []string, expect test.Expect) {
 }
 
 // Remain calculate and add the missing permutations and add it with
-// expected result to the given permmutation map.
+// expected result to the given permutation map.
 func (perms ExpectMap) Remain(expect test.Expect) ExpectMap {
 	cperms := ExpectMap{}
 	for key, value := range perms {
 		cperms[key] = value
 	}
 
-	// we only need to permutate the first key.
+	// we only need to permute the first key.
 	for key := range cperms {
 		slices.PermuteDo(strings.Split(key, "-"),
 			func(perm []string) {
