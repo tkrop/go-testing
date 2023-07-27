@@ -16,7 +16,11 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-//go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mock_test.go  IFace
+//revive:disable:line-length-limit // go:generate line length
+
+//go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mock_test.go  IFace,XFace
+
+//revive:enable:line-length-limit
 
 var errAny = errors.New("any error")
 
@@ -54,8 +58,70 @@ func NoCall() mock.SetupFunc {
 	}
 }
 
+type XFace interface {
+	CallC(string)
+}
+
+func CallC(input string) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewMockXFace).EXPECT().
+			CallC(input).Do(mocks.Do(XFace.CallC))
+	}
+}
+
 func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
 	return mock.NewMocks(t).Expect(mockSetup)
+}
+
+type MockParams struct {
+	mockSetup mock.SetupFunc
+	call      func(*mock.Mocks)
+}
+
+var testMockParams = map[string]MockParams{
+	"single mock with single call": {
+		mockSetup: mock.Setup(
+			CallA("okay"),
+		),
+		call: func(mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("okay")
+		},
+	},
+	"single mock with many calls": {
+		mockSetup: mock.Setup(
+			CallA("okay"),
+			CallB("okay", "okay"),
+		),
+		call: func(mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("okay")
+			mock.Get(mocks, NewMockIFace).CallB("okay")
+		},
+	},
+	"multiple mocks with many calls": {
+		mockSetup: mock.Setup(
+			CallA("okay"),
+			CallB("okay", "okay"),
+			CallC("okay"),
+		),
+		call: func(mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("okay")
+			mock.Get(mocks, NewMockIFace).CallB("okay")
+			mock.Get(mocks, NewMockXFace).CallC("okay")
+		},
+	},
+}
+
+func TestMocks(t *testing.T) {
+	test.Map(t, testMockParams).Run(func(t test.Test, param MockParams) {
+		// Given
+		mocks := MockSetup(t, param.mockSetup)
+
+		// When
+		param.call(mocks)
+
+		// Then
+		mocks.Wait()
+	})
 }
 
 func MockValidate(
