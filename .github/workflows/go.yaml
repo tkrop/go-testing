@@ -1,7 +1,7 @@
 name: Go
 on: [push, pull_request]
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -17,10 +17,11 @@ jobs:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
       run: make --trace all
 
-#    - name: Release and publish
-#      run: make --trace release publish
-
     - name: Send coverage report
       uses: shogo82148/actions-goveralls@v1
       with:
         path-to-profile: ./build/test-all.cover
+
+    - name: Release and publish
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: make --trace release && make --trace publish
