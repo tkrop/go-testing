@@ -562,8 +562,10 @@ func TestGetSubSlice(t *testing.T) {
 }
 
 type FuncParams struct {
-	call   any
-	result []any
+	mockSetup mock.SetupFunc
+	call      any
+	result    []any
+	expect    []any
 }
 
 var testFuncParams = map[string]FuncParams{
@@ -592,30 +594,61 @@ var testFuncParams = map[string]FuncParams{
 	"in-0-out-1": {
 		call:   func(any) any { return nil },
 		result: []any{"string"},
+		expect: []any{"string"},
 	},
 	"in-0-out-2": {
 		call:   func(any) (any, any) { return nil, nil },
 		result: []any{"string", 1},
+		expect: []any{"string", 1},
 	},
 	"in-0-out-3": {
 		call: func(any) (any, any, any) {
 			return nil, nil, nil
 		},
 		result: []any{"string", 1, true},
+		expect: []any{"string", 1, true},
 	},
 	"in-0-out-4": {
 		call: func(any) (any, any, any, any) {
 			return nil, nil, nil, nil
 		},
 		result: []any{"string", 1, true, errAny},
+		expect: []any{"string", 1, true, errAny},
+	},
+}
+
+var testFuncDoNoReturnParams = map[string]FuncParams{
+	"in-0-no-out-1": {
+		call:   func(any) string { return "okay" },
+		result: []any{},
+		expect: []any{""},
+	},
+	"in-0-no-out-2": {
+		call:   func(any) (string, int) { return "okay", 1 },
+		result: []any{},
+		expect: []any{"", 0},
+	},
+	"in-0-no-out-3": {
+		call: func(any) (string, int, bool) {
+			return "okay", 1, true
+		},
+		result: []any{},
+		expect: []any{"", 0, false},
+	},
+	"in-0-no-out-4": {
+		call: func(any) (string, int, bool, any) {
+			return "oaky", 1, true, nil
+		},
+		result: []any{},
+		expect: []any{"", 0, false, nil},
 	},
 }
 
 func TestFuncDo(t *testing.T) {
-	test.Map(t, testFuncParams).
+	test.Map(t /*, testFuncParams*/, testFuncDoNoReturnParams).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
-			mocks := MockSetup(t, nil)
+			mocks := MockSetup(t, param.mockSetup)
 			ctype := reflect.TypeOf(param.call)
 
 			// When
@@ -625,7 +658,9 @@ func TestFuncDo(t *testing.T) {
 			ftype := reflect.TypeOf(call)
 			assert.Equal(t, ctype.NumIn()-1, ftype.NumIn())
 			assert.Equal(t, ctype.NumOut(), ftype.NumOut())
-			assert.Equal(t, len(param.result), ftype.NumOut())
+			if len(param.result) > 0 {
+				assert.Equal(t, len(param.result), ftype.NumOut())
+			}
 
 			// When
 			result := reflect.ArgsOf(reflect.ValueOf(call).Call(
@@ -633,16 +668,47 @@ func TestFuncDo(t *testing.T) {
 			)...)
 
 			// Then
-			assert.Equal(t, param.result, result)
+			assert.Equal(t, param.expect, result)
 			mocks.Wait()
 		})
 }
 
+var testFuncReturnNoneParams = map[string]FuncParams{
+	"in-0-no-out-1": {
+		mockSetup: test.Panic("not enough arguments"),
+		call:      func(any) string { return "okay" },
+		result:    []any{},
+		expect:    []any{""},
+	},
+	"in-0-no-out-2": {
+		mockSetup: test.Panic("not enough arguments"),
+		call:      func(any) (string, int) { return "okay", 1 },
+		result:    []any{},
+		expect:    []any{"", 0},
+	},
+	"in-0-no-out-3": {
+		mockSetup: test.Panic("not enough arguments"),
+		call: func(any) (string, int, bool) {
+			return "okay", 1, true
+		},
+		result: []any{},
+		expect: []any{"", 0, false},
+	},
+	"in-0-no-out-4": {
+		mockSetup: test.Panic("not enough arguments"),
+		call: func(any) (string, int, bool, any) {
+			return "oaky", 1, true, nil
+		},
+		result: []any{},
+		expect: []any{"", 0, false, nil},
+	},
+}
+
 func TestFuncReturn(t *testing.T) {
-	test.Map(t, testFuncParams).
+	test.Map(t, testFuncParams, testFuncReturnNoneParams).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
-			mocks := MockSetup(t, nil)
+			mocks := MockSetup(t, param.mockSetup)
 			ctype := reflect.TypeOf(param.call)
 
 			// When
@@ -652,7 +718,9 @@ func TestFuncReturn(t *testing.T) {
 			ftype := reflect.TypeOf(call)
 			assert.Equal(t, ctype.NumIn()-1, ftype.NumIn())
 			assert.Equal(t, ctype.NumOut(), ftype.NumOut())
-			assert.Equal(t, len(param.result), ftype.NumOut())
+			if len(param.result) > 0 {
+				assert.Equal(t, len(param.result), ftype.NumOut())
+			}
 
 			// When
 			result := reflect.ArgsOf(reflect.ValueOf(call).Call(
@@ -660,16 +728,16 @@ func TestFuncReturn(t *testing.T) {
 			)...)
 
 			// Then
-			assert.Equal(t, param.result, result)
+			assert.Equal(t, param.expect, result)
 			mocks.Wait()
 		})
 }
 
 func TestFuncPanic(t *testing.T) {
-	test.Map(t, testFuncParams).
+	test.Map(t, testFuncParams, testFuncDoNoReturnParams).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
-			mocks := MockSetup(t, nil)
+			mocks := MockSetup(t, param.mockSetup)
 			ctype := reflect.TypeOf(param.call)
 			defer func() {
 				require.Equal(t, "panic-test", recover())
@@ -683,7 +751,9 @@ func TestFuncPanic(t *testing.T) {
 			ftype := reflect.TypeOf(call)
 			assert.Equal(t, ctype.NumIn()-1, ftype.NumIn())
 			assert.Equal(t, ctype.NumOut(), ftype.NumOut())
-			assert.Equal(t, len(param.result), ftype.NumOut())
+			if len(param.result) > 0 {
+				assert.Equal(t, len(param.result), ftype.NumOut())
+			}
 
 			// When
 			reflect.ValueOf(call).Call(
