@@ -9,7 +9,7 @@ import (
 	"github.com/tkrop/go-testing/mock"
 )
 
-// Validator a test failure validator based on the thest reporter interface.
+// Validator a test failure validator based on the test reporter interface.
 type Validator struct {
 	ctrl     *gomock.Controller
 	recorder *Recorder
@@ -58,8 +58,7 @@ func (r *Recorder) Errorf(format string, args ...any) *gomock.Call {
 func Errorf(format string, args ...any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
-			Errorf(format, args...).
-			Do(mocks.Do(Reporter.Errorf))
+			Errorf(format, args...).Do(mocks.Do(Reporter.Errorf))
 	}
 }
 
@@ -125,18 +124,63 @@ func (r *Recorder) Panic(arg any) *gomock.Call {
 func Panic(arg any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
-			Panic(Error(arg)).Do(mocks.Do(Reporter.Panic))
+			Panic(EqError(arg)).Do(mocks.Do(Reporter.Panic))
 	}
 }
 
-// errorMatcher is an error matcher to improve capabilities of matching errors.
+// UnexpectedCall creates expectation for unexpected calls. We only support one
+// unexpected call since the test execution stops in this case.
+func UnexpectedCall[T any](
+	creator func(*gomock.Controller) *T,
+	method, caller string, args ...any,
+) func(Test, *mock.Mocks) mock.SetupFunc {
+	return func(t Test, mocks *mock.Mocks) mock.SetupFunc {
+		return Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
+			mock.Get(mocks, creator), method, args, caller,
+			fmt.Errorf("there are no expected calls "+ //nolint:goerr113 // necessary
+				"of the method \"%s\" for that receiver", method))
+	}
+}
+
+func ConsumedCall[T any](
+	creator func(*gomock.Controller) *T,
+	method, caller, ecaller string, args ...any,
+) func(Test, *mock.Mocks) mock.SetupFunc {
+	return func(t Test, mocks *mock.Mocks) mock.SetupFunc {
+		return Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
+			mock.Get(mocks, creator), method, args, caller,
+			fmt.Errorf("\nexpected call at %s has "+ //nolint:goerr113 // necessary
+				"already been called the max number of times", ecaller))
+	}
+}
+
+// MissingCalls creates an expectation for all missing calls.
+func MissingCalls(
+	setups ...mock.SetupFunc,
+) func(Test, *mock.Mocks) mock.SetupFunc {
+	return func(t Test, _ *mock.Mocks) mock.SetupFunc {
+		// Creates a new mock controller and test environment to isolate the
+		// validator used for sub-call creation/registration from the validator
+		// used for execution.
+		mocks := mock.NewMocks(NewTester(t, false))
+		calls := make([]func(*mock.Mocks) any, 0, len(setups))
+		for _, setup := range setups {
+			calls = append(calls,
+				Errorf("missing call(s) to %v", EqCall(setup(mocks))))
+		}
+		calls = append(calls, Errorf("aborting test due to missing call(s)"))
+		return mock.Chain(calls...)
+	}
+}
+
+// errorMatcher is a matcher to improve capabilities of matching errors.
 type errorMatcher struct {
 	x any
 }
 
-// Error creates a new error matcher that allows to match either the error or
+// EqError creates a new error matcher that allows to match either the error or
 // alternatively the string describing the error.
-func Error(x any) gomock.Matcher {
+func EqError(x any) gomock.Matcher {
 	return &errorMatcher{x: x}
 }
 
@@ -146,14 +190,14 @@ func (m *errorMatcher) Matches(x any) bool {
 	case string:
 		switch b := x.(type) {
 		case string:
-			return gomock.Eq(a).Matches(b)
+			return a == b
 		case error:
-			return gomock.Eq(a).Matches(b.Error())
+			return a == b.Error()
 		}
 	case error:
 		switch b := x.(type) {
 		case string:
-			return gomock.Eq(a.Error()).Matches(b)
+			return a.Error() == b
 		case error:
 			return gomock.Eq(a).Matches(b)
 		}
@@ -163,5 +207,34 @@ func (m *errorMatcher) Matches(x any) bool {
 
 // String creates a string of the expectation to match.
 func (m *errorMatcher) String() string {
+	return fmt.Sprintf("is equal to %v (%T)", m.x, m.x)
+}
+
+// callMatcher is a matcher that supports matching of calls. Calls contain
+// actions consisting of functions that cannot be matched successfully using
+// [reflect.DeepEquals].
+type callMatcher struct {
+	x any
+}
+
+// EqCall creates a new call matcher that allows to match calls by translating
+// them to the string containing the core information instead of using the
+// standard matcher using [reflect.DeepEquals] that fails for the contained
+// actions.
+func EqCall(x any) gomock.Matcher {
+	return &callMatcher{x: x}
+}
+
+// Matches executes the extended call matching algorithms.
+func (m *callMatcher) Matches(x any) bool {
+	a, aok := m.x.(*gomock.Call)
+	if b, bok := x.(*gomock.Call); aok && bok {
+		return a.String() == b.String()
+	}
+	return gomock.Eq(m.x).Matches(x)
+}
+
+// String creates a string of the expectation to match.
+func (m *callMatcher) String() string {
 	return fmt.Sprintf("is equal to %v (%T)", m.x, m.x)
 }
