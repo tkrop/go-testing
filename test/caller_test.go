@@ -94,7 +94,7 @@ var (
 	}()
 	// CallerTestErrorf provides the file with the line number of the `Errorf`
 	// call in testing.
-	CallerTestErrorf = path.Join(SourceDir, "testing.go:174")
+	CallerTestErrorf = path.Join(SourceDir, "testing.go:175")
 	// CallerGomockErrorf provides the file with the line number of the
 	// `Errorf` call in gomock.
 	CallerGomockErrorf = path.Join(SourceDir, "gomock.go:61")
