@@ -3,6 +3,8 @@ package test_test
 // File contains the split out logic to calculate the caller for automated
 // testing of test failure validation.
 import (
+	"os"
+	"path"
 	"runtime"
 	"strconv"
 	"testing"
@@ -81,4 +83,19 @@ var (
 	CallerPanic = getCaller(func(t test.Reporter) {
 		t.Panic("fail")
 	})
+
+	// Generic source directory for caller path evaluation.
+	SourceDir = func() string {
+		dir, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+		return dir
+	}()
+	// CallerTestErrorf provides the file with the line number of the `Errorf`
+	// call in testing.
+	CallerTestErrorf = path.Join(SourceDir, "testing.go:174")
+	// CallerGomockErrorf provides the file with the line number of the
+	// `Errorf` call in gomock.
+	CallerGomockErrorf = path.Join(SourceDir, "gomock.go:61")
 )

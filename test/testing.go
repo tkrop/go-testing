@@ -39,7 +39,7 @@ const (
 	Parallel = true
 )
 
-// TODO: consider following convenience mehtods:
+// TODO: consider following convenience methods:
 //
 // // Result is a convenience method that returns the first argument ans swollows
 // // all others assuming that the first argument contains the important result to
@@ -64,7 +64,7 @@ const (
 // 	return result
 // }
 
-// // Ok is a conveninence method to check whether the second boolean argument is
+// // Ok is a convenience method to check whether the second boolean argument is
 // // `true` while returning the first argument. If the boolean argument is
 // // `false`, the method panics.
 // func Ok[T any](result T, ok bool) T {

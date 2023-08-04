@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tkrop/go-testing/mock"
@@ -20,106 +21,149 @@ var (
 	errOther = errors.New(otherError)
 )
 
-type ErrorMatcherParams struct {
-	base   any
-	match  any
-	result bool
+type MatcherParams struct {
+	matcher       func(any) gomock.Matcher
+	base          any
+	match         any
+	expectMatches bool
+	expectString  string
 }
 
-var testErrorMatcherParams = map[string]ErrorMatcherParams{
-	"success-string-string": {
-		base:   anyError,
-		match:  anyError,
-		result: true,
+var testErrorMatcherParams = map[string]MatcherParams{
+	"error-matcher-success-string-string": {
+		matcher:       test.EqError,
+		base:          anyError,
+		match:         anyError,
+		expectMatches: true,
+		expectString:  "is equal to any error (string)",
 	},
-	"success-string-error": {
-		base:   anyError,
-		match:  errAny,
-		result: true,
+	"error-matcher-success-string-error": {
+		matcher:       test.EqError,
+		base:          anyError,
+		match:         errAny,
+		expectMatches: true,
+		expectString:  "is equal to any error (string)",
 	},
-	"success-error-string": {
-		base:   errAny,
-		match:  anyError,
-		result: true,
+	"error-matcher-success-error-string": {
+		matcher:       test.EqError,
+		base:          errAny,
+		match:         anyError,
+		expectMatches: true,
+		expectString:  "is equal to any error (*errors.errorString)",
 	},
-	"success-error-error": {
-		base:   errAny,
-		match:  errAny,
-		result: true,
+	"error-matcher-success-error-error": {
+		matcher:       test.EqError,
+		base:          errAny,
+		match:         errAny,
+		expectMatches: true,
+		expectString:  "is equal to any error (*errors.errorString)",
 	},
-	"success-other-other": {
-		base:   1,
-		match:  1,
-		result: true,
+	"error-matcher-success-other-other": {
+		matcher:       test.EqError,
+		base:          1,
+		match:         1,
+		expectMatches: true,
+		expectString:  "is equal to 1 (int)",
 	},
 
-	"failure-string-string": {
-		base:   errAny,
-		match:  errOther,
-		result: false,
+	"error-matcher-failure-string-string": {
+		matcher:       test.EqError,
+		base:          errAny,
+		match:         errOther,
+		expectMatches: false,
+		expectString:  "is equal to any error (*errors.errorString)",
 	},
-	"failure-string-error": {
-		base:   anyError,
-		match:  errOther,
-		result: false,
+	"error-matcher-failure-string-error": {
+		matcher:       test.EqError,
+		base:          anyError,
+		match:         errOther,
+		expectMatches: false,
+		expectString:  "is equal to any error (string)",
 	},
-	"failure-error-string": {
-		base:   errAny,
-		match:  otherError,
-		result: false,
+	"error-matcher-failure-error-string": {
+		matcher:       test.EqError,
+		base:          errAny,
+		match:         otherError,
+		expectMatches: false,
+		expectString:  "is equal to any error (*errors.errorString)",
 	},
-	"failure-error-error": {
-		base:   errAny,
-		match:  errOther,
-		result: false,
+	"error-matcher-failure-error-error": {
+		matcher:       test.EqError,
+		base:          errAny,
+		match:         errOther,
+		expectMatches: false,
+		expectString:  "is equal to any error (*errors.errorString)",
 	},
-	"failure-other-other": {
-		base:   1,
-		match:  false,
-		result: false,
+	"error-matcher-failure-other-other": {
+		matcher:       test.EqError,
+		base:          1,
+		match:         false,
+		expectMatches: false,
+		expectString:  "is equal to 1 (int)",
 	},
 }
 
 func TestErrorMatcher(t *testing.T) {
 	test.Map(t, testErrorMatcherParams).
-		Run(func(t test.Test, param ErrorMatcherParams) {
+		Run(func(t test.Test, param MatcherParams) {
 			// Given
-			matcher := test.Error(param.base)
+			matcher := param.matcher(param.base)
 
 			// When
-			result := matcher.Matches(param.match)
+			matches := matcher.Matches(param.match)
 
 			// Then
-			assert.Equal(t, param.result, result)
+			assert.Equal(t, param.expectMatches, matches)
+			assert.Equal(t, param.expectString, matcher.String())
 		})
 }
 
-func TestErrorMatcherString(t *testing.T) {
-	assert.Equal(t, test.Error(true).String(), "is equal to true (bool)")
+var testCallMatcherParams = map[string]MatcherParams{
+	"call-matcher-success-call-call": {
+		matcher:       test.EqCall,
+		base:          test.Errorf("fail"),
+		match:         test.Errorf("fail"),
+		expectMatches: true,
+		expectString: "is equal to *test.Validator.Errorf" +
+			"(is equal to fail (string)) " + CallerGomockErrorf +
+			" (*gomock.Call)",
+	},
+	"call-matcher-success-any-nay": {
+		matcher:       test.EqCall,
+		base:          "any string",
+		match:         "any string",
+		expectMatches: true,
+		expectString:  "is equal to any string (string)",
+	},
 }
 
-func testFatalf(
-	method string, caller string, args ...any,
-) func(mocks *mock.Mocks) mock.SetupFunc {
-	return func(mocks *mock.Mocks) mock.SetupFunc {
-		return test.Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
-			mock.Get(mocks, test.NewValidator), method, args, caller,
-			errors.New("there are no expected calls of the method \""+
-				method+"\" for that receiver"))
+func evalCall(arg any, mocks *mock.Mocks) any {
+	if call, ok := arg.(mock.SetupFunc); ok {
+		return call(mocks)
 	}
+	return arg
 }
 
-func testMissing(setup mock.SetupFunc) func(mocks *mock.Mocks) mock.SetupFunc {
-	return func(mocks *mock.Mocks) mock.SetupFunc {
-		return test.Errorf("missing call(s) to %v",
-			setup(mocks).([]any)...)
-	}
+func TestCallMatcher(t *testing.T) {
+	test.Map(t, testCallMatcherParams).
+		Run(func(t test.Test, param MatcherParams) {
+			// Given - send mock calls to unchecked tester.
+			mocks := mock.NewMocks(test.NewTester(t, test.Success))
+			matcher := param.matcher(evalCall(param.base, mocks))
+
+			// When
+			matches := matcher.Matches(evalCall(param.match, mocks))
+
+			// Then
+			assert.Equal(t, param.expectMatches, matches)
+			assert.Equal(t, param.expectString, matcher.String())
+		})
 }
 
 type ReporterParams struct {
 	mockSetup mock.SetupFunc
-	failSetup func(mocks *mock.Mocks) mock.SetupFunc
-	call      func(t test.Test)
+	failSetup func(test.Test, *mock.Mocks) mock.SetupFunc
+	call      func(test.Test)
 }
 
 var testReporterParams = map[string]ReporterParams{
@@ -148,49 +192,120 @@ var testReporterParams = map[string]ReporterParams{
 		},
 	},
 
-	"errorf missing": {
-		mockSetup: test.Errorf("fail"),
-		failSetup: testMissing(test.Errorf("fail")),
-		call:      func(t test.Test) {},
-	},
-	"fatalf missing": {
-		mockSetup: test.Fatalf("fail"),
-		failSetup: testMissing(test.Fatalf("fail")),
-		call:      func(t test.Test) {},
-	},
-	"failnow missing": {
-		mockSetup: test.FailNow(),
-		failSetup: testMissing(test.FailNow()),
-		call:      func(t test.Test) {},
-	},
-	"panic missing": {
-		mockSetup: test.Panic("fail"),
-		failSetup: testMissing(test.Panic("fail")),
-		call:      func(t test.Test) {},
-	},
-
 	"errorf undeclared": {
-		failSetup: testFatalf("Errorf", CallerErrorf, "fail"),
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Errorf", CallerErrorf, "fail"),
 		call: func(t test.Test) {
 			t.Errorf("fail")
 		},
 	},
+	"errorf undeclared twice": {
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Errorf", CallerErrorf, "fail"),
+		call: func(t test.Test) {
+			t.Errorf("fail")
+			t.Errorf("fail")
+		},
+	},
 	"fatalf undeclared": {
-		failSetup: testFatalf("Fatalf", CallerFatalf, "fail"),
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Fatalf", CallerFatalf, "fail"),
 		call: func(t test.Test) {
 			t.Fatalf("fail")
 		},
 	},
 	"failnow undeclared": {
-		failSetup: testFatalf("FailNow", CallerFailNow),
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"FailNow", CallerFailNow),
 		call: func(t test.Test) {
 			t.FailNow()
 		},
 	},
 	"panic undeclared": {
-		failSetup: testFatalf("Panic", CallerPanic, "fail"),
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Panic", CallerPanic, "fail"),
 		call: func(t test.Test) {
 			panic("fail")
+		},
+	},
+
+	// Only Errorf can be consumed more than once, since Fatalf, FailNow, and
+	// panic will stop execution immediately. The second call is effectively
+	// unreachable.
+	"errorf consumed": {
+		mockSetup: test.Errorf("fail"),
+		failSetup: test.ConsumedCall(test.NewValidator,
+			"Errorf", CallerTestErrorf, CallerGomockErrorf, "fail"),
+		call: func(t test.Test) {
+			t.Errorf("fail")
+			t.Errorf("fail")
+		},
+	},
+	"fatalf consumed": {
+		mockSetup: test.Fatalf("fail"),
+		call: func(t test.Test) {
+			//revive:disable-next-line:unreachable-code // needed for testing
+			t.Fatalf("fail")
+			t.Fatalf("fail")
+		},
+	},
+	"failnow consumed": {
+		mockSetup: test.FailNow(),
+		call: func(t test.Test) {
+			//revive:disable-next-line:unreachable-code // needed for testing
+			t.FailNow()
+			t.FailNow()
+		},
+	},
+	"panic consumed": {
+		mockSetup: test.Panic("fail"),
+		call: func(t test.Test) {
+			panic("fail")
+			//nolint:govet // needed for testing
+			panic("fail")
+		},
+	},
+
+	// The mock setup is automatically creating a [test.Validator] requiring
+	// a the test environment to expect a failure to get called. To satisfy
+	// this, we need to create at least one failure.
+	"errorf missing": {
+		mockSetup: mock.Chain(test.Errorf("fail"), test.Errorf("fail")),
+		failSetup: test.MissingCalls(test.Errorf("fail")),
+		call: func(t test.Test) {
+			t.Errorf("fail")
+		},
+	},
+	"errorf missing two calls": {
+		mockSetup: mock.Chain(
+			test.Errorf("fail"), test.Errorf("fail"), test.Errorf("fail-x"),
+		),
+		failSetup: test.MissingCalls(
+			test.Errorf("fail"), test.Errorf("fail-x"),
+		),
+		call: func(t test.Test) {
+			t.Errorf("fail")
+		},
+	},
+	"fatalf missing": {
+		mockSetup: mock.Chain(test.Errorf("fail"), test.Fatalf("fail")),
+		failSetup: test.MissingCalls(test.Fatalf("fail")),
+		call: func(t test.Test) {
+			t.Errorf("fail")
+		},
+	},
+	"failnow missing": {
+		mockSetup: mock.Chain(test.Errorf("fail"), test.FailNow()),
+		failSetup: test.MissingCalls(test.FailNow()),
+		call: func(t test.Test) {
+			t.Errorf("fail")
+		},
+	},
+	"panic missing": {
+		mockSetup: mock.Chain(test.Errorf("fail"), test.Panic("fail")),
+		failSetup: test.MissingCalls(test.Panic("fail")),
+		call: func(t test.Test) {
+			t.Errorf("fail")
 		},
 	},
 }
@@ -202,18 +317,17 @@ func TestReporter(t *testing.T) {
 			mocks := mock.NewMocks(t)
 
 			// When
-			test.InRun(test.Failure, func(tt test.Test) {
+			test.InRun(test.Success, func(tt test.Test) {
 				// Given
-				xmocks := mock.NewMocks(tt)
-
+				imocks := mock.NewMocks(tt)
 				if param.failSetup != nil {
-					mocks.Expect(param.failSetup(xmocks))
+					mocks.Expect(param.failSetup(tt, imocks))
 				}
-				xmocks.Expect(param.mockSetup)
+				imocks.Expect(param.mockSetup)
 
 				// Connect the mock controller directly to the isolated parent
 				// test environment to capture the mock controller failure.
-				xmocks.Ctrl.T = t
+				imocks.Ctrl.T = t
 
 				// When
 				param.call(tt)

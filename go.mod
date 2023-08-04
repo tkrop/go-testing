@@ -5,11 +5,11 @@ go 1.20
 require (
 	github.com/golang/mock v1.6.0
 	github.com/h2non/gock v1.2.0
-	github.com/huandu/go-clone v1.5.0
+	github.com/huandu/go-clone v1.6.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
+	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
 	golang.org/x/text v0.11.0
-	golang.org/x/tools v0.11.0
+	golang.org/x/tools v0.11.1
 )
 
 require (

@@ -2,6 +2,8 @@ package mock_test
 
 import (
 	"errors"
+	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -69,30 +71,79 @@ func CallC(input string) mock.SetupFunc {
 	}
 }
 
-func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
-	return mock.NewMocks(t).Expect(mockSetup)
-}
+var (
+	// Generic source directory for caller path evaluation.
+	SourceDir = func() string {
+		dir, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+		return dir
+	}()
+	// CallerCallA provides the file with the line number of the `CallA` call
+	// in mock.
+	CallerCallA = path.Join(SourceDir, "mock/mock_test.go:35")
+)
 
 type MockParams struct {
 	mockSetup mock.SetupFunc
-	call      func(*mock.Mocks)
+	failSetup func(test.Test, *mock.Mocks) mock.SetupFunc
+	call      func(test.Test, *mock.Mocks)
 }
 
 var testMockParams = map[string]MockParams{
 	"single mock with single call": {
 		mockSetup: mock.Setup(
-			CallA("okay"),
+			CallA("ok"),
 		),
-		call: func(mocks *mock.Mocks) {
+		call: func(_ test.Test, mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("ok")
+		},
+	},
+	"single mock with two calls": {
+		mockSetup: mock.Setup(
+			CallA("ok"), CallA("okay"),
+		),
+		call: func(_ test.Test, mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("ok")
 			mock.Get(mocks, NewMockIFace).CallA("okay")
 		},
 	},
+	"single mock with missing calls": {
+		mockSetup: mock.Setup(
+			CallA("ok"), CallA("okay"),
+		),
+		failSetup: test.MissingCalls(CallA("okay")),
+		call: func(_ test.Test, mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("ok")
+		},
+	},
+	"single mock with unexpected call": {
+		failSetup: test.UnexpectedCall(NewMockIFace,
+			"CallA", path.Join(SourceDir, "mock_test.go:125"), "ok"),
+		call: func(_ test.Test, mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("ok")
+		},
+	},
+	"single mock with more than expected calls": {
+		mockSetup: mock.Setup(
+			CallA("ok"),
+		),
+		failSetup: test.ConsumedCall(NewMockIFace,
+			"CallA", path.Join(SourceDir, "mock_test.go:137"),
+			path.Join(SourceDir, "mock_test.go:37"), "ok"),
+		call: func(_ test.Test, mocks *mock.Mocks) {
+			mock.Get(mocks, NewMockIFace).CallA("ok")
+			mock.Get(mocks, NewMockIFace).CallA("ok")
+		},
+	},
+
 	"single mock with many calls": {
 		mockSetup: mock.Setup(
 			CallA("okay"),
 			CallB("okay", "okay"),
 		),
-		call: func(mocks *mock.Mocks) {
+		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("okay")
 			mock.Get(mocks, NewMockIFace).CallB("okay")
 		},
@@ -103,7 +154,7 @@ var testMockParams = map[string]MockParams{
 			CallB("okay", "okay"),
 			CallC("okay"),
 		),
-		call: func(mocks *mock.Mocks) {
+		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("okay")
 			mock.Get(mocks, NewMockIFace).CallB("okay")
 			mock.Get(mocks, NewMockXFace).CallC("okay")
@@ -112,16 +163,32 @@ var testMockParams = map[string]MockParams{
 }
 
 func TestMocks(t *testing.T) {
-	test.Map(t, testMockParams).Run(func(t test.Test, param MockParams) {
-		// Given
-		mocks := MockSetup(t, param.mockSetup)
+	test.Map(t, testMockParams).
+		RunSeq(func(t test.Test, param MockParams) {
+			// Given
+			mocks := mock.NewMocks(t)
 
-		// When
-		param.call(mocks)
+			// When
+			test.InRun(test.Success, func(tt test.Test) {
+				// Given
+				imocks := mock.NewMocks(tt)
+				if param.failSetup != nil {
+					mocks.Expect(param.failSetup(tt, imocks))
+				}
+				imocks.Expect(param.mockSetup)
 
-		// Then
-		mocks.Wait()
-	})
+				// Connect the mock controller directly to the isolated parent
+				// test environment to capture the mock controller failure.
+				imocks.Ctrl.T = t
+
+				// When
+				param.call(tt, imocks)
+			})(t)
+		})
+}
+
+func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
+	return mock.NewMocks(t).Expect(mockSetup)
 }
 
 func MockValidate(
