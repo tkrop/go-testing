@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/tkrop/go-testing/internal/maps"
 	"github.com/tkrop/go-testing/internal/reflect"
 	"github.com/tkrop/go-testing/internal/slices"
 	"github.com/tkrop/go-testing/internal/sync"
@@ -350,10 +351,10 @@ func New[P any](t *testing.T, params any) Runner[P] {
 
 // Map creates a new parallel test runner with given test parameter sets
 // provided as a test case name to parameter sets mapping.
-func Map[P any](t *testing.T, params map[string]P) Runner[P] {
+func Map[P any](t *testing.T, params ...map[string]P) Runner[P] {
 	t.Helper()
 
-	return New[P](t, params)
+	return New[P](t, maps.Add(maps.Copy(params[0]), params[1:]...))
 }
 
 // Slice creates a new parallel test runner with given test parameter sets

@@ -179,7 +179,7 @@ func (mocks *Mocks) Times(num int) int {
 //
 // **Note:** Call registers exactly one expected call automatically.
 func (mocks *Mocks) Call(fn any, call func(...any) []any) any {
-	return mocks.notify(fn, call)
+	return mocks.notify(fn, false, call)
 }
 
 // Do is a convenience method to setup a call back function for [gomock.Do]
@@ -190,7 +190,7 @@ func (mocks *Mocks) Call(fn any, call func(...any) []any) any {
 //
 // **Note:** Do registers exactly one expected call automatically.
 func (mocks *Mocks) Do(fn any, args ...any) any {
-	return mocks.notify(fn, nil, args...)
+	return mocks.notify(fn, true, nil, args...)
 }
 
 // Return is a convenience method to setup a call back function for [gomock.Do]
@@ -201,7 +201,7 @@ func (mocks *Mocks) Do(fn any, args ...any) any {
 //
 // **Note:** Return registers exactly one expected call automatically.
 func (mocks *Mocks) Return(fn any, args ...any) any {
-	return mocks.notify(fn, nil, args...)
+	return mocks.notify(fn, false, nil, args...)
 }
 
 // Panic is a convenience method to setup a call back function that panics with
@@ -211,16 +211,18 @@ func (mocks *Mocks) Return(fn any, args ...any) any {
 //
 // **Note:** Return registers exactly one expected call automatically.
 func (mocks *Mocks) Panic(fn any, reason any) any {
-	return mocks.notify(fn, func(...any) []any { panic(reason) })
+	return mocks.notify(fn, false, func(...any) []any { panic(reason) })
 }
 
 // notify is a generic method for providing a customized notification function
 // of the given function call type with given custom call behavior and given
 // return arguments for usage in [gomock.Do] or `[gomock.DoAndReturn]. When
 // notify is called, it registers exactly one expected service call that is
-// consumed, when the created call back function is called.
+// consumed, when the created call back function is called. If lenient is
+// given, the provided output arguments are not enforced to match the number
+// of return arguments in the notification function.
 func (mocks *Mocks) notify(
-	fn any, call func(...any) []any, args ...any,
+	fn any, lenient bool, call func(...any) []any, args ...any,
 ) any {
 	mocks.wg.Add(1)
 
@@ -235,7 +237,7 @@ func (mocks *Mocks) notify(
 				args = call(reflect.ArgsOf(in...)...)
 			}
 
-			return reflect.ValuesOut(ftype, args...)
+			return reflect.ValuesOut(ftype, lenient, args...)
 		})
 
 	return notify

@@ -429,10 +429,12 @@ func TestArgsOf(t *testing.T) {
 }
 
 type ValuesParams struct {
-	setup  mock.SetupFunc
-	call   any
-	args   []any
-	expect test.Expect
+	setup      mock.SetupFunc
+	call       any
+	args       []any
+	lenient    bool
+	expect     test.Expect
+	expectArgs []any
 }
 
 var testValuesInParams = map[string]ValuesParams{
@@ -442,15 +444,17 @@ var testValuesInParams = map[string]ValuesParams{
 		args:  nil,
 	},
 	"args-nil-var": {
-		call:   func(...any) {},
-		args:   nil,
-		expect: test.Success,
+		call:       func(...any) {},
+		args:       nil,
+		expectArgs: nil,
+		expect:     test.Success,
 	},
 
 	"nil": {
-		call:   func(any, any) {},
-		args:   []any{nil, nil},
-		expect: test.Success,
+		call:       func(any, any) {},
+		args:       []any{nil, nil},
+		expectArgs: []any{nil, nil},
+		expect:     test.Success,
 	},
 	"nil-less": {
 		setup: test.Panic("not enough arguments"),
@@ -463,9 +467,10 @@ var testValuesInParams = map[string]ValuesParams{
 		args:  []any{nil, nil},
 	},
 	"nil-var": {
-		call:   func(any, ...any) {},
-		args:   []any{nil},
-		expect: test.Success,
+		call:       func(any, ...any) {},
+		args:       []any{nil},
+		expectArgs: []any{nil},
+		expect:     test.Success,
 	},
 	"nil-var-less": {
 		setup: test.Panic("not enough arguments"),
@@ -473,25 +478,29 @@ var testValuesInParams = map[string]ValuesParams{
 		args:  []any{},
 	},
 	"nil-var-first": {
-		call:   func(any, ...any) {},
-		args:   []any{nil, nil},
-		expect: test.Success,
+		call:       func(any, ...any) {},
+		args:       []any{nil, nil},
+		expectArgs: []any{nil, nil},
+		expect:     test.Success,
 	},
 	"nil-var-more": {
-		call:   func(any, ...any) {},
-		args:   []any{nil, nil, nil},
-		expect: test.Success,
+		call:       func(any, ...any) {},
+		args:       []any{nil, nil, nil},
+		expectArgs: []any{nil, nil, nil},
+		expect:     test.Success,
 	},
 
 	"match": {
-		call:   func(bool, int, string, ExportParams) {},
-		args:   []any{true, 1, "value", teststruct},
-		expect: test.Success,
+		call:       func(bool, int, string, ExportParams) {},
+		args:       []any{true, 1, "value", teststruct},
+		expectArgs: []any{true, 1, "value", teststruct},
+		expect:     test.Success,
 	},
 	"match-var": {
-		call:   func(bool, int, string, ExportParams, ...any) {},
-		args:   []any{true, 1, "value", teststruct},
-		expect: test.Success,
+		call:       func(bool, int, string, ExportParams, ...any) {},
+		args:       []any{true, 1, "value", teststruct},
+		expectArgs: []any{true, 1, "value", teststruct},
+		expect:     test.Success,
 	},
 	"match-var-less": {
 		setup: test.Panic("not enough arguments"),
@@ -499,9 +508,10 @@ var testValuesInParams = map[string]ValuesParams{
 		args:  []any{true, 1, "value"},
 	},
 	"match-var-more": {
-		call:   func(bool, int, string, ExportParams, ...any) {},
-		args:   []any{true, 1, "value", teststruct, true, 1, "value"},
-		expect: test.Success,
+		call:       func(bool, int, string, ExportParams, ...any) {},
+		args:       []any{true, 1, "value", teststruct, true, 1, "value"},
+		expectArgs: []any{true, 1, "value", teststruct, true, 1, "value"},
+		expect:     test.Success,
 	},
 
 	"miss": {
@@ -529,19 +539,21 @@ func TestValuesIn(t *testing.T) {
 			values := reflect.ValuesIn(ftype, param.args...)
 
 			// Then (reflect.Values are not comparable)
-			assert.Equal(t, param.args, reflect.ArgsOf(values...))
+			assert.Equal(t, param.expectArgs, reflect.ArgsOf(values...))
 		})
 }
 
 var testValuesOutParams = map[string]ValuesParams{
 	"method-nil": {
-		call:   func() {},
-		args:   nil,
-		expect: test.Success,
+		call:       func() {},
+		args:       nil,
+		expectArgs: nil,
+		expect:     test.Success,
 	},
 	"method-empty": {
-		call: func() {},
-		args: []any{},
+		call:       func() {},
+		args:       []any{},
+		expectArgs: []any{},
 	},
 	"method-more": {
 		setup: test.Panic("too many arguments"),
@@ -550,9 +562,10 @@ var testValuesOutParams = map[string]ValuesParams{
 	},
 
 	"nil": {
-		call:   func() (any, any) { return nil, nil },
-		args:   []any{nil, nil},
-		expect: test.Success,
+		call:       func() (any, any) { return nil, nil },
+		args:       []any{nil, nil},
+		expectArgs: []any{nil, nil},
+		expect:     test.Success,
 	},
 	"nil-less": {
 		setup: test.Panic("not enough arguments"),
@@ -569,8 +582,51 @@ var testValuesOutParams = map[string]ValuesParams{
 		call: func() (bool, int, string, ExportParams) {
 			return true, 1, "value", teststruct
 		},
-		args:   []any{true, 1, "value", teststruct},
-		expect: test.Success,
+		args:       []any{true, 1, "value", teststruct},
+		expectArgs: []any{true, 1, "value", teststruct},
+		expect:     test.Success,
+	},
+	"match-less": {
+		setup: test.Panic("not enough arguments"),
+		call: func() (bool, int, string, ExportParams) {
+			return true, 1, "value", teststruct
+		},
+		args: []any{true, 1, "value"},
+	},
+	"match-more": {
+		setup: test.Panic("too many arguments"),
+		call: func() (bool, int, string, ExportParams) {
+			return true, 1, "value", teststruct
+		},
+		args: []any{true, 1, "value", teststruct, nil},
+	},
+
+	"lenient": {
+		lenient: true,
+		call: func() (bool, int, string, ExportParams) {
+			return true, 1, "value", teststruct
+		},
+		args:       []any{true, 1, "value", teststruct},
+		expectArgs: []any{true, 1, "value", teststruct},
+		expect:     test.Success,
+	},
+	"lenient-less": {
+		lenient: true,
+		call: func() (bool, int, string, ExportParams) {
+			return true, 1, "value", teststruct
+		},
+		args:       []any{true, 1, "value"},
+		expectArgs: []any{true, 1, "value", ExportParams{}},
+		expect:     test.Success,
+	},
+	"lenient-more": {
+		lenient: true,
+		call: func() (bool, int, string, ExportParams) {
+			return true, 1, "value", teststruct
+		},
+		args:       []any{true, 1, "value", teststruct, "string"},
+		expectArgs: []any{true, 1, "value", teststruct},
+		expect:     test.Success,
 	},
 
 	"miss": {
@@ -589,10 +645,10 @@ func TestValuesOut(t *testing.T) {
 			ftype := reflect.TypeOf(param.call)
 
 			// When
-			values := reflect.ValuesOut(ftype, param.args...)
+			values := reflect.ValuesOut(ftype, param.lenient, param.args...)
 
 			// Then (reflect.Values are not comparable)
-			assert.Equal(t, param.args, reflect.ArgsOf(values...))
+			assert.Equal(t, param.expectArgs, reflect.ArgsOf(values...))
 		})
 }
 
@@ -727,6 +783,7 @@ type MakeFuncOfParams struct {
 	call       any
 	args       []any
 	result     []any
+	lenient    bool
 	expectArgs []any
 }
 
@@ -764,7 +821,7 @@ func TestMakeFuncOf(t *testing.T) {
 			call := reflect.MakeFuncOf(ctype,
 				func(args []reflect.Value) []reflect.Value {
 					assert.Equal(t, param.expectArgs, reflect.ArgsOf(args...))
-					return reflect.ValuesOut(ctype, param.result...)
+					return reflect.ValuesOut(ctype, param.lenient, param.result...)
 				})
 
 			// Then

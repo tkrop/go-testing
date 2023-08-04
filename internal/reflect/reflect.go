@@ -134,7 +134,7 @@ func ArgOf(v reflect.Value) any {
 	}
 }
 
-// ArgsOf returns the arguents slice for the given values.
+// ArgsOf returns the arguments slice for the given values.
 func ArgsOf(values ...reflect.Value) []any {
 	args := make([]any, 0, len(values))
 	for _, value := range values {
@@ -150,22 +150,78 @@ func ArgsOf(values ...reflect.Value) []any {
 // ValuesIn returns the reflection values matching the input arguments of the
 // given function.
 func ValuesIn(ftype reflect.Type, args ...any) []reflect.Value {
-	return valuesOf(typesIn(ftype, len(args)), args...)
+	return valuesOf(typesIn(ftype, args...))
 }
 
 // ValuesOut returns the reflection values matching the output arguments of
-// the given function.
-func ValuesOut(ftype reflect.Type, args ...any) []reflect.Value {
-	return valuesOf(typesOut(ftype, len(args)), args...)
+// the given function. If lenient is set, non existing output arguments are
+// filled with zero values to support incomplete argument lists.
+func ValuesOut(ftype reflect.Type, lenient bool, args ...any) []reflect.Value {
+	return valuesOf(typesOut(ftype, lenient, args...))
 }
 
-// valuesOf returns the reflection valuesOf for the given arguments. The types must
-// be provided via `typesOf` that extends a variadic type function to infinity by
-// returning the variadic base element on all followup indexes.
-func valuesOf(ftype func(i int) reflect.Type, args ...any) []reflect.Value {
-	vs := make([]reflect.Value, 0, len(args))
-	for i, arg := range args {
+// typesIn checks the input argument length and provides the matching input
+// type function, the number of arguments, and the default values. The input
+// type function is a wrapper the standard input type function that returns a
+// variadic base type for all arguments exceeding the function argument number.
+func typesIn(
+	ftype reflect.Type, args ...any,
+) (func(int) reflect.Type, int, []any) {
+	num := ftype.NumIn()
+	variadic := ftype.IsVariadic()
+	if variadic {
+		num--
+	}
+
+	anum := len(args)
+	if anum < num {
+		panic("not enough arguments")
+	} else if !variadic {
+		if anum > num {
+			panic("too many arguments")
+		}
+		return ftype.In, anum, args
+	}
+
+	t := ftype.In(num).Elem()
+	return func(i int) reflect.Type {
+		if i < num {
+			return ftype.In(i)
+		}
+		return t
+	}, anum, args
+}
+
+// typesOut checks the output arguments number against the function expectation
+// if not lenient is give and provides an output type function, the number of
+// output arguments, and the default values.
+func typesOut(
+	ftype reflect.Type, lenient bool, args ...any,
+) (func(int) reflect.Type, int, []any) {
+	num := ftype.NumOut()
+	if !lenient {
+		anum := len(args)
+		if anum < num {
+			panic("not enough arguments")
+		} else if anum > num {
+			panic("too many arguments")
+		}
+	}
+	return ftype.Out, num, args
+}
+
+// valuesOf returns the reflection values for the given arguments matching the
+// given reflection types. The types must be provided via `typesOf`-function
+// that extends a variadic type function to infinity by returning the variadic
+// base element on all followup indexes. The `num` input gives the number of
+// arguments to be created from the given arguments.
+func valuesOf(
+	ftype func(i int) reflect.Type, num int, args []any,
+) []reflect.Value {
+	vs := make([]reflect.Value, 0, num)
+	for i := 0; i < num; i++ {
 		t := ftype(i)
+		arg := argOrNil(i, args...)
 		if arg == nil {
 			vs = append(vs, reflect.New(t).Elem())
 		} else {
@@ -183,6 +239,15 @@ func valuesOf(ftype func(i int) reflect.Type, args ...any) []reflect.Value {
 	return vs
 }
 
+// argOrNil returns the `i`-th argument, if the index is within the boundaries,
+// or `nil`, if it is out of bounds.
+func argOrNil(i int, args ...any) any {
+	if i < len(args) {
+		return args[i]
+	}
+	return nil
+}
+
 var errInvalidType = errors.New("invalid type")
 
 // NewErrInvalidType creates a new error reporting an invalid type during value
@@ -190,45 +255,6 @@ var errInvalidType = errors.New("invalid type")
 func NewErrInvalidType(index int, expect, actual reflect.Type) error {
 	return fmt.Errorf("%w at %d: expect %v got %v",
 		errInvalidType, index, expect, actual)
-}
-
-// typesOf checks the arguments length and provides the matching input type
-// function from the function type. The type function is a wrapper that returns
-// a variadic base type inifinitely.
-func typesIn(ftype reflect.Type, args int) func(int) reflect.Type {
-	num := ftype.NumIn()
-	variadic := ftype.IsVariadic()
-	if variadic {
-		num--
-	}
-
-	if args < num {
-		panic("not enough arguments")
-	} else if !variadic {
-		if args > num {
-			panic("too many arguments")
-		}
-		return ftype.In
-	}
-
-	t := ftype.In(num).Elem()
-	return func(i int) reflect.Type {
-		if i < num {
-			return ftype.In(i)
-		}
-		return t
-	}
-}
-
-// typesOut the arguments length and provides an output type function.
-func typesOut(ftype reflect.Type, args int) func(int) reflect.Type {
-	num := ftype.NumOut()
-	if args < num {
-		panic("not enough arguments")
-	} else if args > num {
-		panic("too many arguments")
-	}
-	return ftype.Out
 }
 
 // AnyFuncOf returns a function with given number of arguments accepting any
