@@ -48,13 +48,14 @@
 ## Introduction
 
 Goal of the `testing` framework is to provide simple and efficient tools to for
-writing effective unit and component tests in [`go`][go].
+writing effective unit, component, and integration tests in [`go`][go].
 
-To accomplish this, the `testing` framework contains a couple of opinionated
-small extensions for [testing][testing], [`gomock`][gomock], and [`gock`][gock]
-to enable isolated, parallel, parameterized tests using a common pattern to
-setup strongly validating mock request and response chains that work across
-detached [`go`-routines][go-routines] and various error scenarios.
+To accomplish this, the `testing` framework provides a couple of extensions for
+to standard [`testing`][testing] package of [`go`][go] that support a simple
+setup of [`gomock`][gomock] and [`gock`][gock] in isolated, parallel, and
+parameterized tests using a common pattern to setup with strong validation of
+mock request and response that work under various failure scenarios and even in
+the presense of [`go`-routines][go-routines].
 
 [go-routines]: <https://go.dev/tour/concurrency>
 
@@ -62,7 +63,7 @@ detached [`go`-routines][go-routines] and various error scenarios.
 ### Example Usage
 
 The core idea of the [`mock`](mock)/[`gock`](gock) packages is to provide a
-short pragmatic domain language for defining mock requests with response that
+short pragmatic domain language for defining mock requests with responses that
 enforce validation, while the [`test`](test) package provides the building
 blocks for test isolation.
 
@@ -118,7 +119,7 @@ func TestUnit(t *testing.T) {
 ```
 
 This opinionated test pattern supports a wide range of test in a standardized
-way.
+way. For variations have a closer look at the [test](test) package.
 
 
 ### Why parameterized test?
