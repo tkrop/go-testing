@@ -1,15 +1,17 @@
 module github.com/tkrop/go-testing
 
-go 1.20
+go 1.21
+
+toolchain go1.21.0
 
 require (
 	github.com/golang/mock v1.6.0
 	github.com/h2non/gock v1.2.0
 	github.com/huandu/go-clone v1.6.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/text v0.11.0
-	golang.org/x/tools v0.11.1
+	golang.org/x/tools v0.13.0
 )
 
 require (
@@ -18,7 +20,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
