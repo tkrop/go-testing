@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 GOBIN ?= $(shell go env GOPATH)/bin
-GOMAKE := github.com/tkrop/go-make@latest
+GOMAKE ?= github.com/tkrop/go-make@latest
 TARGETS := $(shell command -v go-make >/dev/null || \
 	go install $(GOMAKE) && go-make targets)
 
