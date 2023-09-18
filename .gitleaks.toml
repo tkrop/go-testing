@@ -2,11 +2,11 @@
     useDefault = true
 
 [allowlist]
-    description = "Whitelist false positives"
+    description = "Allowlist false positives"
     regexTarget = "match"
     regexes = [
-        # mark CDP build secret_version as false possitive since its not a secret
+        # Mark CDP build secret_version as false positive since it does not contain a secret.
         '''(?i)(?:secret_version:)(?:['|\"|\s]{0,5})([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:['|\"|\n|\r|\s]{0,5}|$)''',
-        # mark api-id or api_id or x-api-id as false possitive since they are uuids that are used in OAS and stacksets to track apis
+        # Mark api-id or api_id or x-api-id as false positive since they are uuids that are used in OAS and stacksets to track apis.
         '''(?i)(?:api[_-]id(?:['|\"|\s|:]{0,5}))(?:['|\"|\s]{0,5})([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:['|\"|\n|\r|\s]{0,5}|$)'''
     ]
