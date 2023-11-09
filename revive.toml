@@ -35,6 +35,15 @@ enableAllRules = true
 [rule.import-shadowing]
   disabled = true
 
+# Restricted alias naming conflicts with '.'-imports.
+# Not supporte by current Codacy revive v1.2.3
+#[rule.import-alias-naming]
+#  disabled = true
+
+# Exluding '.'-import makes test package separation unnecessary difficult.
+[rule.dot-imports]
+  disabled = true
+
 # Fails to exclude nolint directives from reporting.
 # Not supporte by current Codacy revive v1.2.3
 #[rule.comment-spacings]

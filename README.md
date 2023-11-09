@@ -20,10 +20,10 @@
 [coveralls-link]: https://coveralls.io/github/tkrop/go-testing?branch=main
 
 [coverage-badge]: https://app.codacy.com/project/badge/Coverage/cc1c47ec5ce0493caf15c08fa72fc78c
-[coverage-link]: https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&utm_medium=referral&utm_content=tkrop/go-testing&utm_campaign=Badge_Coverage
+[coverage-link]: https://app.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage
 
 [quality-badge]: https://app.codacy.com/project/badge/Grade/cc1c47ec5ce0493caf15c08fa72fc78c
-[quality-link]: https://www.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=tkrop/go-testing&amp;utm_campaign=Badge_Grade
+[quality-link]: https://app.codacy.com/gh/tkrop/go-testing/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
 
 [report-badge]: https://goreportcard.com/badge/github.com/tkrop/go-testing
 [report-link]: https://goreportcard.com/report/github.com/tkrop/go-testing
@@ -243,7 +243,7 @@ implementations for most common tasks. Read the [go-make manual][go-make-man]
 for more information about how to build, test, lint, etc.
 
 [go-make]: <https://github.com/tkrop/go-make>
-[go-make-man]: <https://github.com/tkrop/go-make/MANUAL.md>
+[go-make-man]: <https://github.com/tkrop/go-make/blob/main/MANUAL.md>
 
 
 ## Contributing
