@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/tkrop/go-testing/internal/mock"
-	mock "github.com/tkrop/go-testing/mock"
+	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/test"
 )
 

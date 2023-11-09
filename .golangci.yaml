@@ -3,7 +3,7 @@ run:
   # Default: 1m
   timeout: 3m
 
-linters:
+linters: {}
   # Placeholder for dynamically enabled linters.
 
 issues:
@@ -35,7 +35,7 @@ issues:
       linters: [ errcheck ]
     # Exclude certain revive standards from being applied in tests.
     - path: "_test\\.go"
-      text: "^(max-public-structs|function-length|cognitive-complexity):"
+      text: "^(max-public-structs|function-length|cognitive-complexity|unchecked-type-assertion):"
       linters: [ revive ]
     # Exclude dots in unfinished thoughts.
     - source: "(noinspection|TODO)"
@@ -96,7 +96,7 @@ linters-settings:
     # To specify a set of rules to explicitly exclude.
     # Available rules: https://github.com/securego/gosec#available-rules
     # Default: [] (issues are fixed)
-    excludes: [ G105, G307 ]
+    excludes: [ G307 ]
 
   gocritic:
     # Settings passed to gocritic. The settings key is the name of a supported
@@ -142,8 +142,17 @@ linters-settings:
       # Reports on comments not matching the name as first word.
       - name: exported
         disabled: true
+      # Ident error flow is buggy and throws false alerts.
+      - name: indent-error-flow
+        disabled: true
       # No need to exclude import shadowing.
       - name: import-shadowing
+        disabled: true
+      # Restricted alias naming conflicts with '.'-imports.
+      - name: import-alias-naming
+        disabled: true
+      # Exluding '.'-import makes test package separation unnecessary difficult.
+      - name: dot-imports
         disabled: true
       # Fails to exclude nolint directives from reporting.
       - name: comment-spacings
