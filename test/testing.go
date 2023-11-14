@@ -105,7 +105,6 @@ type Cleanuper interface {
 // can be used as a drop in replacement for `testing.T` in various libraries
 // to check for expected test failures.
 type Tester struct {
-	Test
 	sync.Synchronizer
 	t        Test
 	wg       sync.WaitGroup
@@ -157,6 +156,11 @@ func (t *Tester) Cleanup(cleanup func()) {
 // Name delegates the request to the parent test context.
 func (t *Tester) Name() string {
 	return t.t.Name()
+}
+
+// TempDir delegates the request to the parent test context.
+func (t *Tester) TempDir() string {
+	return t.t.TempDir()
 }
 
 // Helper delegates request to the parent test context.

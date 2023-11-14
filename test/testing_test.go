@@ -252,6 +252,13 @@ type ParamParam struct {
 	expect bool
 }
 
+func TestTempDir(t *testing.T) {
+	test.New[ParamParam](t, ParamParam{expect: true}).
+		Run(func(t test.Test, param ParamParam) {
+			assert.NotEmpty(t, t.TempDir())
+		})
+}
+
 func TestNameCastFallback(t *testing.T) {
 	test.New[ParamParam](t, ParamParam{name: "value"}).
 		Run(func(t test.Test, param ParamParam) {
