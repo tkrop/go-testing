@@ -89,6 +89,7 @@ type Reporter interface {
 type Test interface {
 	Helper()
 	Name() string
+	TempDir() string
 	Errorf(format string, args ...any)
 	Fatalf(format string, args ...any)
 	FailNow()

@@ -200,6 +200,11 @@ var (
 		Params:   []*Param{},
 		Results:  []*Param{{Type: "string"}},
 		Variadic: false,
+	}, {
+		Name:     "TempDir",
+		Params:   []*Param{},
+		Results:  []*Param{{Type: "string"}},
+		Variadic: false,
 	}}
 
 	methodsTestReporter = []*Method{{
