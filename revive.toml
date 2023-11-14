@@ -1,4 +1,4 @@
-# Translates the 'golangci-lint' settings into an codacy understandable format.
+# Translates the 'golangci-lint' settings into an Codacy understandable format.
 
 # When set to false, ignores files with "GENERATED" header.
 ignoreGeneratedHeader = true
@@ -83,7 +83,7 @@ enableAllRules = true
 [rule.line-length-limit]
   arguments = [100]
 
-# We are a bit more relexed with function length consistent with funlen.
+# We are a bit more relaxed with function length consistent with funlen.
 [rule.function-length]
   arguments = [40,60]
 
