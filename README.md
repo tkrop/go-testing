@@ -93,9 +93,10 @@ func TestUnit(t *testing.T) {
         Run(func(t test.Test, param UnitParams){
 
         // Given
-        mocks := mock.NewMock(t).Expect(
-          param.mockSetup,
-        )
+        mocks := mock.NewMock(t).
+            SetArg("common-url", "http://test").Expect(
+              param.mockSetup,
+            )
 
         unit := NewUnitService(
             mock.Get(mocks, NewServiceMock),

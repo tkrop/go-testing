@@ -187,6 +187,28 @@ func TestMocks(t *testing.T) {
 		})
 }
 
+func TestMockArgs(t *testing.T) {
+	// Given
+	mocks := mock.NewMocks(t)
+
+	// When
+	mocks.SetArg("a", "a")
+
+	// Than
+	assert.Equal(t, mocks.GetArg("a"), "a")
+	assert.Equal(t, mocks.GetArg("b"), nil)
+
+	// When
+	mocks.SetArgs(map[any]any{
+		"a": "b",
+		"b": "b",
+	})
+
+	// Than
+	assert.Equal(t, mocks.GetArg("a"), "b")
+	assert.Equal(t, mocks.GetArg("b"), "b")
+}
+
 func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
 	return mock.NewMocks(t).Expect(mockSetup)
 }

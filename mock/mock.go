@@ -81,6 +81,8 @@ type Mocks struct {
 	wg sync.WaitGroup
 	// The map of mock singletons.
 	mocks map[reflect.Value]any
+	// A map of mock key value pairs.
+	args map[any]any
 }
 
 // NewMocks creates a new mock handler using given test reporter, e.g.
@@ -90,6 +92,7 @@ func NewMocks(t gomock.TestReporter) *Mocks {
 		Ctrl:  gomock.NewController(t),
 		wg:    sync.NewLenientWaitGroup(),
 		mocks: map[reflect.Value]any{},
+		args:  map[any]any{},
 	}).syncWith(t)
 }
 
@@ -112,6 +115,28 @@ func (mocks *Mocks) Get(creator reflect.Value) any {
 func (mocks *Mocks) Expect(fncalls SetupFunc) *Mocks {
 	if fncalls != nil {
 		Setup(fncalls)(mocks)
+	}
+	return mocks
+}
+
+// GetArg gets the mock argument value for the given argument key. This can be
+// used to access a common test arguments from a mock call.
+func (mocks *Mocks) GetArg(key any) any {
+	return mocks.args[key]
+}
+
+// SetArg sets the given mock argument value for the given argument key. This
+// can be used to pass a common test arguments to mock calls.
+func (mocks *Mocks) SetArg(key any, value any) *Mocks {
+	mocks.args[key] = value
+	return mocks
+}
+
+// SetArgs sets the given mock argument values for the given argument keys.
+// This can be used to pass a set of common test arguments to mock calls.
+func (mocks *Mocks) SetArgs(args map[any]any) *Mocks {
+	for key, value := range args {
+		mocks.args[key] = value
 	}
 	return mocks
 }
