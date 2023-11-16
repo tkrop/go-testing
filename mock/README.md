@@ -22,6 +22,7 @@ func TestUnit(t *testing.T) {
     mocks := mock.NewMocks(t)
 
     mockSetup := mock.Get(mocks, NewServiceMock).EXPECT()...
+
     mocks.Expect(mockSetup)
 
     service := NewUnitService(
@@ -85,10 +86,15 @@ prepared to handle tests with detached *goroutines*, i.e. functions that are
 spawned by the system-under-test without waiting for their result.
 
 The mock handler therefore provides a `WaitGroup` and automatically registers
-a single mock call on each request using `mocks.Do(...)` and notifies the
+a single mock call on each request using `mocks.Do(...)` to notify the call
 completion via `Do|DoAndReturn()`. For test with detached *goroutines* the
 test can wait via `mocks.Wait()`, before finishing and checking whether the
 mock calls are completely consumed.
+
+Since some arguments needed to setup a mock call may only be available after
+creating the test runner, the mock controller provides a dynamic key-value
+storage that is accessible via `SetArg(key,value)`, `SetArgs(map[key]value)`,
+and `GetArg(key)`.
 
 **Note:** Since waiting for mock calls can take literally for ever in case of
 test failures, it is advised to use an isolated [test environment](../test)
