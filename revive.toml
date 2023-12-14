@@ -57,6 +57,10 @@ enableAllRules = true
 [rule.unhandled-error]
   disabled = true
 
+# Conflicts with strategy to embed assignments in if statements.
+[rule.indent-error-flow]
+  disabled = true
+
 # Fails to restrict sufficiently in switches with numeric values.
 [rule.add-constant]
   disabled = true
