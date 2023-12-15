@@ -195,7 +195,6 @@ func NewMethods(iface *types.Interface) []*Method {
 	methods := make([]*Method, 0, iface.NumMethods())
 	for index := 0; index < iface.NumMethods(); index++ {
 		method := iface.Method(index)
-		//revive:disable-next-line:unchecked-type-assertion // cannot happen
 		sign := method.Type().Underlying().(*types.Signature)
 		methods = append(methods, &Method{
 			Name:     method.Name(),

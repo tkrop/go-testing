@@ -35,7 +35,7 @@ issues:
       linters: [ errcheck ]
     # Exclude certain revive standards from being applied in tests.
     - path: "_test\\.go"
-      text: "^(max-public-structs|function-length|cognitive-complexity|unchecked-type-assertion):"
+      text: "^(max-public-structs|function-length|cognitive-complexity):"
       linters: [ revive ]
     # Exclude dots in unfinished thoughts.
     - source: "(noinspection|TODO)"
@@ -159,6 +159,9 @@ linters-settings:
         disabled: true
       # Fails to disable writers that actually cannot return errors.
       - name: unhandled-error
+        disabled: true
+      # Fails to detect and exclude type safe usages of type assertions.
+      - name: unchecked-type-assertion
         disabled: true
       # Fails to restrict sufficiently in switches with numeric values.
       - name: add-constant
