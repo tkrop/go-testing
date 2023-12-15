@@ -201,6 +201,11 @@ var (
 		Results:  []*Param{{Type: "string"}},
 		Variadic: false,
 	}, {
+		Name:     "Parallel",
+		Params:   []*Param{},
+		Results:  []*Param{},
+		Variadic: false,
+	}, {
 		Name:     "TempDir",
 		Params:   []*Param{},
 		Results:  []*Param{{Type: "string"}},

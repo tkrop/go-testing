@@ -40,6 +40,18 @@ const (
 	Parallel = true
 )
 
+// ensureParallel ensures that the test runs test parameter sets in parallel.
+func ensureParallel(t *testing.T) {
+	t.Helper()
+	defer func() {
+		if v := recover(); v != nil &&
+			v != "testing: t.Parallel called multiple times" {
+			panic(v)
+		}
+	}()
+	t.Parallel()
+}
+
 // TODO: consider following convenience methods:
 //
 // // Result is a convenience method that returns the first argument ans swollows
@@ -87,11 +99,22 @@ type Reporter interface {
 // Test is a minimal interface for abstracting test methods that are needed to
 // setup an isolated test environment for GoMock and Testify.
 type Test interface {
-	Helper()
+	// Name provides the test name.
 	Name() string
+	// Helper declares a test helper function.
+	Helper()
+	// Parallel declares that the test is to be run in parallel with (and only
+	// with) other parallel tests.
+	Parallel()
+	// TempDir creates a new temporary directory for the test.
 	TempDir() string
+	// Errorf handles a failure messages when a test is supposed to continue.
 	Errorf(format string, args ...any)
+	// Fatalf handles a fatal failure messge that immediate aborts of the test
+	// execution.
 	Fatalf(format string, args ...any)
+	// FailNow handles fatal failure notifications without log output that
+	// aborts test execution immediately.
 	FailNow()
 }
 
@@ -124,13 +147,6 @@ func NewTester(t Test, expect Expect) *Tester {
 	return (&Tester{t: t, expect: expect})
 }
 
-// Parallel delegates request to `testing.T.Parallel()`.
-func (t *Tester) Parallel() {
-	if t, ok := t.t.(*testing.T); ok {
-		t.Parallel()
-	}
-}
-
 // WaitGroup adds wait group to unlock in case of a failure.
 //
 //revive:disable-next-line:waitgroup-by-value // own wrapper interface
@@ -158,19 +174,27 @@ func (t *Tester) Name() string {
 	return t.t.Name()
 }
 
-// TempDir delegates the request to the parent test context.
-func (t *Tester) TempDir() string {
-	return t.t.TempDir()
-}
-
 // Helper delegates request to the parent test context.
 func (t *Tester) Helper() {
 	t.t.Helper()
 }
 
+// Parallel delegates request to the parent context if it is of type
+// `*testing.T`. Else it is swallowing the request silently.
+func (t *Tester) Parallel() {
+	if t, ok := t.t.(*testing.T); ok {
+		ensureParallel(t)
+	}
+}
+
+// TempDir delegates the request to the parent test context.
+func (t *Tester) TempDir() string {
+	return t.t.TempDir()
+}
+
 // Errorf handles failure messages where the test is supposed to continue. On
 // an expected success, the failure is also delegated to the parent test
-// context.
+// context. Else it delegates the request to the test reporter if available.
 func (t *Tester) Errorf(format string, args ...any) {
 	t.Helper()
 	t.failed.Store(true)
@@ -183,7 +207,8 @@ func (t *Tester) Errorf(format string, args ...any) {
 
 // Fatalf handles a fatal failure messge that immediate aborts of the test
 // execution. On an expected success, the failure handling is also delegated
-// to the parent test context.
+// to the parent test context. Else it delegates the request to the test
+// reporter if available.
 func (t *Tester) Fatalf(format string, args ...any) {
 	t.Helper()
 	t.failed.Store(true)
@@ -198,7 +223,8 @@ func (t *Tester) Fatalf(format string, args ...any) {
 
 // FailNow handles fatal failure notifications without log output that aborts
 // test execution immediately. On an expected success, it the failure handling
-// is also delegated to the parent test context.
+// is also delegated to the parent test context. Else it delegates the request
+// to the test reporter if available.
 func (t *Tester) FailNow() {
 	t.Helper()
 	t.failed.Store(true)
@@ -391,15 +417,21 @@ func (r *runner[P]) RunSeq(call func(t Test, param P)) Runner[P] {
 	return r.run(call, false)
 }
 
+// parallel ensures that the test runner runs the test parameter sets in
+// parallel.
+func (r *runner[P]) parallel(parallel bool) {
+	if parallel {
+		ensureParallel(r.t)
+	}
+}
+
 // Run runs the test parameter sets either parallel or in sequence.
 func (r *runner[P]) run(
 	call func(t Test, param P), parallel bool,
 ) Runner[P] {
 	switch params := r.params.(type) {
 	case map[string]P:
-		if parallel {
-			r.t.Parallel()
-		}
+		r.parallel(parallel)
 		r.wg.Add(len(params))
 
 		for name, param := range params {
@@ -408,9 +440,7 @@ func (r *runner[P]) run(
 		}
 
 	case []P:
-		if parallel {
-			r.t.Parallel()
-		}
+		r.parallel(parallel)
 		r.wg.Add(len(params))
 
 		for index, param := range params {
