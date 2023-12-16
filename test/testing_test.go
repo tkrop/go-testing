@@ -280,3 +280,22 @@ func TestTypePanic(t *testing.T) {
 	test.New[TestParam](t, ParamParam{expect: false}).
 		Run(func(t test.Test, param TestParam) {})
 }
+
+func TestParallel(t *testing.T) {
+	t.Parallel()
+	test.New[ParamParam](t, []ParamParam{{expect: false}}).
+		Run(func(t test.Test, param ParamParam) {
+			t.Parallel()
+		})
+}
+
+func TestParallelDenied(t *testing.T) {
+	t.Setenv("TESTING", "true")
+	defer func() {
+		assert.Equal(t, "testing: t.Parallel called after t.Setenv;"+
+			" cannot set environment variables in parallel tests", recover())
+	}()
+
+	test.New[ParamParam](t, []ParamParam{{expect: false}}).
+		Run(func(t test.Test, param ParamParam) {})
+}
