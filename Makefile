@@ -8,7 +8,7 @@ else
 endif
 
 GOBIN ?= $(shell go env GOPATH)/bin
-GOMAKE ?= github.com/tkrop/go-make@v0.0.10
+GOMAKE ?= github.com/tkrop/go-make@v0.0.11
 TARGETS := $(shell command -v go-make >/dev/null || \
 	go install $(GOMAKE) && go-make targets)
 
@@ -17,6 +17,5 @@ TARGETS := $(shell command -v go-make >/dev/null || \
 
 # Delegate all targets to go-make in one call.
 # TODO: consider solution that does not delegate local goals.
-$(eval $(lastwords $(MAKECMDGOALS)):;@:)
-all $(firstword $(MAKECMDGOALS))::
+$(firstword $(MAKECMDGOALS) all)::
 	$(GOBIN)/go-make $(MAKEFLAGS) $(MAKECMDGOALS);
