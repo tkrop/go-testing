@@ -2,14 +2,14 @@ module github.com/tkrop/go-testing
 
 go 1.21
 
-toolchain go1.21.0
+toolchain go1.21.5
 
 require (
 	github.com/golang/mock v1.6.0
 	github.com/h2non/gock v1.2.0
 	github.com/huandu/go-clone v1.6.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
+	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
 	golang.org/x/text v0.13.0
 	golang.org/x/tools v0.16.1
 )
