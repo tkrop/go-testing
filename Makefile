@@ -8,14 +8,14 @@ else
 endif
 
 GOBIN ?= $(shell go env GOPATH)/bin
-GOMAKE ?= github.com/tkrop/go-make@v0.0.18
-TARGETS := $(shell command -v go-make >/dev/null || \
-	go install $(GOMAKE) && go-make targets)
+GOMAKE ?= github.com/tkrop/go-make@v0.0.32
+TARGETS := $(shell command -v $(GOBIN)/go-make >/dev/null || \
+	go install $(GOMAKE) >/dev/stderr && $(GOBIN)/go-make targets)
 
 # Declare all targets phony to make them available for auto-completion.
-.PHONY: $(TARGETS)
+.PHONY:: $(TARGETS)
 
 # Delegate all targets to go-make in a single call suppressing other targets.
 $(eval $(wordlist 1,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))::;@:)
 $(firstword $(MAKECMDGOALS) all)::
-	$(GOBIN)/go-make $(MAKEFLAGS) $(MAKECMDGOALS);
+	@$(GOBIN)/go-make $(strip $(MAKEFLAGS) $(MAKECMDGOALS));
