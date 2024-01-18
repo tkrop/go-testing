@@ -9,7 +9,7 @@ require (
 	github.com/h2non/gock v1.2.0
 	github.com/huandu/go-clone v1.6.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 	golang.org/x/text v0.13.0
 	golang.org/x/tools v0.17.0
 )
