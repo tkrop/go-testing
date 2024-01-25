@@ -19,7 +19,7 @@ else
 endif
 
 # Setup go-make to utilize desired build and config scripts.
-GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.41
+GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.43
 # Request targets from go-make targets target.
 TARGETS := $(shell command -v $(GOBIN)/go-make >/dev/null || \
 	go install $(GOMAKE_DEP) >/dev/stderr && \

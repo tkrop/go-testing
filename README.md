@@ -13,8 +13,8 @@
 [![Security][security-badge]][security-link]
 -->
 
-[build-badge]: https://github.com/tkrop/go-testing/actions/workflows/go.yaml/badge.svg
-[build-link]: https://github.com/tkrop/go-testing/actions/workflows/go.yaml
+[build-badge]: https://github.com/tkrop/go-testing/actions/workflows/build.yaml/badge.svg
+[build-link]: https://github.com/tkrop/go-testing/actions/workflows/build.yaml
 
 [coveralls-badge]: https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main
 [coveralls-link]: https://coveralls.io/github/tkrop/go-testing?branch=main
