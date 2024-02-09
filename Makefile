@@ -7,23 +7,16 @@ else
 	$(warning warning: please customize variables in Makefile.vars)
 endif
 
-# Setup desired go compiler environemt or defaults.
+# Setup default go compiler environment.
 export GO ?= go
-ifndef GOSETUP
-  export GOBIN ?= $(shell $(GO) env GOPATH)/bin
-else ifeq ($(GOSETUP),local)
-  export GOBIN := $(DIR_BUILD)/bin
-  export PATH := $(GOBIN):$(PATH)
-else
-  $(error error: unsupported go setup ($(GOSETUP)))
-endif
-
+export GOPATH ?= $(shell $(GO) env GOPATH)
+export GOBIN ?= $(GOPATH)/bin
 # Setup go-make to utilize desired build and config scripts.
-GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.43
+GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.58
 # Request targets from go-make targets target.
 TARGETS := $(shell command -v $(GOBIN)/go-make >/dev/null || \
-	go install $(GOMAKE_DEP) >/dev/stderr && \
-	$(GOBIN)/go-make targets 2>/dev/null)
+	$(GO) install $(GOMAKE_DEP) >/dev/stderr && \
+	$(GOBIN)/go-make show-targets 2>/dev/null)
 # Declare all targets phony to make them available for auto-completion.
 .PHONY:: $(TARGETS)
 

@@ -238,12 +238,23 @@ versions for changes.
 
 ## Building
 
-This project is using [go-make][go-make] for building, which provides default
-implementations for most common tasks. Read the [go-make manual][go-make-man]
-for more information about how to build, test, lint, etc.
+This project is using [go-make][go-make], which provides default targets for
+most common tasks, to initialize, build, test, and run the software of this
+project. Read the [go-make manual][go-make-man] for more information about
+targets and configuration options.
+
+**Not:** [go-make][go-make] automatically installs `pre-commit` and `commit-msg`
+[hooks][git-hooks] overwriting and deleting pre-existing hooks (see also
+[Customizing Git - Git Hooks][git-hooks]). The `pre-commit` hook calls
+`make commit` as an alias for executing  `test-go`, `test-unit`, `lint-<level>`,
+and `lint-markdown` to enforce successful testing and linting. The `commit-msg`
+hook calls `make git-verify message` for validating whether the commit message
+is following the [conventional commit][convent-commit] best practice.
 
 [go-make]: <https://github.com/tkrop/go-make>
 [go-make-man]: <https://github.com/tkrop/go-make/blob/main/MANUAL.md>
+[git-hooks]: <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>
+[convent-commit]: <https://www.conventionalcommits.org/en/v1.0.0/>
 
 
 ## Contributing
