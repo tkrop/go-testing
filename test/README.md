@@ -164,13 +164,41 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-**Note:** To enable panic testing, the isolated test enviroment is recovering
+**Note:** To enable panic testing, the isolated test environment is recovering
 from all panics by default and converting it in a fatal error message. This is
 often most usable and sufficient to fix the issue. If you need to discover the
 source of the panic, you need to spawn a new unrecovered go-routine.
 
 **Hint:** [`gomock`][gomock] uses very complicated reporting patterns that are
 hard to recreate. Do not try it.
+
+
+## Out-of-the-box test pattners
+
+Currently, the package supports the following _out-of-the-box_ test pattern for
+testing of `main`-methods of commands.
+
+```go
+testMainParams := map[string]test.MainParams{
+    "no mocks": {
+        Args:     []string{"mock"},
+        Env:      []string{},
+        ExitCode: 0,
+    },
+}
+
+func TestMain(t *testing.T) {
+    test.Map(t, testMainParams).Run(test.TestMain(main))
+}
+```
+
+The pattern executes a the `main`-method in a separate process that allows to
+setup the command line arguments (`Args`) as well as to modify the environment
+variables (`Env`) and to capture and compare the exit code.
+
+**Note:** the general approach can be used to test any code calling `os.Exit`,
+however, it is focused on testing methods without arguments parsing command
+line arguments, i.e. in particular `func main() { ... }`.
 
 
 [gomock]: <https://github.com/golang/mock>
