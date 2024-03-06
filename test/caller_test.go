@@ -55,7 +55,7 @@ func getCaller(call func(t test.Reporter)) string {
 	t := test.NewTester(&testing.T{}, test.Failure)
 	mocks := mock.NewMocks(t)
 	caller := mock.Get(mocks,
-		func(ctrl *gomock.Controller) *Caller {
+		func(*gomock.Controller) *Caller {
 			return &Caller{}
 		})
 	t.Reporter(caller)

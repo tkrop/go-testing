@@ -42,7 +42,7 @@ func CallB(input string, output string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
 			CallB(input).DoAndReturn(
-			mocks.Call(IFace.CallB, func(a ...any) []any {
+			mocks.Call(IFace.CallB, func(...any) []any {
 				return []any{output}
 			}))
 	}
@@ -734,7 +734,7 @@ var testFuncDoNoReturnParams = map[string]FuncParams{
 }
 
 func TestFuncDo(t *testing.T) {
-	test.Map(t /*, testFuncParams*/, testFuncDoNoReturnParams).
+	test.Map(t, testFuncParams, testFuncDoNoReturnParams).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
 			mocks := MockSetup(t, param.mockSetup)
@@ -881,7 +881,7 @@ var testFailureParams = map[string]FailureParam{
 	},
 
 	"panic": {
-		test:   func(t test.Test) { panic("panic") },
+		test:   func(test.Test) { panic("panic") },
 		expect: test.Failure,
 	},
 }
@@ -920,7 +920,7 @@ var testWaitParams = map[string]WaitParam{
 
 func TestFuncWait(t *testing.T) {
 	test.Map(t, testWaitParams).
-		Run(func(t test.Test, param WaitParam) {
+		Run(func(t test.Test, _ WaitParam) {
 			// Given
 			mocks := mock.NewMocks(t)
 

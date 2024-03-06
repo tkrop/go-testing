@@ -187,7 +187,7 @@ var testReporterParams = map[string]ReporterParams{
 	},
 	"panic called": {
 		mockSetup: test.Panic("fail"),
-		call: func(t test.Test) {
+		call: func(test.Test) {
 			panic("fail")
 		},
 	},
@@ -224,7 +224,7 @@ var testReporterParams = map[string]ReporterParams{
 	"panic undeclared": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
 			"Panic", CallerPanic, "fail"),
-		call: func(t test.Test) {
+		call: func(test.Test) {
 			panic("fail")
 		},
 	},
@@ -259,7 +259,7 @@ var testReporterParams = map[string]ReporterParams{
 	},
 	"panic consumed": {
 		mockSetup: test.Panic("fail"),
-		call: func(t test.Test) {
+		call: func(test.Test) {
 			panic("fail")
 			//nolint:govet // needed for testing
 			panic("fail")

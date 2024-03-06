@@ -23,7 +23,7 @@ type TestParam struct {
 
 var testParams = map[string]TestParam{
 	"base nothing": {
-		test:   func(t test.Test) {},
+		test:   func(test.Test) {},
 		expect: test.Success,
 	},
 	"base errorf": {
@@ -41,7 +41,7 @@ var testParams = map[string]TestParam{
 		consumed: true,
 	},
 	"base panic": {
-		test:     func(t test.Test) { panic("fail") },
+		test:     func(test.Test) { panic("fail") },
 		expect:   test.Failure,
 		consumed: true,
 	},
@@ -70,14 +70,14 @@ var testParams = map[string]TestParam{
 	},
 	"inrun success with panic": {
 		test: test.InRun(test.Success,
-			func(t test.Test) { panic("fail") }),
+			func(test.Test) { panic("fail") }),
 		expect:   test.Failure,
 		consumed: true,
 	},
 
 	"inrun failure": {
 		test: test.InRun(test.Failure,
-			func(t test.Test) {}),
+			func(test.Test) {}),
 		expect: test.Failure,
 	},
 	"inrun failure with errorf": {
@@ -99,7 +99,7 @@ var testParams = map[string]TestParam{
 	},
 	"inrun failure with panic": {
 		test: test.InRun(test.Failure,
-			func(t test.Test) { panic("fail") }),
+			func(test.Test) { panic("fail") }),
 		expect:   test.Success,
 		consumed: true,
 	},
@@ -254,21 +254,21 @@ type ParamParam struct {
 
 func TestTempDir(t *testing.T) {
 	test.New[ParamParam](t, ParamParam{expect: true}).
-		Run(func(t test.Test, param ParamParam) {
+		Run(func(t test.Test, _ ParamParam) {
 			assert.NotEmpty(t, t.TempDir())
 		})
 }
 
 func TestNameCastFallback(t *testing.T) {
 	test.New[ParamParam](t, ParamParam{name: "value"}).
-		Run(func(t test.Test, param ParamParam) {
+		Run(func(t test.Test, _ ParamParam) {
 			assert.Equal(t, t.Name(), "TestNameCastFallback")
 		})
 }
 
 func TestExpectCastFallback(t *testing.T) {
 	test.New[ParamParam](t, ParamParam{expect: false}).
-		Run(func(t test.Test, param ParamParam) {})
+		Run(func(test.Test, ParamParam) {})
 }
 
 func TestTypePanic(t *testing.T) {
@@ -278,13 +278,13 @@ func TestTypePanic(t *testing.T) {
 		}
 	}()
 	test.New[TestParam](t, ParamParam{expect: false}).
-		Run(func(t test.Test, param TestParam) {})
+		Run(func(test.Test, TestParam) {})
 }
 
 func TestParallel(t *testing.T) {
 	t.Parallel()
 	test.New[ParamParam](t, []ParamParam{{expect: false}}).
-		Run(func(t test.Test, param ParamParam) {
+		Run(func(t test.Test, _ ParamParam) {
 			t.Parallel()
 		})
 }
@@ -297,5 +297,5 @@ func TestParallelDenied(t *testing.T) {
 	}()
 
 	test.New[ParamParam](t, []ParamParam{{expect: false}}).
-		Run(func(t test.Test, param ParamParam) {})
+		Run(func(test.Test, ParamParam) {})
 }

@@ -15,26 +15,26 @@ var errAny = errors.New("any error")
 // NewFooMatcher creates a special foo matcher.
 func NewFooMatcher() *gock.MockMatcher {
 	matcher := gock.NewEmptyMatcher()
-	matcher.Add(func(req *http.Request, ereq *gock.Request) (bool, error) {
+	matcher.Add(func(req *http.Request, _ *gock.Request) (bool, error) {
 		if req.URL.Scheme == "https" {
 			return true, errAny
 		}
 		return true, nil
 	})
-	matcher.Add(func(req *http.Request, ereq *gock.Request) (bool, error) {
+	matcher.Add(func(req *http.Request, _ *gock.Request) (bool, error) {
 		return req.URL.Host == "foo.com", nil
 	})
-	matcher.Add(func(req *http.Request, ereq *gock.Request) (bool, error) {
+	matcher.Add(func(req *http.Request, _ *gock.Request) (bool, error) {
 		return req.URL.Path == "/baz" || req.URL.Path == "/bar", nil
 	})
 	return matcher
 }
 
-// NewRoundTrippertError creates the same round trip error usually returned in
+// NewRoundTripperError creates the same round trip error usually returned in
 // case of a transport error. This method is used for validating tests that are
 // replacing the transport against the error `RoundTripper` via
 // `NewErrorRoundTripper`.
-func NewRoundTrippertError(method string, _url string, err error) error {
+func NewRoundTripperError(method string, _url string, err error) error {
 	op := cases.Title(language.Und).String(method)
 	return &url.Error{Op: op, URL: _url, Err: err}
 }
