@@ -134,7 +134,7 @@ func UnexpectedCall[T any](
 	creator func(*gomock.Controller) *T,
 	method, caller string, args ...any,
 ) func(Test, *mock.Mocks) mock.SetupFunc {
-	return func(t Test, mocks *mock.Mocks) mock.SetupFunc {
+	return func(_ Test, mocks *mock.Mocks) mock.SetupFunc {
 		return Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
 			mock.Get(mocks, creator), method, args, caller,
 			fmt.Errorf("there are no expected calls "+ //nolint:goerr113 // necessary
@@ -146,7 +146,7 @@ func ConsumedCall[T any](
 	creator func(*gomock.Controller) *T,
 	method, caller, ecaller string, args ...any,
 ) func(Test, *mock.Mocks) mock.SetupFunc {
-	return func(t Test, mocks *mock.Mocks) mock.SetupFunc {
+	return func(_ Test, mocks *mock.Mocks) mock.SetupFunc {
 		return Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
 			mock.Get(mocks, creator), method, args, caller,
 			fmt.Errorf("\nexpected call at %s has "+ //nolint:goerr113 // necessary

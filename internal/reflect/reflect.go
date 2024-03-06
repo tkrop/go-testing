@@ -79,7 +79,7 @@ func FieldArgOf(v reflect.Value, i int) any {
 
 	// Get the field value from the copy.
 	vf = vr.Field(i)
-	//#nosec G103 -- is necessary
+	// #nosec G103 -- is necessary
 	rf := reflect.NewAt(vf.Type(), unsafe.Pointer(vf.UnsafeAddr())).Elem()
 
 	var value any
