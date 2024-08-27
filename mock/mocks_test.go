@@ -20,7 +20,7 @@ import (
 
 //revive:disable:line-length-limit // go:generate line length
 
-//go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mock_test.go  IFace,XFace
+//go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mocks_test.go  IFace,XFace
 
 //revive:enable:line-length-limit
 
@@ -82,7 +82,7 @@ var (
 	}()
 	// CallerCallA provides the file with the line number of the `CallA` call
 	// in mock.
-	CallerCallA = path.Join(SourceDir, "mock/mock_test.go:35")
+	CallerCallA = path.Join(SourceDir, "mock/mocks_test.go:35")
 )
 
 type MockParams struct {
@@ -120,7 +120,7 @@ var testMockParams = map[string]MockParams{
 	},
 	"single mock with unexpected call": {
 		failSetup: test.UnexpectedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mock_test.go:125"), "ok"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:125"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
@@ -130,8 +130,8 @@ var testMockParams = map[string]MockParams{
 			CallA("ok"),
 		),
 		failSetup: test.ConsumedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mock_test.go:137"),
-			path.Join(SourceDir, "mock_test.go:37"), "ok"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:137"),
+			path.Join(SourceDir, "mocks_test.go:37"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 			mock.Get(mocks, NewMockIFace).CallA("ok")

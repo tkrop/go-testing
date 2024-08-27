@@ -10,7 +10,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.22.2
+        go-version: 1.23.0
 
     - name: Release new version
       env:
@@ -22,4 +22,4 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      run: make --trace version-publish || true
+      run: sleep 60 && make --trace version-publish || true

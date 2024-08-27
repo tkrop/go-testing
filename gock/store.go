@@ -72,7 +72,7 @@ func (s *MockStore) Match(req *http.Request) (gock.Mock, error) {
 			return mock, nil
 		}
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // externally defined behavior
 }
 
 // IsDone returns true if all the registered  HTTP request/response mocks have

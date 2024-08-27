@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"reflect"
 	"unsafe"
-
-	"github.com/tkrop/go-testing/internal/math"
 )
 
 // Aliases for types.
@@ -79,8 +77,9 @@ func FieldArgOf(v reflect.Value, i int) any {
 
 	// Get the field value from the copy.
 	vf = vr.Field(i)
-	// #nosec G103 -- is necessary
-	rf := reflect.NewAt(vf.Type(), unsafe.Pointer(vf.UnsafeAddr())).Elem()
+	// #nosec G103 G115 -- is necessary.
+	rf := reflect.NewAt(vf.Type(),
+		unsafe.Pointer(vf.UnsafeAddr())).Elem()
 
 	var value any
 	reflect.ValueOf(&value).Elem().Set(rf)
@@ -93,27 +92,27 @@ func ArgOf(v reflect.Value) any {
 		return nil
 	}
 
-	switch v.Type().Kind() { //nolint:exhaustive // covered by default
+	switch v.Type().Kind() { //nolint:exhaustive // covered by default.
 	case reflect.Bool:
 		return v.Bool()
 	case reflect.Int:
 		return int(v.Int())
 	case reflect.Int8:
-		return int8(v.Int())
+		return int8(v.Int()) // #nosec G115 // checked by type switch.
 	case reflect.Int16:
-		return int16(v.Int())
+		return int16(v.Int()) // #nosec G115 // checked by type switch.
 	case reflect.Int32:
-		return int32(v.Int())
+		return int32(v.Int()) // #nosec G115 // checked by type switch.
 	case reflect.Int64:
 		return v.Int()
 	case reflect.Uint:
 		return uint(v.Uint())
 	case reflect.Uint8:
-		return uint8(v.Uint())
+		return uint8(v.Uint()) // #nosec G115 // checked by type switch.
 	case reflect.Uint16:
-		return uint16(v.Uint())
+		return uint16(v.Uint()) // #nosec G115 // checked by type switch.
 	case reflect.Uint32:
-		return uint32(v.Uint())
+		return uint32(v.Uint()) // #nosec G115 // checked by type switch.
 	case reflect.Uint64:
 		return v.Uint()
 	// TODO find test case.
@@ -280,12 +279,12 @@ func AnyFuncOf(args int, variadic bool) reflect.Type {
 // arguments. Use `1` to remove the first argument, or `NumIn/NumOut` to remove
 // all arguments.
 func BaseFuncOf(mtype reflect.Type, in, out int) reflect.Type {
-	it := make([]reflect.Type, 0, math.Max(mtype.NumIn()-in, 0))
+	it := make([]reflect.Type, 0, max(mtype.NumIn()-in, 0))
 	for i := in; i < mtype.NumIn(); i++ {
 		it = append(it, mtype.In(i))
 	}
 
-	ot := make([]reflect.Type, 0, math.Max(mtype.NumOut()-out, 0))
+	ot := make([]reflect.Type, 0, max(mtype.NumOut()-out, 0))
 	for i := out; i < mtype.NumOut(); i++ {
 		ot = append(ot, mtype.Out(i))
 	}
