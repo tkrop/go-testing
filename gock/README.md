@@ -5,13 +5,13 @@ services (gateways) by mocking the network communication using [`gock`][gock].
 
 **Note:** Since the controller is focused on testing, it does not support the
 same networking and observation features of [`gock`][gock] and requires manual
-transport interception setup. However, the interface is mainly compatible with.
+transport interception setup. However, the interface is mainly compatible.
 
 
 ## Example usage
 
 Just create a new controller on each test, connect it to your HTTP clients or
-client wrappers, and than use it to create HTTP mock request/response cycles
+client wrappers, and then use it to create HTTP mock request/response cycles
 as usual.
 
 
