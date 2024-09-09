@@ -8,6 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// errExit is an error instance for comparing to the exit code error.
+var errExit = &exec.ExitError{}
+
 // MainParams provides the test parameters for testing a `main`-method.
 type MainParams struct {
 	Args     []string
@@ -56,10 +59,10 @@ func TestMain(main func()) func(t Test, param MainParams) {
 		cmd := exec.Command(os.Args[0], "-test.run="+t.(*Tester).t.Name())
 		cmd.Env = append(append(os.Environ(), "TEST="+t.Name()), param.Env...)
 		if err := cmd.Run(); err != nil || param.ExitCode != 0 {
-			errExit := &exec.ExitError{}
-			if errors.As(err, &errExit) {
+			if errors.As(err, &errExit) || err != nil {
 				require.Equal(t, param.ExitCode, errExit.ExitCode())
 			} else {
+				// #no-cover: impossible to reach this code.
 				require.Fail(t, "unexpected error", err)
 			}
 		}
