@@ -1,6 +1,6 @@
 module github.com/tkrop/go-testing
 
-go 1.23.0
+go 1.23.1
 
 require (
 	github.com/golang/mock v1.6.0
@@ -8,7 +8,7 @@ require (
 	github.com/huandu/go-clone v1.6.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/text v0.13.0
-	golang.org/x/tools v0.24.0
+	golang.org/x/tools v0.25.0
 )
 
 require (
