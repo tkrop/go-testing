@@ -1,7 +1,10 @@
 .project
 .vscode
+.env
 
 build
 run
 
 mock_*_test.go
+
+__debug_bin*
