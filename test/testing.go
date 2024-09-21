@@ -40,18 +40,6 @@ const (
 	Parallel = true
 )
 
-// ensureParallel ensures that the test runs test parameter sets in parallel.
-func ensureParallel(t *testing.T) {
-	t.Helper()
-	defer func() {
-		if v := recover(); v != nil &&
-			v != "testing: t.Parallel called multiple times" {
-			panic(v)
-		}
-	}()
-	t.Parallel()
-}
-
 // TODO: consider following convenience methods:
 //
 // // Result is a convenience method that returns the first argument ans swollows
@@ -87,12 +75,18 @@ func ensureParallel(t *testing.T) {
 // 	return result
 // }
 
-// Reporter is a minimal inferface for abstracting test report methods that are
+// Reporter is a minimal interface for abstracting test report methods that are
 // needed to setup an isolated test environment for GoMock and Testify.
 type Reporter interface {
+	// Panic reports a panic.
 	Panic(arg any)
+	// Errorf reports a failure messages when a test is supposed to continue.
 	Errorf(format string, args ...any)
+	// Fatalf reports a fatal failure message that immediate aborts of the test
+	// execution.
 	Fatalf(format string, args ...any)
+	// FailNow reports fatal failure notifications without log output that
+	// aborts test execution immediately.
 	FailNow()
 }
 
@@ -110,12 +104,14 @@ type Test interface {
 	TempDir() string
 	// Errorf handles a failure messages when a test is supposed to continue.
 	Errorf(format string, args ...any)
-	// Fatalf handles a fatal failure messge that immediate aborts of the test
+	// Fatalf handles a fatal failure message that immediate aborts of the test
 	// execution.
 	Fatalf(format string, args ...any)
 	// FailNow handles fatal failure notifications without log output that
 	// aborts test execution immediately.
 	FailNow()
+	// Setenv sets an environment variable for the test.
+	Setenv(key, value string)
 }
 
 // Cleanuper defines an interface to add a custom mehtod that is called after
@@ -179,12 +175,18 @@ func (t *Tester) Helper() {
 	t.t.Helper()
 }
 
-// Parallel delegates request to the parent context if it is of type
-// `*testing.T`. Else it is swallowing the request silently.
+// Parallel robustly delegates request to the parent context. It can be called
+// multiple times, since it is swallowing the panic that is raised when calling
+// `t.Parallel()` multiple times.
 func (t *Tester) Parallel() {
-	if t, ok := t.t.(*testing.T); ok {
-		ensureParallel(t)
-	}
+	defer t.recoverParallel()
+	t.t.Parallel()
+}
+
+// Setenv delegates request to the parent context, if it is of type
+// `*testing.T`. Else it is swallowing the request silently.
+func (t *Tester) Setenv(key, value string) {
+	t.t.Setenv(key, value)
 }
 
 // TempDir delegates the request to the parent test context.
@@ -205,7 +207,7 @@ func (t *Tester) Errorf(format string, args ...any) {
 	}
 }
 
-// Fatalf handles a fatal failure messge that immediate aborts of the test
+// Fatalf handles a fatal failure message that immediate aborts of the test
 // execution. On an expected success, the failure handling is also delegated
 // to the parent test context. Else it delegates the request to the test
 // reporter if available.
@@ -334,9 +336,22 @@ func (t *Tester) finish() {
 func (t *Tester) recover() {
 	t.Helper()
 
-	//revive:disable-next-line:defer // is inside the defered function
+	//revive:disable-next-line:defer // only used inside a deferred call.
 	if arg := recover(); arg != nil {
 		t.Panic(arg)
+	}
+}
+
+// recoverParallel recovers from panics when calling `t.Parallel()` multiple
+// times.
+func (t *Tester) recoverParallel() {
+	t.Helper()
+
+	//revive:disable-next-line:defer // only used inside a deferred call.
+	if v := recover(); v != nil &&
+		v != "testing: t.Parallel called multiple times" {
+		// TODO: t.Panic(v)
+		panic(v)
 	}
 }
 
@@ -414,14 +429,25 @@ func (r *runner[P]) Run(call func(t Test, param P)) Runner[P] {
 
 // RunSeq runs the test parameter sets in a sequence.
 func (r *runner[P]) RunSeq(call func(t Test, param P)) Runner[P] {
-	return r.run(call, false)
+	return r.run(call, !Parallel)
 }
 
 // parallel ensures that the test runner runs the test parameter sets in
 // parallel.
 func (r *runner[P]) parallel(parallel bool) {
 	if parallel {
-		ensureParallel(r.t)
+		defer r.recoverParallel()
+		r.t.Parallel()
+	}
+}
+
+// recoverParallel recovers from panics when calling `t.Parallel()` multiple
+// times.
+func (*runner[P]) recoverParallel() {
+	//revive:disable-next-line:defer // only used inside a deferred call.
+	if v := recover(); v != nil &&
+		v != "testing: t.Parallel called multiple times" {
+		panic(v)
 	}
 }
 
@@ -506,7 +532,7 @@ func Run(expect Expect, test func(Test)) func(*testing.T) {
 // with given expectation. When executed via `t.Run()` it checks whether the
 // result is matching the expectation.
 func RunSeq(expect Expect, test func(Test)) func(*testing.T) {
-	return run(expect, test, false)
+	return run(expect, test, !Parallel)
 }
 
 // Run creates an isolated parallel or sequential test environment running the
@@ -527,7 +553,7 @@ func InRun(expect Expect, test func(Test)) func(Test) {
 	return func(t Test) {
 		t.Helper()
 
-		NewTester(t, expect).Run(test, false)
+		NewTester(t, expect).Run(test, !Parallel)
 	}
 }
 
