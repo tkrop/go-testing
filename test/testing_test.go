@@ -1,6 +1,7 @@
 package test_test
 
 import (
+	"os"
 	"sync/atomic"
 	"testing"
 
@@ -281,21 +282,94 @@ func TestTypePanic(t *testing.T) {
 		Run(func(test.Test, TestParam) {})
 }
 
-func TestParallel(t *testing.T) {
-	t.Parallel()
-	test.New[ParamParam](t, []ParamParam{{expect: false}}).
-		Run(func(t test.Test, _ ParamParam) {
-			t.Parallel()
-		})
+type PanicParam struct {
+	parallel bool
+	before   func(test.Test)
+	during   func(test.Test)
+	expect   mock.SetupFunc
 }
 
-func TestParallelDenied(t *testing.T) {
-	t.Setenv("TESTING", "true")
-	defer func() {
-		assert.Equal(t, "testing: t.Parallel called after t.Setenv;"+
-			" cannot set environment variables in parallel tests", recover())
-	}()
+var testPanicParams = map[string]PanicParam{
+	"setenv in run without parallel": {
+		during: func(t test.Test) {
+			t.Setenv("TESTING", "during")
+			assert.Equal(t, "during", os.Getenv("TESTING"))
+		},
+	},
 
-	test.New[ParamParam](t, []ParamParam{{expect: false}}).
-		Run(func(test.Test, ParamParam) {})
+	"setenv in run with parallel": {
+		parallel: true,
+		during: func(t test.Test) {
+			t.Setenv("TESTING", "during")
+			assert.Equal(t, "during", os.Getenv("TESTING"))
+		},
+		expect: test.Panic("testing: t.Setenv called after t.Parallel;" +
+			" cannot set environment variables in parallel tests"),
+	},
+
+	"setenv before run without parallel": {
+		before: func(t test.Test) {
+			t.Setenv("TESTING", "before")
+			assert.Equal(t, "before", os.Getenv("TESTING"))
+		},
+		during: func(t test.Test) {
+			t.Setenv("TESTING", "during")
+			assert.Equal(t, "during", os.Getenv("TESTING"))
+		},
+	},
+
+	"setenv before run with parallel": {
+		parallel: true,
+		before: func(t test.Test) {
+			t.Setenv("TESTING", "before")
+			assert.Equal(t, "before", os.Getenv("TESTING"))
+		},
+		expect: test.Panic("testing: t.Parallel called after t.Setenv;" +
+			" cannot set environment variables in parallel tests"),
+	},
+
+	"swallow multiple parallel calls": {
+		during: func(t test.Test) {
+			t.Parallel()
+			t.Parallel()
+		},
+	},
+}
+
+func TestTesterPanic(t *testing.T) {
+	for name, param := range testPanicParams {
+		name, param := name, param
+		t.Run(name, test.RunSeq(test.Success, func(t test.Test) {
+			// Given
+			if param.before != nil {
+				mock.NewMocks(t).Expect(param.expect)
+				param.before(t)
+			}
+
+			// When
+			test.NewTester(t, test.Success).Run(func(t test.Test) {
+				mock.NewMocks(t).Expect(param.expect)
+				param.during(t)
+			}, param.parallel)
+		}))
+	}
+}
+
+// This test is checking the runner for recovering from panics in parallel
+// tests. Currently, I have no idea hot to integrate the test using the above
+// simplified test pattern that only works on `test.Test` and not `testing.T“.
+func TestRunnerPanic(t *testing.T) {
+	defer func() {
+		v := recover()
+		if v == nil {
+			assert.Fail(t, "not paniced")
+		} else if v.(string) != "testing: t.Parallel called after t.Setenv;"+
+			" cannot set environment variables in parallel tests" {
+			assert.Fail(t, "unexpected panic: %v", v)
+		}
+	}()
+	t.Setenv("TESTING", "before")
+
+	test.New[ParamParam](t, []ParamParam{{expect: true}}).
+		Run(func(_ test.Test, _ ParamParam) {})
 }

@@ -206,6 +206,14 @@ var (
 		Results:  []*Param{},
 		Variadic: false,
 	}, {
+		Name: "Setenv",
+		Params: []*Param{
+			{Name: "key", Type: "string"},
+			{Name: "value", Type: "string"},
+		},
+		Results:  []*Param{},
+		Variadic: false,
+	}, {
 		Name:     "TempDir",
 		Params:   []*Param{},
 		Results:  []*Param{{Type: "string"}},

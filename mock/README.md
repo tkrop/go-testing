@@ -5,8 +5,8 @@ common mock controller interface for [`gomock`][gomock] and [`gock`][gock] that
 enables a unified, highly reusable integration pattern.
 
 Unfortunately, we had to sacrifice a bit of type-safety to allow for chaining
-mock calls in an arbitrary way during setup. Anyhow, the offered in runtime
-validation is a sufficient strategy to cover for the missing type-safety.
+mock calls arbitrarily during setup. Anyhow, the offered in runtime validation
+is a sufficient strategy to cover for the missing type-safety.
 
 
 ## Example usage
@@ -39,8 +39,8 @@ patterns as described in the following.
 
 ## Generic mock controller setup
 
-Usually, a new system under test must be create for each test run. Therefore,
-the following generic pattern to setup the mock controller with an arbitrary
+Usually, a new system under test must be created for each test run. Therefore,
+the following generic pattern to set up the mock controller with an arbitrary
 system under test is very useful.
 
 ```go
@@ -91,7 +91,7 @@ completion via `Do|DoAndReturn()`. For test with detached *goroutines* the
 test can wait via `mocks.Wait()`, before finishing and checking whether the
 mock calls are completely consumed.
 
-Since some arguments needed to setup a mock call may only be available after
+Since some arguments needed to set up a mock call may only be available after
 creating the test runner, the mock controller provides a dynamic key-value
 storage that is accessible via `SetArg(key,value)`, `SetArgs(map[key]value)`,
 and `GetArg(key)`.
@@ -142,7 +142,7 @@ With the above preparations for mocking service calls we can now define the
   with other setup methods that determine the predecessors and successor mock
   calls.
 
-* `Parallel` allows to creates an unordered set of mock calls that can be
+* `Parallel` allows to create an unordered set of mock calls that can be
   combined with other setup methods that determine the predecessor and
   successor mock calls.
 
@@ -150,8 +150,8 @@ With the above preparations for mocking service calls we can now define the
   no relation to predecessors and successors it was defined with.
 
 Beside this simple (un-)ordering methods there are two further methods for
-completeness, that allow to control how predecessors and successors are used
-to setup ordering conditions:
+completeness, that allows control of how predecessors and successors are used
+to set up ordering conditions:
 
 * `Sub` allows to define a sub-set or sub-chain of elements in `Parallel` and
   `Chain` as predecessor and successor context for further combination.

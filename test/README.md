@@ -121,7 +121,7 @@ Or the interface of the underlying `test.Tester`:
 func TestUnit(t *testing.T) {
     t.Parallel()
 
-    test.Tester(t, test.Success).Run(func(t test.Test){
+    test.NewTester(t, test.Success).Run(func(t test.Test){
         // Given
 
         // When
@@ -144,7 +144,7 @@ validator that is tightly integrated with the [`mock`](../mock) framework.
 func TestUnit(t *testing.T) {
     test.Run(func(t test.Test){
         // Given
-        mocks := mock.NewMocks(t).Expect(mock.Setup(
+        mock.NewMocks(t).Expect(mock.Setup(
             test.Errorf("fail"),
             test.Fatalf("fail"),
             test.FailNow(),
