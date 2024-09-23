@@ -37,7 +37,6 @@ type MainParams struct {
 // setting the given additional environment variables (`Env`) to allow
 // modification of the test environment.
 func TestMain(main func()) func(t Test, param MainParams) {
-	errExit := &exec.ExitError{}
 	return func(t Test, param MainParams) {
 		// Switch to execute main function in test process.
 		if name := os.Getenv("TEST"); name != "" {
@@ -57,6 +56,7 @@ func TestMain(main func()) func(t Test, param MainParams) {
 		cmd := exec.Command(os.Args[0], "-test.run="+t.(*Tester).t.Name())
 		cmd.Env = append(append(os.Environ(), "TEST="+t.Name()), param.Env...)
 		if err := cmd.Run(); err != nil || param.ExitCode != 0 {
+			errExit := &exec.ExitError{}
 			if errors.As(err, &errExit) || err != nil {
 				require.Equal(t, param.ExitCode, errExit.ExitCode())
 			} else {
