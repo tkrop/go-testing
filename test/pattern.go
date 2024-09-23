@@ -8,9 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// errExit is an error instance for comparing to the exit code error.
-var errExit = &exec.ExitError{}
-
 // MainParams provides the test parameters for testing a `main`-method.
 type MainParams struct {
 	Args     []string
@@ -40,6 +37,7 @@ type MainParams struct {
 // setting the given additional environment variables (`Env`) to allow
 // modification of the test environment.
 func TestMain(main func()) func(t Test, param MainParams) {
+	errExit := &exec.ExitError{}
 	return func(t Test, param MainParams) {
 		// Switch to execute main function in test process.
 		if name := os.Getenv("TEST"); name != "" {
