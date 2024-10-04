@@ -20,176 +20,172 @@ var (
 	testcomplex = complex(1.0, 1.0)
 	teststring  = "value"
 	testmap     = map[string]string{"value": "value"}
-	teststruct  = ExportParams{Value: "value"}
+	teststruct  = ExportParam{Value: "value"}
 	testarray   = [1]string{"value"}
 	testslice   = []string{"value"}
 )
 
 func FuncTest() {}
 
+type (
+	BoolAlias   bool
+	StringAlias string
+	BoolParam   struct{ value bool }
+	IntParam    struct{ value int }
+	StringParam struct{ value string }
+	ExportParam struct{ Value string }
+	StructParam struct{ value BoolParam }
+)
+
 type FindArgOfParams struct {
 	name   string
-	value  any
+	param  any
 	deflt  any
 	expect any
-}
-
-type BoolParams struct {
-	value bool
-}
-
-type IntParams struct {
-	value int
-}
-
-type StringParams struct {
-	value string
-}
-
-type ExportParams struct {
-	Value string
-}
-
-type StructParams struct {
-	value BoolParams
 }
 
 var testFindArgOfParams = map[string]FindArgOfParams{
 	"no struct": {
 		name:   "value",
-		value:  "string",
+		param:  "string",
 		deflt:  true,
 		expect: true,
 	},
 
+	// Test bool type.
 	"bool value": {
 		name:   "any",
-		value:  true,
+		param:  true,
 		deflt:  false,
 		expect: true,
 	},
-
 	"bool found": {
 		name:   "value",
-		value:  BoolParams{value: true},
+		param:  BoolParam{value: true},
 		deflt:  false,
 		expect: true,
 	},
-
 	"bool fallback": {
 		name:   "fallback",
-		value:  BoolParams{value: true},
+		param:  BoolParam{value: true},
+		deflt:  true,
+		expect: true,
+	},
+	"bool not-found": {
+		name:   "not-found",
+		param:  StringParam{},
 		deflt:  true,
 		expect: true,
 	},
 
-	"bool notfound": {
-		name:   "notfound",
-		value:  StringParams{},
-		deflt:  true,
-		expect: true,
-	},
-
+	// Test int type.
 	"int value": {
 		name:   "any",
-		value:  2,
+		param:  2,
 		deflt:  1,
 		expect: 2,
 	},
-
 	"int found": {
 		name:   "value",
-		value:  IntParams{value: 2},
+		param:  IntParam{value: 2},
 		deflt:  1,
 		expect: 2,
 	},
-
 	"int fallback": {
 		name:   "fallback",
-		value:  IntParams{value: 2},
+		param:  IntParam{value: 2},
 		deflt:  1,
 		expect: 2,
 	},
-
-	"int notfound": {
-		name:   "notfound",
-		value:  StringParams{},
+	"int not-found": {
+		name:   "not-found",
+		param:  StringParam{},
 		deflt:  1,
 		expect: 1,
 	},
 
+	// Test string type.
 	"string value": {
 		name:   "any",
-		value:  "value",
+		param:  "value",
 		deflt:  "default",
 		expect: "value",
 	},
-
 	"string found": {
 		name:   "value",
-		value:  StringParams{value: "value"},
+		param:  StringParam{value: "value"},
 		deflt:  "default",
 		expect: "value",
 	},
-
 	"string fallback": {
 		name:   "fallback",
-		value:  StringParams{value: "fallback"},
+		param:  StringParam{value: "fallback"},
 		deflt:  "default",
 		expect: "fallback",
 	},
-
-	"string notfound": {
-		name:   "notfound",
-		value:  BoolParams{},
+	"string not-found": {
+		name:   "not-found",
+		param:  BoolParam{},
 		deflt:  "default",
 		expect: "default",
 	},
 
+	// Test exported field.
 	"export found": {
 		name:   "value",
-		value:  ExportParams{Value: "value"},
+		param:  ExportParam{Value: "value"},
 		deflt:  "default",
 		expect: "value",
 	},
-
 	"export fallback": {
 		name:   "fallback",
-		value:  ExportParams{Value: "fallback"},
+		param:  ExportParam{Value: "fallback"},
 		deflt:  "default",
 		expect: "fallback",
 	},
-
-	"export notfound": {
+	"export not-found": {
 		name:   "notfound",
-		value:  BoolParams{},
+		param:  BoolParam{},
 		deflt:  "default",
 		expect: "default",
 	},
 
+	// Test struct type.
 	"struct found": {
 		name: "value",
-		value: StructParams{
-			value: BoolParams{value: true},
+		param: StructParam{
+			value: BoolParam{value: true},
 		},
-		deflt:  BoolParams{value: false},
-		expect: BoolParams{value: true},
+		deflt:  BoolParam{value: false},
+		expect: BoolParam{value: true},
 	},
-
 	"struct fallback": {
 		name: "fallback",
-		value: StructParams{
-			value: BoolParams{value: true},
+		param: StructParam{
+			value: BoolParam{value: true},
 		},
-		deflt:  BoolParams{value: false},
-		expect: BoolParams{value: true},
+		deflt:  BoolParam{value: false},
+		expect: BoolParam{value: true},
+	},
+	"struct not-found": {
+		name:   "not-found",
+		param:  StringParam{},
+		deflt:  BoolParam{value: false},
+		expect: BoolParam{value: false},
 	},
 
-	"struct notfound": {
-		name:   "notfound",
-		value:  StringParams{},
-		deflt:  BoolParams{value: false},
-		expect: BoolParams{value: false},
+	// Test alias type - not working as intended.
+	"alias string": {
+		name:   "value",
+		param:  StringParam{value: "value"},
+		deflt:  StringAlias("default"),
+		expect: string("value"),
+	},
+	"alias bool": {
+		name:   "value",
+		param:  BoolParam{value: true},
+		deflt:  BoolAlias(false),
+		expect: bool(true),
 	},
 }
 
@@ -197,7 +193,7 @@ func TestFindArgOf(t *testing.T) {
 	test.Map(t, testFindArgOfParams).
 		Run(func(t test.Test, param FindArgOfParams) {
 			// When
-			value := reflect.FindArgOf(param.value, param.deflt, param.name)
+			value := reflect.FindArgOf(param.param, param.deflt, param.name)
 
 			// Then
 			assert.Equal(t, param.expect, value)
@@ -491,24 +487,24 @@ var testValuesInParams = map[string]ValuesParams{
 	},
 
 	"match": {
-		call:       func(bool, int, string, ExportParams) {},
+		call:       func(bool, int, string, ExportParam) {},
 		args:       []any{true, 1, "value", teststruct},
 		expectArgs: []any{true, 1, "value", teststruct},
 		expect:     test.Success,
 	},
 	"match-var": {
-		call:       func(bool, int, string, ExportParams, ...any) {},
+		call:       func(bool, int, string, ExportParam, ...any) {},
 		args:       []any{true, 1, "value", teststruct},
 		expectArgs: []any{true, 1, "value", teststruct},
 		expect:     test.Success,
 	},
 	"match-var-less": {
 		setup: test.Panic("not enough arguments"),
-		call:  func(bool, int, string, ExportParams) {},
+		call:  func(bool, int, string, ExportParam) {},
 		args:  []any{true, 1, "value"},
 	},
 	"match-var-more": {
-		call:       func(bool, int, string, ExportParams, ...any) {},
+		call:       func(bool, int, string, ExportParam, ...any) {},
 		args:       []any{true, 1, "value", teststruct, true, 1, "value"},
 		expectArgs: []any{true, 1, "value", teststruct, true, 1, "value"},
 		expect:     test.Success,
@@ -579,7 +575,7 @@ var testValuesOutParams = map[string]ValuesParams{
 	},
 
 	"match": {
-		call: func() (bool, int, string, ExportParams) {
+		call: func() (bool, int, string, ExportParam) {
 			return true, 1, "value", teststruct
 		},
 		args:       []any{true, 1, "value", teststruct},
@@ -588,14 +584,14 @@ var testValuesOutParams = map[string]ValuesParams{
 	},
 	"match-less": {
 		setup: test.Panic("not enough arguments"),
-		call: func() (bool, int, string, ExportParams) {
+		call: func() (bool, int, string, ExportParam) {
 			return true, 1, "value", teststruct
 		},
 		args: []any{true, 1, "value"},
 	},
 	"match-more": {
 		setup: test.Panic("too many arguments"),
-		call: func() (bool, int, string, ExportParams) {
+		call: func() (bool, int, string, ExportParam) {
 			return true, 1, "value", teststruct
 		},
 		args: []any{true, 1, "value", teststruct, nil},
@@ -603,7 +599,7 @@ var testValuesOutParams = map[string]ValuesParams{
 
 	"lenient": {
 		lenient: true,
-		call: func() (bool, int, string, ExportParams) {
+		call: func() (bool, int, string, ExportParam) {
 			return true, 1, "value", teststruct
 		},
 		args:       []any{true, 1, "value", teststruct},
@@ -612,16 +608,16 @@ var testValuesOutParams = map[string]ValuesParams{
 	},
 	"lenient-less": {
 		lenient: true,
-		call: func() (bool, int, string, ExportParams) {
+		call: func() (bool, int, string, ExportParam) {
 			return true, 1, "value", teststruct
 		},
 		args:       []any{true, 1, "value"},
-		expectArgs: []any{true, 1, "value", ExportParams{}},
+		expectArgs: []any{true, 1, "value", ExportParam{}},
 		expect:     test.Success,
 	},
 	"lenient-more": {
 		lenient: true,
-		call: func() (bool, int, string, ExportParams) {
+		call: func() (bool, int, string, ExportParam) {
 			return true, 1, "value", teststruct
 		},
 		args:       []any{true, 1, "value", teststruct, "string"},

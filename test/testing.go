@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	gosync "sync"
 	"sync/atomic"
@@ -33,8 +35,8 @@ const (
 	// Failure used to express that a test is supposed to fail.
 	Failure Expect = false
 
-	// unknownName default unknown test case name.
-	unknownName Name = "unknown"
+	// unknown default unknown test case name.
+	unknown Name = "unknown"
 
 	// Flag to run test by default sequential instead of parallel.
 	Parallel = true
@@ -74,6 +76,36 @@ const (
 // 	}
 // 	return result
 // }
+
+// TestName returns the normalized test case name for the given name and given
+// parameter set. If the name is empty, the name is resolved from the parameter
+// set using the `name` parameter. The resolved name is normalized before being
+// returned.
+func TestName[P any](name string, param P) string {
+	if name != "" {
+		return strings.ReplaceAll(name, " ", "-")
+		// TODO: replace reflect.FindArgOf with Find - needs better structs support!
+		// } else if name := Find(param, unknown, "name"); name != "" {
+		// 	return strings.ReplaceAll(string(name), " ", "-")
+	}
+	found := reflect.FindArgOf(param, unknown, "name")
+	if name, ok := found.(Name); ok && name != "" {
+		return strings.ReplaceAll(string(name), " ", "-")
+	}
+	return string(unknown)
+}
+
+// TestExpect resolves the test case expectation from the parameter set. If no
+// expectation is found, the default expectation `Success` is returned.
+func TestExpect[P any](param P) Expect {
+	// TODO: replace reflect.FindArgOf with Find - needs better struct support!
+	// return Find(param, Success, "expect")
+	expect := reflect.FindArgOf(param, Success, "expect")
+	if expect, ok := expect.(Expect); ok {
+		return expect
+	}
+	return Success
+}
 
 // Reporter is a minimal interface for abstracting test report methods that are
 // needed to setup an isolated test environment for GoMock and Testify.
@@ -350,8 +382,7 @@ func (t *Tester) recoverParallel() {
 	//revive:disable-next-line:defer // only used inside a deferred call.
 	if v := recover(); v != nil &&
 		v != "testing: t.Parallel called multiple times" {
-		// TODO: t.Panic(v)
-		panic(v)
+		t.Panic(v)
 	}
 }
 
@@ -365,19 +396,35 @@ func (t *Tester) unlock() {
 
 // Runner is a generic test runner interface.
 type Runner[P any] interface {
-	// Cleanup register a function to be called for cleanup after all tests
-	// have been finished.
-	Cleanup(call func())
-	// Run runs the test parameter sets (by default) parallel.
+	// Filter sets up a filter for the test cases using the given pattern and
+	// match flag. The pattern is a regular expression that is matched against
+	// the test case name. The match flag is used to include or exclude the
+	// test cases that match the pattern.
+	Filter(pattern string, match bool) Runner[P]
+	// Run runs all test parameter sets in parallel. If the test parameter sets
+	// are provided as a map, the test case name is used as the test name. If
+	// the test parameter sets are provided as a slice, the test case name is
+	// created by appending the index to the test name. If the test parameter
+	// sets are provided as a single parameter set, the test case name is used
+	// as the test name. The test case name is normalized before being used.
 	Run(call func(t Test, param P)) Runner[P]
-	// RunSeq runs the test parameter sets in a sequence.
+	// RunSeq runs the test parameter sets in a sequence. If the test parameter
+	// sets are provided as a map, the test case name is used as the test name.
+	// If the test parameter sets are provided as a slice, the test case name is
+	// created by appending the index to the test name. If the test parameter
+	// sets are provided as a single parameter set, the test case name is used
+	// as the test name. The test case name is normalized before being used.
 	RunSeq(call func(t Test, param P)) Runner[P]
+	// Cleanup register a function to be called to cleanup after all tests have
+	// finished to remove the shared resources.
+	Cleanup(call func())
 }
 
 // runner is a generic parameterized test runner struct.
 type runner[P any] struct {
 	t      *testing.T
 	wg     sync.WaitGroup
+	filter func(string) bool
 	params any
 }
 
@@ -412,14 +459,18 @@ func Slice[P any](t *testing.T, params []P) Runner[P] {
 	return New[P](t, params)
 }
 
-// Cleanup register a function to be called for cleanup after all tests have
-// been finished.
-func (r *runner[P]) Cleanup(call func()) {
-	r.t.Cleanup(func() {
-		r.t.Helper()
-		r.wg.Wait()
-		call()
-	})
+// Filter filters the test cases by the given pattern and match flag. The
+// pattern is a regular expression that is matched against the test case name.
+// The match flag is used to include or exclude the test cases that match the
+// pattern.
+func (r *runner[P]) Filter(
+	pattern string, match bool,
+) Runner[P] {
+	regexp := regexp.MustCompile(pattern)
+	r.filter = func(name string) bool {
+		return regexp.MatchString(name) == match
+	}
+	return r
 }
 
 // Run runs the test parameter sets (by default) parallel.
@@ -432,7 +483,17 @@ func (r *runner[P]) RunSeq(call func(t Test, param P)) Runner[P] {
 	return r.run(call, !Parallel)
 }
 
-// parallel ensures that the test runner runs the test parameter sets in
+// Cleanup register a function to be called for cleanup after all tests have
+// been finished.
+func (r *runner[P]) Cleanup(call func()) {
+	r.t.Cleanup(func() {
+		r.t.Helper()
+		r.wg.Wait()
+		call()
+	})
+}
+
+// Parallel ensures that the test runner runs the test parameter sets in
 // parallel.
 func (r *runner[P]) parallel(parallel bool) {
 	if parallel {
@@ -441,7 +502,7 @@ func (r *runner[P]) parallel(parallel bool) {
 	}
 }
 
-// recoverParallel recovers from panics when calling `t.Parallel()` multiple
+// RecoverParallel recovers from panics when calling `t.Parallel()` multiple
 // times.
 func (*runner[P]) recoverParallel() {
 	//revive:disable-next-line:defer // only used inside a deferred call.
@@ -458,42 +519,49 @@ func (r *runner[P]) run(
 	switch params := r.params.(type) {
 	case map[string]P:
 		r.parallel(parallel)
-		r.wg.Add(len(params))
-
 		for name, param := range params {
-			name, param := name, param
+			name := TestName(name, param)
+			if r.filter != nil && !r.filter(name) {
+				continue
+			}
+			r.wg.Add(1)
 			r.t.Run(name, r.wrap(name, param, call, parallel))
 		}
 
 	case []P:
 		r.parallel(parallel)
-		r.wg.Add(len(params))
-
 		for index, param := range params {
-			index, param := index, param
-			name := fmt.Sprintf("%s[%d]", r.name(param), index)
+			name := TestName("", param) + "[" + strconv.Itoa(index) + "]"
+			if r.filter != nil && !r.filter(name) {
+				continue
+			}
+			r.wg.Add(1)
 			r.t.Run(name, r.wrap(name, param, call, parallel))
 		}
-	case P:
-		r.wg.Add(1)
 
-		name := string(r.name(params))
-		if name != string(unknownName) {
+	case P:
+		name := TestName("", params)
+		if r.filter != nil && !r.filter(name) {
+			return r
+		}
+		r.wg.Add(1)
+		if name != string(unknown) {
 			r.t.Run(name, r.wrap(name, params, call, parallel))
 		} else {
 			r.wrap(name, params, call, parallel)(r.t)
 		}
+
 	default:
 		panic(NewErrUnknownParameterType(r.params))
 	}
 	return r
 }
 
-// wrap creates the test wrapper method executing the test.
+// Wrap creates the test wrapper method executing the test.
 func (r *runner[P]) wrap(
 	name string, param P, call func(t Test, param P), parallel bool,
 ) func(*testing.T) {
-	return run(r.expect(param), func(t Test) {
+	return run(TestExpect(param), func(t Test) {
 		t.Helper()
 
 		// Helpful for debugging to see the test case.
@@ -502,23 +570,6 @@ func (r *runner[P]) wrap(
 		defer r.wg.Done()
 		call(t, param)
 	}, parallel)
-}
-
-// name resolves the test case name from the parameter set.
-func (*runner[P]) name(param P) Name {
-	name, ok := reflect.FindArgOf(param, unknownName, "name").(Name)
-	if ok && name != "" {
-		return name
-	}
-	return unknownName
-}
-
-// expect resolves the test case expectation from the parameter set.
-func (*runner[P]) expect(param P) Expect {
-	if expect, ok := reflect.FindArgOf(param, Success, "expect").(Expect); ok {
-		return expect
-	}
-	return Success
 }
 
 // Run creates an isolated (by default) parallel test environment running the
@@ -557,13 +608,11 @@ func InRun(expect Expect, test func(Test)) func(Test) {
 	}
 }
 
-var ( //nolint:gofumpt // requires documentation changing.
-	// Error type for unknown parameter types.
-	ErrUnkownParameterType = errors.New("unknown parameter type")
-)
+// ErrUnknownParameterType is an error for unknown parameter types.
+var ErrUnknownParameterType = errors.New("unknown parameter type")
 
 // NewErrUnknownParameterType creates a new unknown parameter type error.
 func NewErrUnknownParameterType(value any) error {
 	return fmt.Errorf("%w [type: %v]",
-		ErrUnkownParameterType, reflect.ValueOf(value).Type())
+		ErrUnknownParameterType, reflect.ValueOf(value).Type())
 }

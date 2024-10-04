@@ -175,7 +175,7 @@ func (loader *CachedLoader) byPath(path string) *PkgResponse {
 // file path targeting a directory. If the path is relative or targeting a
 // file, the package is resolved but will not provide the package repository
 // path nor the standardized package name by default. The method compensates
-// this partially be calculating default package names on a best effort basis.
+// this partially by calculating default package names on a best effort basis.
 func (loader *CachedLoader) load(path string) *PkgResponse {
 	pkgs, err := packages.Load(loader.Config, path)
 	if err != nil {

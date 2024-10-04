@@ -217,6 +217,19 @@ func (parser *Parser) argTypeGuess(arg string) (argType, string) {
 		}
 	}
 
+	// TODO: Reconsider the early failure handling approach here.
+	//
+	// This early failure handing may not be necessary and undesired. It has
+	// the drawback to prevents generating mocks for broken code, as well as
+	// for partially loaded packages defined by incomplete sets of files.
+	//
+	// It looks not to complicated to drop the early failure handling and
+	// change the four effected tests. The alternative solution to drop support
+	// for partial package loading via single file loading or automatically
+	// load the whole package is not very desirable and complicates code.
+	//
+	// pkgs, _ := parser.loader.Load(arg).Get()
+	// if len(pkgs) > 0 {
 	pkgs, err := parser.loader.Load(arg).Get()
 	if len(pkgs) > 0 && err == nil {
 		if pkgs[0].PkgPath == ReadFromFile {
