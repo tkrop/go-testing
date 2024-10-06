@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	. "github.com/tkrop/go-testing/internal/mock"
 	"github.com/tkrop/go-testing/test"
 )
@@ -23,18 +22,6 @@ type ParseParams struct {
 	args        []string
 	expectMocks []*Mock
 	expectError []error
-}
-
-func testParse(t test.Test, param ParseParams) {
-	// Given
-	parser := NewParser(param.loader, param.target)
-
-	// When
-	mocks, errs := parser.Parse(param.args...)
-
-	// Then
-	assert.Equal(t, param.expectError, errs)
-	assert.Equal(t, param.expectMocks, mocks)
 }
 
 var testParseParams = map[string]ParseParams{
@@ -480,12 +467,6 @@ var testParseParams = map[string]ParseParams{
 	},
 }
 
-// var testParseXParams = map[string]ParseParams{}
-
-func TestParseMain(t *testing.T) {
-	test.Map(t, testParseParams).Run(testParse)
-}
-
 var testParseAddParams = map[string]ParseParams{
 	"package test": {
 		loader: loaderMock,
@@ -571,6 +552,25 @@ var testParseAddParams = map[string]ParseParams{
 	},
 }
 
+func testParse(t test.Test, param ParseParams) {
+	// Given
+	parser := NewParser(param.loader, param.target)
+
+	// When
+	mocks, errs := parser.Parse(param.args...)
+
+	// Then
+	assert.Equal(t, param.expectError, errs)
+	assert.Equal(t, param.expectMocks, mocks)
+}
+
+func TestParseMain(t *testing.T) {
+	test.Map(t, testParseParams).Run(testParse)
+}
+
 func TestParseAdd(t *testing.T) {
-	test.Map(t, testParseAddParams).Run(testParse)
+	test.Map(t, testParseAddParams).
+		// TODO: removed when Find feature migration implemented.
+		// Filter("package-test-file", true).
+		Run(testParse)
 }

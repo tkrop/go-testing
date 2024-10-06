@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"unsafe"
 )
 
@@ -34,7 +35,10 @@ var (
 
 // FindArgOf find the first argument with one of the given field names matching
 // the type matching the default argument type.
-func FindArgOf[P any](param P, deflt any, names ...string) any {
+//
+// TODO: This function does not belong here and is tested insufficiently.
+// TODO: This function may fail on pointer types.
+func FindArgOf(param any, deflt any, names ...string) any {
 	t := reflect.TypeOf(param)
 	dt := reflect.TypeOf(deflt)
 	if t.Kind() != reflect.Struct {
@@ -50,10 +54,8 @@ func FindArgOf[P any](param P, deflt any, names ...string) any {
 	for i := 0; i < t.NumField(); i++ {
 		fv := v.Field(i)
 		if fv.Type().Kind() == dt.Kind() {
-			for _, name := range names {
-				if t.Field(i).Name == name {
-					return FieldArgOf(v, i)
-				}
+			if slices.Contains(names, t.Field(i).Name) {
+				return FieldArgOf(v, i)
 			}
 			if !found {
 				deflt = FieldArgOf(v, i)
@@ -65,6 +67,8 @@ func FindArgOf[P any](param P, deflt any, names ...string) any {
 }
 
 // FieldArgOf returns the argument of the `i`th field of the given value.
+//
+// TODO: This function does not belong here and is tested insufficiently.
 func FieldArgOf(v reflect.Value, i int) any {
 	vf := v.Field(i)
 	if vf.CanInterface() {
@@ -80,7 +84,7 @@ func FieldArgOf(v reflect.Value, i int) any {
 	// #nosec G103 G115 -- is necessary.
 	rf := reflect.NewAt(vf.Type(),
 		unsafe.Pointer(vf.UnsafeAddr())).Elem()
-
+	// Create a new variable of the type P.
 	var value any
 	reflect.ValueOf(&value).Elem().Set(rf)
 	return value

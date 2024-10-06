@@ -52,7 +52,7 @@ var testPermTestParams = perm.ExpectMap{
 
 func TestPermTest(t *testing.T) {
 	test.Map(t, testPermTestParams.Remain(test.Failure)).
-		Run(func(t test.Test, expect test.Expect) {
+		RunSeq(func(t test.Test, expect test.Expect) {
 			// Given
 			name := strings.Split(t.Name(), "/")[1]
 			perm := strings.Split(name, "-")

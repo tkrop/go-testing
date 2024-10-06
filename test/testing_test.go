@@ -2,11 +2,12 @@ package test_test
 
 import (
 	"os"
+	"regexp"
+	"strings"
 	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/tkrop/go-testing/internal/sync"
 
@@ -22,7 +23,32 @@ type TestParam struct {
 	consumed bool
 }
 
-var testParams = map[string]TestParam{
+type TestParamMap map[string]TestParam
+
+func (m TestParamMap) FilterBy(pattern string) TestParamMap {
+	filter := regexp.MustCompile(pattern)
+	params := TestParamMap{}
+	for key, value := range m {
+		if filter.MatchString(key) {
+			params[key] = value
+		}
+	}
+	return params
+}
+
+func (m TestParamMap) GetSlice() []TestParam {
+	params := make([]TestParam, 0, len(m))
+	for name, param := range m {
+		params = append(params, TestParam{
+			name:   test.Name(name),
+			test:   param.test,
+			expect: param.expect,
+		})
+	}
+	return params
+}
+
+var testParams = TestParamMap{
 	"base nothing": {
 		test:   func(test.Test) {},
 		expect: test.Success,
@@ -156,7 +182,7 @@ func TestNewRun(t *testing.T) {
 		defer func() { finished = true }()
 		testFailures(t, param)
 	}).Cleanup(func() {
-		require.True(t, finished)
+		assert.True(t, finished)
 	})
 }
 
@@ -172,7 +198,7 @@ func TestNewRunSeq(t *testing.T) {
 			defer func() { finished = true }()
 			testFailures(t, param)
 		}).Cleanup(func() {
-			require.True(t, finished)
+			assert.True(t, finished)
 		})
 	}
 }
@@ -182,15 +208,17 @@ func TestNewRunNamed(t *testing.T) {
 
 	for name, param := range testParams {
 		finished := false
+		tname := t.Name() + "/" + test.TestName(name, param)
 		test.New[TestParam](t, TestParam{
 			name:   test.Name(name),
 			test:   param.test,
 			expect: param.expect,
 		}).Run(func(t test.Test, param TestParam) {
 			defer func() { finished = true }()
+			assert.Equal(t, tname, t.Name())
 			testFailures(t, param)
 		}).Cleanup(func() {
-			require.True(t, finished)
+			assert.True(t, finished, tname)
 		})
 	}
 }
@@ -200,20 +228,45 @@ func TestNewRunSeqNamed(t *testing.T) {
 
 	for name, param := range testParams {
 		finished := false
+		tname := t.Name() + "/" + test.TestName(name, param)
 		test.New[TestParam](t, TestParam{
 			name:   test.Name(name),
 			test:   param.test,
 			expect: param.expect,
 		}).RunSeq(func(t test.Test, param TestParam) {
 			defer func() { finished = true }()
+			assert.Equal(t, tname, t.Name())
 			testFailures(t, param)
 		}).Cleanup(func() {
-			require.True(t, finished)
+			assert.True(t, finished, tname)
 		})
 	}
 }
 
-func TestMap(t *testing.T) {
+func TestNewRunFiltered(t *testing.T) {
+	t.Parallel()
+
+	for name, param := range testParams {
+		pattern, finished := "base", false
+		tname := t.Name() + "/" + test.TestName(name, param)
+		test.New[TestParam](t, TestParam{
+			name:   test.Name(name),
+			test:   param.test,
+			expect: param.expect,
+		}).Filter(pattern, true).Run(func(t test.Test, param TestParam) {
+			defer func() { finished = true }()
+			assert.Equal(t, tname, t.Name())
+			assert.Contains(t, t.Name(), pattern)
+			testFailures(t, param)
+		}).Cleanup(func() {
+			if strings.Contains(tname, pattern) {
+				assert.True(t, finished, tname)
+			}
+		})
+	}
+}
+
+func TestMapRun(t *testing.T) {
 	count := atomic.Int32{}
 
 	test.Map(t, testParams).
@@ -222,29 +275,50 @@ func TestMap(t *testing.T) {
 			testFailures(t, param)
 		}).
 		Cleanup(func() {
-			require.Equal(t, len(testParams), int(count.Load()))
+			assert.Equal(t, len(testParams), int(count.Load()))
 		})
 }
 
-func TestSlice(t *testing.T) {
+func TestMapRunFiltered(t *testing.T) {
+	pattern, count := "base", atomic.Int32{}
+	expect := testParams.FilterBy(pattern)
+
+	test.Map(t, testParams).Filter(pattern, true).
+		Run(func(t test.Test, param TestParam) {
+			defer count.Add(1)
+			assert.Contains(t, t.Name(), pattern)
+			testFailures(t, param)
+		}).
+		Cleanup(func() {
+			assert.Equal(t, len(expect), int(count.Load()))
+		})
+}
+
+func TestSliceRun(t *testing.T) {
 	count := atomic.Int32{}
 
-	params := make([]TestParam, 0, len(testParams))
-	for name, param := range testParams {
-		params = append(params, TestParam{
-			name:   test.Name(name),
-			test:   param.test,
-			expect: param.expect,
-		})
-	}
-
-	test.Slice(t, params).
+	test.Slice(t, testParams.GetSlice()).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
 			testFailures(t, param)
 		}).
 		Cleanup(func() {
-			require.Equal(t, len(testParams), int(count.Load()))
+			assert.Equal(t, len(testParams), int(count.Load()))
+		})
+}
+
+func TestSliceRunFiltered(t *testing.T) {
+	pattern, count := "inrun", atomic.Int32{}
+	expect := testParams.FilterBy(pattern)
+
+	test.Slice(t, testParams.GetSlice()).Filter(pattern, true).
+		Run(func(t test.Test, param TestParam) {
+			defer count.Add(1)
+			assert.Contains(t, t.Name(), pattern)
+			testFailures(t, param)
+		}).
+		Cleanup(func() {
+			assert.Equal(t, len(expect), int(count.Load()))
 		})
 }
 

@@ -44,12 +44,15 @@ started by `Run` that accepts a simple test function as input, using a
 ```go
 func TestUnit(t *testing.T) {
     test.New|Slice|Map(t, testParams).
-        Run(func(t test.Test, param UnitParams){
+        /* Filter("test-case-name", false|true). */
+        Run|RunSeq(func(t test.Test, param UnitParams){
             // Given
 
             // When
 
             // Then
+        }).Cleanup(func(){
+            // clean test resources
         })
 }
 ```
@@ -65,7 +68,13 @@ default value `unknown-%d`) or as key using a test case name to parameter set
 mapping.
 
 **Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
-for more information on requirements in parallel parameterized tests.
+for more information on requirements in parallel parameterized tests. If
+parallel parameterized test are undesired, `RunSeq` can be used to enforce a
+sequential test execution.
+
+It is also possible to select a subset of tests for execution by setting up a
+`Filter` using a regular expression to match or filter by the normalized test
+name.
 
 
 ## Isolated in-test environment setup
@@ -76,7 +85,7 @@ test function that is run in isolation.
 ```go
 func TestUnit(t *testing.T) {
     test.Map(t, testParams).
-        Run(func(t test.Test, param UnitParams){
+        Run|RunSeq(func(t test.Test, param UnitParams){
             // Given
 
             // When
@@ -173,7 +182,7 @@ source of the panic, you need to spawn a new unrecovered go-routine.
 hard to recreate. Do not try it.
 
 
-## Out-of-the-box test pattners
+## Out-of-the-box test patterns
 
 Currently, the package supports the following _out-of-the-box_ test pattern for
 testing of `main`-methods of commands.
