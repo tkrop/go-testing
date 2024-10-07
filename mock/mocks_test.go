@@ -164,7 +164,7 @@ var testMockParams = map[string]MockParams{
 
 func TestMocks(t *testing.T) {
 	test.Map(t, testMockParams).
-		RunSeq(func(t test.Test, param MockParams) {
+		Run(func(t test.Test, param MockParams) {
 			// Given
 			mocks := mock.NewMocks(t)
 

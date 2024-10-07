@@ -922,7 +922,7 @@ func TestFind(t *testing.T) {
 	test.Map(t, testFindParams).
 		// TODO: advance find to support basic structs.
 		Filter("^struct", false).
-		RunSeq(func(t test.Test, param testFindParam) {
+		Run(func(t test.Test, param testFindParam) {
 			// When
 			expect := test.Find(param.param, param.deflt, param.names...)
 
