@@ -125,6 +125,9 @@ func (parser *Parser) Parse(args ...string) ([]*Mock, []error) {
 // value and returns the argument type with the remaining argument value.
 func (parser *Parser) argType(arg string) (argType, string) {
 	if strings.Index(arg, "--") == 0 {
+		if !strings.Contains(arg, "=") {
+			return argTypeUnknown, arg
+		}
 		return parser.argTypeParse(arg)
 	}
 	return parser.argTypeGuess(arg)
@@ -217,26 +220,14 @@ func (parser *Parser) argTypeGuess(arg string) (argType, string) {
 		}
 	}
 
-	// TODO: Reconsider the early failure handling approach here.
-	//
-	// This early failure handing may not be necessary and undesired. It has
-	// the drawback to prevents generating mocks for broken code, as well as
-	// for partially loaded packages defined by incomplete sets of files.
-	//
-	// It looks not to complicated to drop the early failure handling and
-	// change the four effected tests. The alternative solution to drop support
-	// for partial package loading via single file loading or automatically
-	// load the whole package is not very desirable and complicates code.
-	//
-	// pkgs, _ := parser.loader.Load(arg).Get()
-	// if len(pkgs) > 0 {
-	pkgs, err := parser.loader.Load(arg).Get()
-	if len(pkgs) > 0 && err == nil {
+	pkgs, _ := parser.loader.Load(arg).Get()
+	if len(pkgs) > 0 {
 		if pkgs[0].PkgPath == ReadFromFile {
 			return argTypeSourceFile, arg
 		}
 		return argTypeSourcePath, arg
 	}
+	// #no-cover: impossible to reach this code?
 	return argTypeNotFound, arg
 }
 
@@ -270,7 +261,7 @@ func (state *ParseState) ensureSource() *ParseState {
 // interfaces in the source package.
 func (state *ParseState) ensureIFace(pos int) {
 	if state.source.IsPartial() {
-		state.creatMocks(pos, "")
+		state.creatMocks(pos, ".")
 	}
 }
 
@@ -282,7 +273,7 @@ func (state *ParseState) ensureState(arg string) {
 	state.source.Update(state.loader)
 	state.target.Update(state.loader)
 
-	if arg == "" {
+	if arg == "." {
 		state.source.Name = MatchPatternDefault
 		state.target.Name = MockPatternDefault
 		return

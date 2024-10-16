@@ -52,10 +52,10 @@ writing effective unit, component, and integration tests in [`go`][go].
 
 To accomplish this, the `testing` framework provides a couple of extensions for
 to standard [`testing`][testing] package of [`go`][go] that support a simple
-setup of [`gomock`][gomock] and [`gock`][gock] in isolated, parallel, and
-parameterized tests using a common pattern to setup with strong validation of
-mock request and response that work under various failure scenarios and even in
-the presense of [`go`-routines][go-routines].
+setup of test cases using [`gomock`][gomock] and [`gock`][gock] in isolated,
+parallel, and parameterized tests using a common pattern with strong validation
+of mock request and response that work under various failure scenarios and even
+in the presence of spawned [`go`-routines][go-routines].
 
 [go-routines]: <https://go.dev/tour/concurrency>
 
@@ -90,6 +90,7 @@ var testUnitParams = map[string]UnitParams {
 
 func TestUnit(t *testing.T) {
     test.Map(t, testParams).
+        Timeout(50 * time.Millisecond)
         Run(func(t test.Test, param UnitParams){
 
         // Given
@@ -124,11 +125,10 @@ way. For variations have a closer look at the [test](test) package.
 
 ### Why parameterized test?
 
-Parameterized test are an efficient way to setup a high number of related test
-cases cover the system under test in a black box mode from feature perspective.
-With the right tools and concepts - as provided by this `testing` framework,
-parameterized test allow to cover all success and failure paths of a system
-under test as outlined above.
+Parameterized test are an effective way to set up a systematic set of test
+cases covering a system under test in a black box mode. With the right tools
+and concepts — as provided by this `testing` framework, parameterized test
+allow to cover all success and failure paths of a system under test.
 
 
 ### Why parallel tests?
@@ -142,7 +142,7 @@ effort needed to write parallel tests.
 
 ### Why isolation of tests?
 
-Test isolation is a precondition to have stable running test - especially run
+Test isolation is a precondition to have stable running test — especially run
 in parallel. Isolation must happen from input perspective, i.e. the outcome of
 a test must not be affected by any previous running test, but also from output
 perspective, i.e. it must not affect any later running test. This is often
@@ -155,36 +155,38 @@ tests](#requirements-for-parallel-isolated-tests).
 
 Test are only meaningful, if they validate ensure pre-conditions and validate
 post-conditions sufficiently strict. Without validation test cannot ensure that
-the system under test behaves as expected - even with 100% code and branch
+the system under test behaves as expected — even with 100% code and branch
 coverage. As a consequence, a system may fail in unexpected ways in production.
 
-Thus it is advised to validate mock input parameters for mocked requests and
-to carefully define the order of mock requests and responses. The
-[`mock`](mock) framework makes this approach as simple as possible, but it is
-still the responsibility of the developer to setup the validation correctly.
+Thus, it is advised to validate input parameters for mocked requests and to
+carefully define the order of mock requests and responses. The [`mock`](mock)
+framework makes this approach as simple as possible, but it is still the
+responsibility of the test developer to set up the validation correctly.
 
 
 ## Framework structure
 
 The `testing` framework consists of the following sub-packages:
 
-* [`test`](test) provides a small framework to simply isolate the test execution
-  and safely check whether a test fails or succeeds as expected in coordination
-  with the [`mock`](mock) package - even in if a system under test spans
-  detached [`go`-routines][go-routines].
+* [`test`](test) provides a small framework to isolate the test execution and
+  safely check whether a test fails or succeeds as expected in combination with
+  the [`mock`](mock) package — even in if a system under test spans detached
+  [`go`-routines][go-routines].
 
-* [`mock`](mock) provides the means to setup a simple chain or a complex network
-  of expected mock calls with minimal effort. This makes it easy to extend the
-  usual narrow range of mocking to larger components using a unified pattern.
+* [`mock`](mock) provides the means to set up a simple chain as well as a
+  complex network of expected mock calls with minimal effort. This makes it
+  easy to extend the usual narrow range of mocking to larger components using
+  a unified test pattern.
 
-* [`gock`](gock) provides a drop-in extension for [Gock][gock] consisting of a
-  controller and a mock storage that allows to run tests isolated. This allows
-  to parallelize simple test and parameterized tests.
+* [`gock`](gock) provides a drop-in extension for the [Gock][gock] package
+  consisting of a controller and a mock storage that allows running tests
+  isolated. This allows parallelizing simple test as well as parameterized
+  tests.
 
 * [`perm`](perm) provides a small framework to simplify permutation tests, i.e.
   a consistent test set where conditions can be checked in all known orders
-  with different outcome. This is very handy in combination with [`test`](test)
-  to validated the [`mock`](mock) framework, but may be useful in other cases
+  with different outcome. This was very handy in combination with [`test`](test)
+  for validating the [`mock`](mock) framework, but may be useful in other cases
   too.
 
 Please see the documentation of the sub-packages for more details.
@@ -192,21 +194,21 @@ Please see the documentation of the sub-packages for more details.
 
 ## Requirements for parallel isolated tests
 
-Running tests in parallel not only makes test faster, but also helps to detect
-race conditions that else randomly appear in production  when running tests
+Running tests in parallel makes test not only faster, but also helps to detect
+race conditions that else randomly appear in production, when running tests
 with `go test -race`.
 
 **Note:** there are some general requirements for running test in parallel:
 
-1. Tests *must not modify* environment variables dynamically - utilize test
+1. Tests *must not modify* environment variables dynamically — utilize test
    specific configuration instead.
-2. Tests *must not require* reserved service ports and open listeners - setup
+2. Tests *must not require* reserved service ports and open listeners — setup
    services to acquire dynamic ports instead.
 3. Tests *must not share* files, folder and pipelines, e.g. `stdin`, `stdout`,
-   or `stderr` - implement logic by using wrappers that can be redirected and
+   or `stderr` — implement logic by using wrappers that can be redirected and
    mocked.
 4. Tests *must not share* database schemas or tables, that are updated during
-   execution of parallel tests - implement test to setup test specific database
+   execution of parallel tests — implement test to set up test specific database
    schemas.
 5. Tests *must not share* process resources, that are update during execution
    of parallel tests. Many frameworks make use of common global resources that
@@ -215,17 +217,17 @@ with `go test -race`.
 Examples for such shared resources in common frameworks are:
 
 * Using of [monkey patching][monkey] to modify commonly used global functions,
-  e.g. `time.Now()` - implement access to these global functions using lambdas
+  e.g. `time.Now()` — implement access to these global functions using lambdas
   and interfaces to allow for mocking.
-* Using of [`gock`][gock] to mock HTTP responses on transport level - make use
+* Using of [`gock`][gock] to mock HTTP responses on transport level — make use
   of the [`gock`](gock)-controller provided by this framework.
 * Using the [Gin][gin] HTTP web framework which uses a common `json`-parser
   setup instead of a service specific configuration. While this is not a huge
-  deal, the repeated global setup creates race alerts. Instead use [`chi`][chi]
-  that supports a service specific configuration.
+  deal, the repeated global setup creates race alerts. Instead, use
+  [`chi`][chi] that supports a service specific configuration.
 
-With a careful design the general pattern provided above can be used to support
-parallel test execution.
+With a careful system design, the general pattern provided above can be used
+to create parallel test for a wide range of situations.
 
 
 ## Building
@@ -272,17 +274,16 @@ is following the [conventional commit][convent-commit] best practice.
 
 ## Terms of Usage
 
-This software is open source as is under the MIT license. If you start using
-the software, please give it a star, so that I know to be more careful with
-changes. If this project has more than 25 Stars, I will introduce semantic
-versions for changes.
+This software is open source under the MIT license. You can use it without
+restrictions and liabilities. Please give it a star, so that I know. If the
+project has more than 25 Stars, I will introduce semantic versions `v1`.
 
 
 ## Contributing
 
 If you like to contribute, please create an issue and/or pull request with a
 proper description of your proposal or contribution. I will review it and
-provide feedback on it.
+provide feedback on it as fast as possible.
 
 
 [testing]: <https://pkg.go.dev/testing>

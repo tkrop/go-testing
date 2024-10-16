@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/tools/go/packages"
 
 	"github.com/tkrop/go-testing/test"
 
@@ -36,7 +37,7 @@ var (
 		return dir
 	}()
 
-	fileFailure = filepath.Join(testDirGenerate, dirTest, fileUnknown)
+	fileFailure = filepath.Join(testDirGenerate, dirSubTest, fileUnknown)
 )
 
 var testGenerateParams = map[string]GenerateParams{
@@ -49,8 +50,13 @@ var testGenerateParams = map[string]GenerateParams{
 	"failure parsing": {
 		file: filepath.Join(testDirGenerate, MockFileDefault),
 		args: []string{pathUnknown},
-		expectStderr: "argument invalid [pos: 3, arg: " + pathUnknown +
-			"]: not found\n",
+		expectStderr: NewErrArgFailure(3, ".",
+			NewErrPackageParsing(pathUnknown, []*packages.Package{
+				{Errors: []packages.Error{{
+					Msg: "no required module provides package " + pathUnknown +
+						"; to add it:\n\tgo get " + pathUnknown,
+				}}},
+			})).Error() + "\n",
 		expectCode: 1,
 	},
 

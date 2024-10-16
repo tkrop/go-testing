@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"slices"
-	"unsafe"
 )
 
 // Aliases for types.
@@ -32,63 +30,6 @@ var (
 	// ValueOf alias for `reflect.ValueOf`.
 	ValueOf = reflect.ValueOf
 )
-
-// FindArgOf find the first argument with one of the given field names matching
-// the type matching the default argument type.
-//
-// TODO: This function does not belong here and is tested insufficiently.
-// TODO: This function may fail on pointer types.
-func FindArgOf(param any, deflt any, names ...string) any {
-	t := reflect.TypeOf(param)
-	dt := reflect.TypeOf(deflt)
-	if t.Kind() != reflect.Struct {
-		if t.Kind() == dt.Kind() {
-			return param
-		}
-		return deflt
-	}
-
-	v := reflect.ValueOf(param)
-
-	found := false
-	for i := 0; i < t.NumField(); i++ {
-		fv := v.Field(i)
-		if fv.Type().Kind() == dt.Kind() {
-			if slices.Contains(names, t.Field(i).Name) {
-				return FieldArgOf(v, i)
-			}
-			if !found {
-				deflt = FieldArgOf(v, i)
-				found = true
-			}
-		}
-	}
-	return deflt
-}
-
-// FieldArgOf returns the argument of the `i`th field of the given value.
-//
-// TODO: This function does not belong here and is tested insufficiently.
-func FieldArgOf(v reflect.Value, i int) any {
-	vf := v.Field(i)
-	if vf.CanInterface() {
-		return ArgOf(vf)
-	}
-
-	// Make a copy to circumvent access restrictions.
-	vr := reflect.New(v.Type()).Elem()
-	vr.Set(v)
-
-	// Get the field value from the copy.
-	vf = vr.Field(i)
-	// #nosec G103 G115 -- is necessary.
-	rf := reflect.NewAt(vf.Type(),
-		unsafe.Pointer(vf.UnsafeAddr())).Elem()
-	// Create a new variable of the type P.
-	var value any
-	reflect.ValueOf(&value).Elem().Set(rf)
-	return value
-}
 
 // ArgOf returns the argument of the given value.
 func ArgOf(v reflect.Value) any {

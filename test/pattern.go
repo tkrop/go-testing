@@ -53,7 +53,7 @@ func TestMain(main func()) func(t Test, param MainParams) {
 		// Call the main function in a separate process to prevent capture
 		// regular process exit behavior.
 		// #nosec G204 -- secured by calling only the test instance.
-		cmd := exec.Command(os.Args[0], "-test.run="+t.(*Tester).t.Name())
+		cmd := exec.Command(os.Args[0], "-test.run="+t.(*Context).t.Name())
 		cmd.Env = append(append(os.Environ(), "TEST="+t.Name()), param.Env...)
 		if err := cmd.Run(); err != nil || param.ExitCode != 0 {
 			errExit := &exec.ExitError{}
