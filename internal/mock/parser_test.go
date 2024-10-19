@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	. "github.com/tkrop/go-testing/internal/mock"
 	"github.com/tkrop/go-testing/test"
+	"golang.org/x/tools/go/packages"
 )
 
 var (
@@ -34,11 +35,17 @@ var testParseParams = map[string]ParseParams{
 			Methods: methodsLoadIFace,
 		}},
 	},
-	"invalid argument": {
+	"invalid argument flag": {
+		loader:      loaderTest,
+		args:        []string{"--test"},
+		expectError: []error{NewErrArgInvalid(0, "--test")},
+	},
+	"invalid argument unknown": {
 		loader:      loaderTest,
 		args:        []string{"--unknown=any"},
 		expectError: []error{NewErrArgInvalid(0, "--unknown=any")},
 	},
+	// TODO: add test case for invalid argument for guessed type not found.
 
 	"default file": {
 		loader: loaderTest,
@@ -140,13 +147,19 @@ var testParseParams = map[string]ParseParams{
 		loader: loaderMock,
 		args:   []string{pathUnknown},
 		expectError: []error{
-			NewErrArgNotFound(0, pathUnknown),
+			NewErrArgFailure(0, ".",
+				NewErrPackageParsing(absUnknown, []*packages.Package{{
+					Errors: []packages.Error{{
+						Msg: "stat " + absUnknown + ": directory not found",
+					}},
+				}}),
+			),
 		},
 	},
 
 	"source file explicit": {
 		loader: loaderMock,
-		args:   []string{"--source-file=" + dirTest + "/" + fileIFace},
+		args:   []string{"--source-file=" + dirSubTest + "/" + fileIFace},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
 			Target:  targetMockTestIFace,
@@ -155,7 +168,7 @@ var testParseParams = map[string]ParseParams{
 	},
 	"source file derived": {
 		loader: loaderMock,
-		args:   []string{"--source=" + dirTest + "/" + fileIFace},
+		args:   []string{"--source=" + dirSubTest + "/" + fileIFace},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
 			Target:  targetMockTestIFace,
@@ -174,7 +187,7 @@ var testParseParams = map[string]ParseParams{
 	},
 	"source file guessed": {
 		loader: loaderMock,
-		args:   []string{dirTest + "/" + fileIFace},
+		args:   []string{dirSubTest + "/" + fileIFace},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
 			Target:  targetMockTestIFace,
@@ -185,13 +198,20 @@ var testParseParams = map[string]ParseParams{
 		loader: loaderMock,
 		args:   []string{fileUnknown},
 		expectError: []error{
-			NewErrArgNotFound(0, fileUnknown),
+			NewErrArgFailure(0, ".",
+				NewErrPackageParsing(fileUnknown, []*packages.Package{{
+					Errors: []packages.Error{{
+						Msg: "no required module provides package " + fileUnknown +
+							"; to add it:\n\tgo get " + fileUnknown,
+					}},
+				}}),
+			),
 		},
 	},
 
 	"source directory explicit": {
 		loader: loaderMock,
-		args:   []string{"--source-file=" + dirTest},
+		args:   []string{"--source-file=" + dirSubTest},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
 			Target:  targetMockTestIFace,
@@ -200,7 +220,7 @@ var testParseParams = map[string]ParseParams{
 	},
 	"source directory derived": {
 		loader: loaderMock,
-		args:   []string{"--source=" + dirTest},
+		args:   []string{"--source=" + dirSubTest},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
 			Target:  targetMockTestIFace,
@@ -209,7 +229,7 @@ var testParseParams = map[string]ParseParams{
 	},
 	"source directory guessed": {
 		loader: loaderMock,
-		args:   []string{dirTest},
+		args:   []string{dirSubTest},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
 			Target:  targetMockTestIFace,
@@ -220,7 +240,13 @@ var testParseParams = map[string]ParseParams{
 		loader: loaderMock,
 		args:   []string{dirUnknown},
 		expectError: []error{
-			NewErrArgNotFound(0, dirUnknown),
+			NewErrArgFailure(0, ".",
+				NewErrPackageParsing(dirUnknown, []*packages.Package{{
+					Errors: []packages.Error{{
+						Msg: "stat " + absUnknown + ": directory not found",
+					}},
+				}}),
+			),
 		},
 	},
 
@@ -457,10 +483,10 @@ var testParseParams = map[string]ParseParams{
 	"failure loading": {
 		loader: loaderFail,
 		args: []string{
-			"--source-file=" + filepath.Join(dirUp, dirMock, dirTest, fileIFace),
+			"--source-file=" + filepath.Join(dirUp, dirMock, dirSubTest, fileIFace),
 		},
 		expectError: []error{
-			NewErrArgFailure(0, "", NewErrLoading("", fmt.Errorf(
+			NewErrArgFailure(0, ".", NewErrLoading("", fmt.Errorf(
 				"err: chdir %s: no such file or directory: stderr: ",
 				dirUnknown))),
 		},
@@ -488,7 +514,7 @@ var testParseAddParams = map[string]ParseParams{
 	"package test path": {
 		loader: loaderMock,
 		args: []string{
-			dirTesting, "Test",
+			dirTest, "Test",
 			"--target=" + pkgMock, "Reporter=Reporter",
 		},
 		expectMocks: []*Mock{{
@@ -505,7 +531,7 @@ var testParseAddParams = map[string]ParseParams{
 	"package test file": {
 		loader: loaderMock,
 		args: []string{
-			dirTesting + "/" + fileTesting, "Test",
+			dirTest + "/" + fileContext, "Test",
 			"--target=" + pkgMock, "Reporter=Reporter",
 		},
 		expectMocks: []*Mock{{
@@ -569,8 +595,5 @@ func TestParseMain(t *testing.T) {
 }
 
 func TestParseAdd(t *testing.T) {
-	test.Map(t, testParseAddParams).
-		// TODO: removed when Find feature migration implemented.
-		// Filter("package-test-file", true).
-		Run(testParse)
+	test.Map(t, testParseAddParams).Run(testParse)
 }

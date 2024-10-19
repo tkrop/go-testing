@@ -74,13 +74,13 @@ func (mr *MockIFaceRecorder) CallB() *gomock.Call {
 }
 
 // CallC is the mock method to capture a coresponding call.
-func (m *MockIFace) CallC(test testing_test.Tester) {
+func (m *MockIFace) CallC(test testing_test.Context) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "CallC", test)
 }
 
 // CallC is the recorder method to indicates an expected call.
-func (mr *MockIFaceRecorder) CallC(test testing_test.Tester) *gomock.Call {
+func (mr *MockIFaceRecorder) CallC(test testing_test.Context) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CallC",
 		reflect.TypeOf((*MockIFace)(nil).CallC), test)

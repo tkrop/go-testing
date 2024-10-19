@@ -34,18 +34,18 @@ type testBuilderStructParam struct {
 }
 
 var testBuilderStructParams = map[string]testBuilderStructParam{
-	"struct get init - empty - no copy possible": {
+	"struct get init": {
 		target: structInit,
 		check: func(t test.Test, b test.Builder[Struct]) {
-			assert.Equal(t, "", b.Get("s"))
-			assert.Equal(t, nil, b.Get("a"))
-			assert.Equal(t, "", b.Find("default", "s"))
-			assert.Equal(t, nil, b.Find("default", "a"))
-			assert.Equal(t, "", b.Find("default"))
-			assert.Equal(t, "", b.Find("default", "*"))
+			assert.Equal(t, "init", b.Get("s"))
+			assert.Equal(t, "init", b.Get("a"))
+			assert.Equal(t, "init", b.Find("default", "s"))
+			assert.Equal(t, "default", b.Find("default", "a"))
+			assert.Equal(t, "init", b.Find("default"))
+			assert.Equal(t, "init", b.Find("default", "*"))
 			assert.Equal(t, "default", b.Find("default", "x"))
-			assert.Equal(t, structEmpty, b.Get(""))
-			assert.Equal(t, structEmpty, b.Build())
+			assert.Equal(t, structInit, b.Get(""))
+			assert.Equal(t, structInit, b.Build())
 		},
 	},
 
@@ -210,7 +210,7 @@ var testBuilderPtrStructParams = map[string]testBuilderPtrStructParam{
 			assert.Equal(t, "", b.Get("s"))
 			assert.Equal(t, nil, b.Get("a"))
 			assert.Equal(t, "", b.Find("default", "s"))
-			assert.Equal(t, nil, b.Find("default", "a"))
+			assert.Equal(t, "default", b.Find("default", "a"))
 			assert.Equal(t, "", b.Find("default"))
 			assert.Equal(t, "", b.Find("default", "*"))
 			assert.Equal(t, "default", b.Find("default", "x"))
@@ -309,7 +309,8 @@ var testBuilderPtrStructParams = map[string]testBuilderPtrStructParam{
 	"nil any reset nil invalid": {
 		target: nil,
 		setup: func(b test.Builder[*Struct]) {
-			b.Set("", (*Struct)(nil)).Get("invalid")
+			b.Set("", (*Struct)(nil))
+			b.Get("invalid")
 		},
 		expect: test.Panic("target field not found [invalid]"),
 	},
@@ -321,7 +322,7 @@ var testBuilderPtrStructParams = map[string]testBuilderPtrStructParam{
 			assert.Equal(t, "", b.Get("s"))
 			assert.Equal(t, nil, b.Get("a"))
 			assert.Equal(t, "", b.Find("default", "s"))
-			assert.Equal(t, nil, b.Find("default", "a"))
+			assert.Equal(t, "default", b.Find("default", "a"))
 			assert.Equal(t, "", b.Find("default"))
 			assert.Equal(t, "", b.Find("default", "*"))
 			assert.Equal(t, "default", b.Find("default", "x"))
@@ -413,7 +414,7 @@ var testBuilderPtrStructParams = map[string]testBuilderPtrStructParam{
 			assert.Equal(t, "init", b.Get("s"))
 			assert.Equal(t, "init", b.Get("a"))
 			assert.Equal(t, "init", b.Find("default", "s"))
-			assert.Equal(t, "init", b.Find("default", "a"))
+			assert.Equal(t, "default", b.Find("default", "a"))
 			assert.Equal(t, "init", b.Find("default"))
 			assert.Equal(t, "init", b.Find("default", "*"))
 			assert.Equal(t, "default", b.Find("default", "x"))
@@ -526,18 +527,18 @@ var testBuilderAnyParams = map[string]testBuilderAnyParam{
 	},
 
 	// Test cases for struct instance.
-	"struct get init - empty - no copy possible": {
+	"struct get init": {
 		target: structInit,
 		check: func(t test.Test, b test.Builder[any]) {
-			assert.Equal(t, "", b.Get("s"))
-			assert.Equal(t, nil, b.Get("a"))
-			assert.Equal(t, "", b.Find("default", "s"))
-			assert.Equal(t, nil, b.Find("default", "a"))
-			assert.Equal(t, "", b.Find("default"))
-			assert.Equal(t, "", b.Find("default", "*"))
+			assert.Equal(t, "init", b.Get("s"))
+			assert.Equal(t, "init", b.Get("a"))
+			assert.Equal(t, "init", b.Find("default", "s"))
+			assert.Equal(t, "default", b.Find("default", "a"))
+			assert.Equal(t, "init", b.Find("default"))
+			assert.Equal(t, "init", b.Find("default", "*"))
 			assert.Equal(t, "default", b.Find("default", "x"))
-			assert.Equal(t, structEmpty, b.Get(""))
-			assert.Equal(t, structEmpty, b.Build())
+			assert.Equal(t, structInit, b.Get(""))
+			assert.Equal(t, structInit, b.Build())
 		},
 	},
 
@@ -634,7 +635,7 @@ var testBuilderAnyParams = map[string]testBuilderAnyParam{
 			assert.Equal(t, "init", b.Get("s"))
 			assert.Equal(t, "init", b.Get("a"))
 			assert.Equal(t, "init", b.Find("default", "s"))
-			assert.Equal(t, "init", b.Find("default", "a"))
+			assert.Equal(t, "default", b.Find("default", "a"))
 			assert.Equal(t, "init", b.Find("default"))
 			assert.Equal(t, "init", b.Find("default", "*"))
 			assert.Equal(t, "default", b.Find("default", "x"))
@@ -716,7 +717,7 @@ var testBuilderAnyParams = map[string]testBuilderAnyParam{
 			assert.Equal(t, "", b.Get("s"))
 			assert.Equal(t, nil, b.Get("a"))
 			assert.Equal(t, "", b.Find("default", "s"))
-			assert.Equal(t, nil, b.Find("default", "a"))
+			assert.Equal(t, "default", b.Find("default", "a"))
 			assert.Equal(t, "", b.Find("default"))
 			assert.Equal(t, "", b.Find("default", "*"))
 			assert.Equal(t, "default", b.Find("default", "x"))
@@ -809,34 +810,6 @@ func TestBuilderAny(t *testing.T) {
 		})
 }
 
-func TestNewBuilderStruct(t *testing.T) {
-	// Given
-	builder := test.NewBuilder[Struct]()
-
-	// When
-	builder.Set("s", "set final").Set("a", "set final")
-
-	// Then
-	assert.Equal(t, "set final", builder.Get("s"))
-	assert.Equal(t, "set final", builder.Get("a"))
-	assert.Equal(t, structFinal, builder.Get(""))
-	assert.Equal(t, structFinal, builder.Build())
-}
-
-func TestNewBuilderPtrStruct(t *testing.T) {
-	// Given
-	builder := test.NewBuilder[*Struct]()
-
-	// When
-	builder.Set("s", "set final").Set("a", "set final")
-
-	// Then
-	assert.Equal(t, "set final", builder.Get("s"))
-	assert.Equal(t, "set final", builder.Get("a"))
-	assert.Equal(t, structPtrFinal, builder.Get(""))
-	assert.Equal(t, structPtrFinal, builder.Build())
-}
-
 type testFindParam struct {
 	param  any
 	deflt  any
@@ -920,8 +893,6 @@ var testFindParams = map[string]testFindParam{
 
 func TestFind(t *testing.T) {
 	test.Map(t, testFindParams).
-		// TODO: advance find to support basic structs.
-		Filter("^struct", false).
 		Run(func(t test.Test, param testFindParam) {
 			// When
 			expect := test.Find(param.param, param.deflt, param.names...)
@@ -929,4 +900,155 @@ func TestFind(t *testing.T) {
 			// Then
 			assert.Equal(t, param.expect, expect)
 		})
+}
+
+//revive:disable-next-line:function-length // Test suite approach.
+func TestNewBuilder(t *testing.T) {
+	t.Parallel()
+
+	t.Run("builder-struct", func(t *testing.T) {
+		t.Parallel()
+		// Given
+		b := test.NewBuilder[Struct]()
+
+		// When
+		b.Set("s", "set final").Set("a", "set final")
+
+		// Then
+		assert.Equal(t, "set final", b.Get("s"))
+		assert.Equal(t, "set final", b.Get("a"))
+		assert.Equal(t, structFinal, b.Get(""))
+		assert.Equal(t, structFinal, b.Build())
+	})
+
+	t.Run("builder-ptr", func(t *testing.T) {
+		t.Parallel()
+		// Given
+		b := test.NewBuilder[*Struct]()
+
+		// When
+		b.Set("s", "set final").Set("a", "set final")
+
+		// Then
+		assert.Equal(t, "set final", b.Get("s"))
+		assert.Equal(t, "set final", b.Get("a"))
+		assert.Equal(t, structPtrFinal, b.Get(""))
+		assert.Equal(t, structPtrFinal, b.Build())
+	})
+
+	t.Run("setter-nil", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		s := test.NewSetter((*Struct)(nil))
+
+		// When
+		s.Set("s", "set final").Set("a", "set final")
+
+		// ThenstructEmpty
+		assert.Equal(t, structPtrFinal, s.Build())
+	})
+
+	t.Run("setter-struct", func(t *testing.T) {
+		t.Parallel()
+		// Given
+		s := test.NewSetter(NewStruct("init", "init"))
+
+		// When
+		s.Set("s", "set final").Set("a", "set final")
+
+		// Then
+		assert.Equal(t, structFinal, s.Build())
+	})
+
+	t.Run("setter-ptr", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		s := test.NewSetter(NewPtrStruct("init", "init"))
+
+		// When
+		s.Set("s", "set final").Set("a", "set final")
+
+		// Then
+		assert.Equal(t, structPtrFinal, s.Build())
+	})
+
+	t.Run("getter-nil", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		g := test.NewGetter((*Struct)(nil))
+
+		// Then
+		assert.Equal(t, "", g.Get("s"))
+		assert.Equal(t, nil, g.Get("a"))
+		assert.Equal(t, structPtrEmpty, g.Get(""))
+	})
+
+	t.Run("getter-struct", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		g := test.NewGetter(structFinal)
+
+		// Then
+		assert.Equal(t, "set final", g.Get("s"))
+		assert.Equal(t, "set final", g.Get("a"))
+		assert.Equal(t, structFinal, g.Get(""))
+	})
+
+	t.Run("getter-ptr", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		g := test.NewGetter(structPtrFinal)
+
+		// Then
+		assert.Equal(t, "set final", g.Get("s"))
+		assert.Equal(t, "set final", g.Get("a"))
+		assert.Equal(t, structPtrFinal, g.Get(""))
+	})
+
+	t.Run("finder-nil", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		f := test.NewFinder((*Struct)(nil))
+
+		// Then
+		assert.Equal(t, "", f.Find("default", "s"))
+		assert.Equal(t, "default", f.Find("default", "a"))
+		assert.Equal(t, "", f.Find("default"))
+		assert.Equal(t, "", f.Find("default", "*"))
+		assert.Equal(t, "default", f.Find("default", "x"))
+	})
+
+	t.Run("finder-struct", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		f := test.NewFinder(structFinal)
+
+		// Then
+		assert.Equal(t, "set final", f.Find("default", "s"))
+		assert.Equal(t, "default", f.Find("default", "a"))
+		assert.Equal(t, "set final", f.Find("default"))
+		assert.Equal(t, "set final", f.Find("default", "*"))
+		assert.Equal(t, "default", f.Find("default", "x"))
+	})
+
+	t.Run("finder-ptr", func(t *testing.T) {
+		t.Parallel()
+
+		// Given
+		f := test.NewFinder(structPtrFinal)
+
+		// Then
+		assert.Equal(t, "set final", f.Find("default", "s"))
+		assert.Equal(t, "default", f.Find("default", "a"))
+		assert.Equal(t, "set final", f.Find("default"))
+		assert.Equal(t, "set final", f.Find("default", "*"))
+		assert.Equal(t, "default", f.Find("default", "x"))
+	})
 }

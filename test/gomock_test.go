@@ -125,7 +125,7 @@ var testCallMatcherParams = map[string]MatcherParams{
 		match:         test.Errorf("fail"),
 		expectMatches: true,
 		expectString: "is equal to *test.Validator.Errorf" +
-			"(is equal to fail (string)) " + CallerGomockErrorf +
+			"(is equal to fail (string)) " + CallerReporterErrorf +
 			" (*gomock.Call)",
 	},
 	"call-matcher-success-any-nay": {
@@ -147,8 +147,8 @@ func evalCall(arg any, mocks *mock.Mocks) any {
 func TestCallMatcher(t *testing.T) {
 	test.Map(t, testCallMatcherParams).
 		Run(func(t test.Test, param MatcherParams) {
-			// Given - send mock calls to unchecked tester.
-			mocks := mock.NewMocks(test.NewTester(t, test.Success))
+			// Given - send mock calls to unchecked test context.
+			mocks := mock.NewMocks(test.New(t, test.Success))
 			matcher := param.matcher(evalCall(param.base, mocks))
 
 			// When
@@ -235,7 +235,7 @@ var testReporterParams = map[string]ReporterParams{
 	"errorf consumed": {
 		mockSetup: test.Errorf("fail"),
 		failSetup: test.ConsumedCall(test.NewValidator,
-			"Errorf", CallerTestErrorf, CallerGomockErrorf, "fail"),
+			"Errorf", CallerTestErrorf, CallerReporterErrorf, "fail"),
 		call: func(t test.Test) {
 			t.Errorf("fail")
 			t.Errorf("fail")

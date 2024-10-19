@@ -52,7 +52,7 @@ func (c *Caller) Panic(_ any) {
 // getCaller implements the capturing logic for the callers file and line
 // number for the given call.
 func getCaller(call func(t test.Reporter)) string {
-	t := test.NewTester(&testing.T{}, test.Failure)
+	t := test.New(&testing.T{}, test.Failure)
 	mocks := mock.NewMocks(t)
 	caller := mock.Get(mocks,
 		func(*gomock.Controller) *Caller {
@@ -93,9 +93,9 @@ var (
 		return dir
 	}()
 	// CallerTestErrorf provides the file with the line number of the `Errorf`
-	// call in testing.
-	CallerTestErrorf = path.Join(SourceDir, "testing.go:238")
-	// CallerGomockErrorf provides the file with the line number of the
-	// `Errorf` call in gomock.
-	CallerGomockErrorf = path.Join(SourceDir, "gomock.go:61")
+	// call in the test context implementation.
+	CallerTestErrorf = path.Join(SourceDir, "context.go:276")
+	// CallerReporterErrorf provides the file with the line number of the
+	// `Errorf` call in the test reporter/validator implementation.
+	CallerReporterErrorf = path.Join(SourceDir, "gomock.go:61")
 )

@@ -16,7 +16,7 @@ type IFace interface {
 	CallA(value *Struct, args ...*reflect.Value) ([]any, error)
 	//revive:disable-next-line:use-any // needed for testing
 	CallB() (fn func([]*mock.File) []interface{}, err error)
-	CallC(test test.Tester)
+	CallC(test test.Context)
 }
 
 // Struct is a non-interface for testing.

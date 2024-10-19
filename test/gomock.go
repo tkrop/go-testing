@@ -25,10 +25,10 @@ type Recorder struct {
 func NewValidator(ctrl *gomock.Controller) *Validator {
 	validator := &Validator{ctrl: ctrl}
 	validator.recorder = &Recorder{validator: validator}
-	if t, ok := ctrl.T.(*Tester); ok {
+	if t, ok := ctrl.T.(*Context); ok {
 		// We need to install a second isolated test environment to break the
 		// reporter cycle on the failure issued by the mock controller.
-		ctrl.T = NewTester(t.t, t.expect)
+		ctrl.T = New(t.t, t.expect)
 		t.expect = Failure
 		t.Reporter(validator)
 	}
@@ -137,7 +137,8 @@ func UnexpectedCall[T any](
 	return func(_ Test, mocks *mock.Mocks) mock.SetupFunc {
 		return Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
 			mock.Get(mocks, creator), method, args, caller,
-			fmt.Errorf("there are no expected calls "+ //nolint:goerr113 // necessary
+			//nolint:goerr113 // necessary
+			fmt.Errorf("there are no expected calls "+
 				"of the method \"%s\" for that receiver", method))
 	}
 }
@@ -162,7 +163,7 @@ func MissingCalls(
 		// Creates a new mock controller and test environment to isolate the
 		// validator used for sub-call creation/registration from the validator
 		// used for execution.
-		mocks := mock.NewMocks(NewTester(t, false))
+		mocks := mock.NewMocks(New(t, false))
 		calls := make([]func(*mock.Mocks) any, 0, len(setups))
 		for _, setup := range setups {
 			calls = append(calls,

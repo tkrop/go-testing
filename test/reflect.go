@@ -6,24 +6,48 @@ import (
 	"unsafe"
 )
 
-// Builder is a generic interface that allows you to access and modify
-// unexported fields of a (pointer) struct by field name.
-type Builder[T any] interface {
-	// Set sets the value of the field with the given name. If the name is empty,
-	// and of the same type the stored target instance is replaced by the given
-	// value.
-	Set(name string, value any) Builder[T]
+// Getter is a generic interface that allows you to access unexported fields
+// of a (pointer) struct by field name.
+type Getter[T any] interface {
 	// Get returns the value of the field with the given name. If the name is
 	// empty, the stored target instance is returned.
 	Get(name string) any
+}
+
+// Setter is a generic fluent interface that allows you to modify unexported
+// fields of a (pointer) struct by field name.
+type Setter[T any] interface {
+	// Set sets the value of the field with the given name. If the name is empty,
+	// and of the same type the stored target instance is replaced by the given
+	// value.
+	Set(name string, value any) Setter[T]
+	// Build returns the created or modified target instance of the builder.
+	Build() T
+}
+
+// Finder is a generic interface that allows you to access unexported fields
+// of a (pointer) struct by field name.
+type Finder[T any] interface {
 	// Find returns the first value of a field from the given list of field
 	// names with a type matching the default value type. If the name list is
 	// empty or contains a star (`*`), the first matching field in order of the
 	// struct declaration is returned as fallback. If no matching field is
 	// found, the default value is returned.
 	Find(dflt any, names ...string) any
-	// Build returns the created/modified target instance of the builder.
-	Build() T
+}
+
+// Builder is a generic, partially fluent interface that allows you to access
+// and modify unexported fields of a (pointer) struct by field name.
+type Builder[T any] interface {
+	// Getter is a generic interface that allows you to access unexported fields
+	// of a (pointer) struct by field name.
+	Getter[T]
+	// Finder is a generic interface that allows you to access unexported fields
+	// of a (pointer) struct by field name.
+	Finder[T]
+	// Setter is a generic fluent interface that allows you to modify unexported
+	// fields of a (pointer) struct by field name.
+	Setter[T]
 }
 
 // Find returns the first value of a parameter field from the given list of
@@ -40,18 +64,24 @@ func Find[P, T any](param P, deflt T, names ...string) T {
 	if pt.Kind() == dt.Kind() {
 		return reflect.ValueOf(param).Interface().(T)
 	} else if pt.Kind() == reflect.Struct {
-		// TODO: This is currently not working as expected and creates panics.
-		return NewAccessor[*P](&param).Find(deflt, names...).(T)
+		return NewAccessor[P](param).Find(deflt, names...).(T)
 	} else if pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct {
 		return NewAccessor[P](param).Find(deflt, names...).(T)
 	}
 	return deflt
 }
 
-// Builder allows you to access and modify unexported fields of a struct.
+// Builder is used for accessing and modifying unexported fields in a struct
+// or a struct pointer.
 type builder[T any] struct {
-	target  any
-	rtype   reflect.Type
+	// target is the struct reflection value of the struct or struct pointer
+	// instance to be accessed and modified.
+	target any
+	// rtype is the targets reflection type of the struct or struct pointer
+	// instance to be accessed and modified.
+	rtype reflect.Type
+	// wrapped is true if the target is a struct that is actually wrapped in
+	// a pointer instance.
 	wrapped bool
 }
 
@@ -63,14 +93,35 @@ func NewBuilder[T any]() Builder[T] {
 	return NewAccessor[T](target)
 }
 
+// NewGetter creates a generic getter for a target struct type. The getter
+// allows you to access unexported fields of the struct by field name.
+func NewGetter[T any](target T) Getter[T] {
+	return NewAccessor[T](target)
+}
+
+// NewSetter creates a generic setter for a target struct type. The setter
+// allows you to modify unexported fields of the struct by field name.
+func NewSetter[T any](target T) Setter[T] {
+	return NewAccessor[T](target)
+}
+
+// NewFinder creates a generic finder for a target struct type. The finder
+// allows you to access unexported fields of the struct by field name.
+func NewFinder[T any](target T) Finder[T] {
+	return NewAccessor[T](target)
+}
+
 // NewAccessor creates a generic builder/accessor for a given target struct.
 // The builder allows you to access and modify unexported fields of the struct
 // by field name.
 //
 // If the target is a pointer to a struct (template), the pointer is stored
-// and the instance is modified directly. If the target is a struct, it is
-// ignored and a new pointer struct is created for modification, since a struct
-// cannot be modified directly by reflection.
+// and the instance is modified directly. If the pointer is nil a new instance
+// is created and stored for modification.
+//
+// If the target is a struct, it cannot be modified directly and a new pointer
+// struct is created to circumvent the access restrictions on private fields.
+// The pointer struct is stored for modification.
 func NewAccessor[T any](target T) Builder[T] {
 	value := reflect.ValueOf(target)
 
@@ -83,13 +134,15 @@ func NewAccessor[T any](target T) Builder[T] {
 
 		if value.Elem().Kind() == reflect.Struct {
 			return &builder[T]{
-				target: target,
-				rtype:  value.Elem().Type(),
+				target:  target,
+				rtype:   value.Elem().Type(),
+				wrapped: false,
 			}
 		}
 	} else if value.Kind() == reflect.Struct {
 		// Create a new pointer instance for modification.
 		value = reflect.New(value.Type())
+		value.Elem().Set(reflect.ValueOf(target))
 		return &builder[T]{
 			target:  value.Interface(),
 			rtype:   value.Elem().Type(),
@@ -115,7 +168,7 @@ func typeOf(target any) string {
 // value. If the value is nil, the field is set to the zero value of the field
 // type. If the field is not found or the value is not assignable to it, a
 // panic is raised.
-func (b *builder[T]) Set(name string, value any) Builder[T] {
+func (b *builder[T]) Set(name string, value any) Setter[T] {
 	if name != "" {
 		b.set(name, value)
 	} else if value == nil && b.rtype.Kind() == reflect.Struct {
@@ -132,21 +185,23 @@ func (b *builder[T]) Set(name string, value any) Builder[T] {
 // Get returns the value of the field with the given name. If the name is
 // empty, the stored target instance is returned.
 func (b *builder[T]) Get(name string) any {
-	if name != "" {
-		target := b.targetValueOf()
-		if !target.IsValid() {
-			if field, ok := b.rtype.FieldByName(name); ok {
-				return reflect.New(field.Type).Elem().Interface()
-			}
-			panic("target field not found [" + name + "]")
-		}
-		field := target.FieldByName(name)
-		if !field.IsValid() {
-			panic("target field not found [" + name + "]")
-		}
-		return b.valuePtr(field).Elem().Interface()
+	if name == "" {
+		return b.Build()
 	}
-	return b.Build()
+
+	target := b.targetValueOf()
+	if !target.IsValid() {
+		if field, ok := b.rtype.FieldByName(name); ok {
+			return reflect.New(field.Type).Elem().Interface()
+		}
+		panic("target field not found [" + name + "]")
+	}
+
+	field := target.FieldByName(name)
+	if !field.IsValid() {
+		panic("target field not found [" + name + "]")
+	}
+	return b.valuePtr(field).Elem().Interface()
 }
 
 // Find returns the first value of a field from the given list of field names
@@ -219,7 +274,7 @@ func (builder[T]) canBeAssigned(field reflect.Type, value reflect.Type) bool {
 	} else if field.Kind() == reflect.Interface {
 		return value.Implements(field)
 	} else {
-		return field.AssignableTo(value)
+		return value.AssignableTo(field)
 	}
 }
 

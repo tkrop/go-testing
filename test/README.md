@@ -22,29 +22,32 @@ func TestUnit(t *testing.T) {
 
         // When
         panic("fail")
-    })(t)
-
-    // Then
     ...
+    })(t)
 }
 ```
+
+But there are many other supported use case, you can discover reading the
+below examples.
 
 
 ## Isolated parameterized parallel test runner
 
 The `test` framework supports to run isolated, parameterized, parallel tests
 using a lean test runner. The runner can be instantiated with a single test
-parameter set (`New`), a slice of test parameter sets (`Slice`), or a map of
-test case name to test parameter sets (`Map` - preferred pattern). The test is
-started by `Run` that accepts a simple test function as input, using a
-`test.Test` interface, that is compatible with most tools, e.g.
+parameter set (`test.Any`), a slice of test parameter sets (`test.Slice`), or a
+map of test case name to test parameter sets (`test.Map` - preferred pattern).
+The test is started by `Run` that accepts a simple test function as input,
+using a `test.Test` interface, that is compatible with most tools, e.g.
 [`gomock`][gomock].
 
 
 ```go
 func TestUnit(t *testing.T) {
-    test.New|Slice|Map(t, testParams).
-        /* Filter("test-case-name", false|true). */
+    test.Any|Slice|Map(t, testParams).
+        Filter("test-case-name", false|true).
+        Timeout(5*time.Millisecond).
+        StopEarly(time.Millisecond).
         Run|RunSeq(func(t test.Test, param UnitParams){
             // Given
 
@@ -60,8 +63,8 @@ func TestUnit(t *testing.T) {
 This creates and starts a lean test wrapper using a common interface, that
 isolates test execution and intercepts all failures (including panics), to
 either forward or suppress them. The result is controlled by providing a test
-parameter of type `test.Expect` (name `expect`) that supports `Failure` (false)
-and `Success` (true - default).
+parameter of type `test.Expect` (name `expect`) that supports `test.Failure`
+(false) and `Success` (true - default).
 
 Similar a test case name can be provided using type `test.Name` (name `name` -
 default value `unknown-%d`) or as key using a test case name to parameter set
@@ -74,7 +77,8 @@ sequential test execution.
 
 It is also possible to select a subset of tests for execution by setting up a
 `Filter` using a regular expression to match or filter by the normalized test
-name.
+name, or to set up a `Timeout` as well as a grace period to `StopEarly` for
+giving the `Cleanup`-functions sufficient time to free resources.
 
 
 ## Isolated in-test environment setup
@@ -103,7 +107,7 @@ func TestUnit(t *testing.T) {
 
 If the above pattern is not sufficient, you can create your own customized
 parameterized, parallel, isolated test wrapper using the basic abstraction
-`test.Run(test.Success|Failure, func (t test.Test) {})`:
+`test.Run|RunSeq(test.Success|Failure, func (t test.Test) {})`:
 
 ```go
 func TestUnit(t *testing.T) {
@@ -124,23 +128,26 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-Or the interface of the underlying `test.Tester`:
+Or finally, use even more directly the flexible `test.Context` that is
+providing the features on top of the underlying `test.Test` interface
+abstraction, if you need more control about the test execution:
 
 ```go
 func TestUnit(t *testing.T) {
     t.Parallel()
 
-    test.NewTester(t, test.Success).Run(func(t test.Test){
-        // Given
+    test.New(t, test.Success).
+        Timeout(5*time.Millisecond).
+        StopEarly(time.Millisecond).
+        Run(func(t test.Test){
+            // Given
 
-        // When
+            // When
 
-        // Then
-    })(t)
+            // Then
+        })(t)
 }
 ```
-
-But this should usually be unnecessary.
 
 
 ## Isolated failure/panic validation
@@ -163,7 +170,7 @@ func TestUnit(t *testing.T) {
         // When
         t.Errorf("fail")
         ...
-        // And one of the following
+        // And one of the terminal calls.
         t.Fatalf("fail")
         t.FailNow()
         panic("fail")
@@ -174,7 +181,7 @@ func TestUnit(t *testing.T) {
 ```
 
 **Note:** To enable panic testing, the isolated test environment is recovering
-from all panics by default and converting it in a fatal error message. This is
+from all panics by default and converting them in fatal error messages. This is
 often most usable and sufficient to fix the issue. If you need to discover the
 source of the panic, you need to spawn a new unrecovered go-routine.
 
@@ -182,10 +189,32 @@ source of the panic, you need to spawn a new unrecovered go-routine.
 hard to recreate. Do not try it.
 
 
+## Test result builder
+
+Comparing test results is most efficient, when you directly can compare the
+actual objects. However, this is sometimes prevented by the objects not being
+open for construction and having private states. The `test`-package supports
+helpers to construct objects and access private fields using reflection.
+
+* `test.NewBuilder[...]()` allows constructing new objects from scratch.
+* `test.NewGetter(...)` allows reading private fields of an object by name.
+* `test.NewSetter(...)` allows writing private fields by name, and finally
+* `test.Accessor(...)` allows reading and writing of private fields by name.
+
+The following example shows how the private properties of a close error can
+be set using the `test.NewBuilder[...]()`.
+
+```go
+    err := test.NewBuilder[viper.ConfigFileNotFoundError]().
+        Set("locations", fmt.Sprintf("%s", "...path...")).
+        Set("name", "test").Build()
+```
+
+
 ## Out-of-the-box test patterns
 
-Currently, the package supports the following _out-of-the-box_ test pattern for
-testing of `main`-methods of commands.
+Currently, the package supports only one _out-of-the-box_ test pattern to test
+the `main`-methods of commands.
 
 ```go
 testMainParams := map[string]test.MainParams{
@@ -201,13 +230,13 @@ func TestMain(t *testing.T) {
 }
 ```
 
-The pattern executes a the `main`-method in a separate process that allows to
-setup the command line arguments (`Args`) as well as to modify the environment
-variables (`Env`) and to capture and compare the exit code.
+The pattern executes the `main`-method in a separate process that setting up
+the command line arguments (`Args`) and modifying the environment variables
+(`Env`) and to capture and compare the exit code of the program execution.
 
 **Note:** the general approach can be used to test any code calling `os.Exit`,
-however, it is focused on testing methods without arguments parsing command
-line arguments, i.e. in particular `func main() { ... }`.
+however, it is focused on testing the `main`-methods with and without parsing
+command line arguments.
 
 
 [gomock]: <https://github.com/golang/mock>

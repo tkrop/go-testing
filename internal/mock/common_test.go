@@ -26,10 +26,10 @@ const (
 	dirTop  = "../../.."
 	dirMock = "mock"
 
-	dirTest    = "./test"
+	dirSubTest = "./test"
 	dirOther   = "../other"
 	dirUnknown = "../unknown"
-	dirTesting = "../../test"
+	dirTest    = "../../test"
 
 	pathMock     = "github.com/tkrop/go-testing/internal/mock"
 	pathTest     = "github.com/tkrop/go-testing/internal/mock/test"
@@ -43,7 +43,7 @@ const (
 	fileOther    = "mock_other_test.go"
 	fileTemplate = "mock_template_test.go"
 	fileUnknown  = "unnkown_test.go"
-	fileTesting  = "testing.go"
+	fileContext  = "context.go"
 
 	aliasMock   = "mock_" + pkgTest
 	aliasInt    = "internal_" + aliasMock
@@ -59,6 +59,8 @@ const (
 
 var (
 	errAny = errors.New("any error")
+
+	absUnknown, _ = filepath.Abs(dirUnknown)
 
 	nameIFace     = &Type{Name: iface}
 	nameIFaceMock = &Type{Name: ifaceMock}
@@ -126,7 +128,7 @@ func methodsMockIFaceFunc(mocktest, test, mock string) []*Method {
 	}, {
 		Name: "CallC",
 		Params: []*Param{{
-			Name: "test", Type: aliasType(test, "Tester"),
+			Name: "test", Type: aliasType(test, "Context"),
 		}},
 		Results:  []*Param{},
 		Variadic: false,
@@ -136,7 +138,7 @@ func methodsMockIFaceFunc(mocktest, test, mock string) []*Method {
 var (
 	// Use two different singleton loaders.
 	loaderMock = NewLoader(DirDefault)
-	loaderTest = NewLoader(dirTest)
+	loaderTest = NewLoader(dirSubTest)
 	loaderFail = NewLoader(dirUnknown)
 
 	// Use singleton template for testing.
@@ -170,6 +172,14 @@ var (
 		pathTest, pathTesting, pathMock)
 
 	methodsTestTest = []*Method{{
+		Name:   "Deadline",
+		Params: []*Param{},
+		Results: []*Param{
+			{Name: "deadline", Type: "time.Time"},
+			{Name: "ok", Type: "bool"},
+		},
+		Variadic: false,
+	}, {
 		Name: "Errorf",
 		Params: []*Param{
 			{Name: "format", Type: "string"},

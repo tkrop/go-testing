@@ -215,7 +215,7 @@ var testLoaderLoadParams = map[string]LoaderLoadParams{
 	"failure loading": {
 		loader: loaderFail,
 		source: targetTest.With(&Type{
-			File: filepath.Join(dirUp, dirMock, dirTest, fileIFace),
+			File: filepath.Join(dirUp, dirMock, dirSubTest, fileIFace),
 		}),
 		expectError: NewErrLoading(pathTest, fmt.Errorf(
 			"err: chdir %s: no such file or directory: stderr: ",
@@ -315,7 +315,7 @@ var testLoaderIFacesParams = map[string]LoaderIFacesParams{
 	"failure loading": {
 		loader: loaderFail,
 		source: targetTest.With(&Type{
-			File: filepath.Join(dirUp, dirMock, dirTest, fileIFace),
+			File: filepath.Join(dirUp, dirMock, dirSubTest, fileIFace),
 		}),
 		expectError: NewErrLoading(pathTest, fmt.Errorf(
 			"err: chdir %s: no such file or directory: stderr: ",
