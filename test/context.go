@@ -65,29 +65,6 @@ type Test interface { //nolint:interfacebloat // Minimal interface.
 	Cleanup(cleanup func())
 }
 
-// Reporter is a minimal interface for abstracting test report methods that are
-// needed to setup an isolated test environment for GoMock and Testify.
-type Reporter interface {
-	// Error reports a failure messages when a test is supposed to continue.
-	Error(args ...any)
-	// Errorf reports a failure messages when a test is supposed to continue.
-	Errorf(format string, args ...any)
-	// Fatal reports a fatal failure message that immediate aborts of the test
-	// execution.
-	Fatal(args ...any)
-	// Fatalf reports a fatal failure message that immediate aborts of the test
-	// execution.
-	Fatalf(format string, args ...any)
-	// Fail reports a failure message that immediate aborts of the test
-	// execution.
-	Fail()
-	// FailNow reports fatal failure notifications without log output that
-	// aborts test execution immediately.
-	FailNow()
-	// Panic reports a panic.
-	Panic(arg any)
-}
-
 // Cleanuper defines an interface to add a custom mehtod that is called after
 // the test execution to cleanup the test environment.
 type Cleanuper interface {
