@@ -167,16 +167,34 @@ type ReporterParams struct {
 }
 
 var testReporterParams = map[string]ReporterParams{
+	"error called": {
+		mockSetup: test.Error("fail"),
+		call: func(t test.Test) {
+			t.Error("fail")
+		},
+	},
 	"errorf called": {
 		mockSetup: test.Errorf("fail"),
 		call: func(t test.Test) {
 			t.Errorf("fail")
 		},
 	},
+	"fatal called": {
+		mockSetup: test.Fatal("fail"),
+		call: func(t test.Test) {
+			t.Fatal("fail")
+		},
+	},
 	"fatalf called": {
 		mockSetup: test.Fatalf("fail"),
 		call: func(t test.Test) {
 			t.Fatalf("fail")
+		},
+	},
+	"fail called": {
+		mockSetup: test.Fail(),
+		call: func(t test.Test) {
+			t.Fail()
 		},
 	},
 	"failnow called": {
@@ -192,6 +210,21 @@ var testReporterParams = map[string]ReporterParams{
 		},
 	},
 
+	"error undeclared": {
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Error", CallerError, "fail"),
+		call: func(t test.Test) {
+			t.Error("fail")
+		},
+	},
+	"error undeclared twice": {
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Error", CallerError, "fail"),
+		call: func(t test.Test) {
+			t.Error("fail")
+			t.Error("fail")
+		},
+	},
 	"errorf undeclared": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
 			"Errorf", CallerErrorf, "fail"),
@@ -207,6 +240,22 @@ var testReporterParams = map[string]ReporterParams{
 			t.Errorf("fail")
 		},
 	},
+	"fatal undeclared": {
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Fatal", CallerFatal, "fail"),
+		call: func(t test.Test) {
+			t.Fatal("fail")
+		},
+	},
+	"fatal undeclared twice": {
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Fatal", CallerFatal, "fail"),
+		call: func(t test.Test) {
+			//revive:disable-next-line:unreachable-code // needed for testing
+			t.Fatal("fail")
+			t.Fatal("fail")
+		},
+	},
 	"fatalf undeclared": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
 			"Fatalf", CallerFatalf, "fail"),
@@ -214,10 +263,28 @@ var testReporterParams = map[string]ReporterParams{
 			t.Fatalf("fail")
 		},
 	},
+	"fatalf undeclared twice": {
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"Fatalf", CallerFatalf, "fail"),
+		call: func(t test.Test) {
+			//revive:disable-next-line:unreachable-code // needed for testing
+			t.Fatalf("fail")
+			t.Fatalf("fail")
+		},
+	},
 	"failnow undeclared": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
 			"FailNow", CallerFailNow),
 		call: func(t test.Test) {
+			t.FailNow()
+		},
+	},
+	"failnow undeclared twice": {
+		failSetup: test.UnexpectedCall(test.NewValidator,
+			"FailNow", CallerFailNow),
+		call: func(t test.Test) {
+			//revive:disable-next-line:unreachable-code // needed for testing
+			t.FailNow()
 			t.FailNow()
 		},
 	},
@@ -229,9 +296,18 @@ var testReporterParams = map[string]ReporterParams{
 		},
 	},
 
-	// Only Errorf can be consumed more than once, since Fatalf, FailNow, and
-	// panic will stop execution immediately. The second call is effectively
-	// unreachable.
+	// Only `Error`and `Errorf` can be consumed more than once, since `Fatal`,
+	// `Fatalf`, `FailNow`, and panic will stop execution immediately. The
+	// second call is effectively unreachable.
+	"error consumed": {
+		mockSetup: test.Error("fail"),
+		failSetup: test.ConsumedCall(test.NewValidator,
+			"Error", CallerTestError, CallerReporterError, "fail"),
+		call: func(t test.Test) {
+			t.Error("fail")
+			t.Error("fail")
+		},
+	},
 	"errorf consumed": {
 		mockSetup: test.Errorf("fail"),
 		failSetup: test.ConsumedCall(test.NewValidator,
@@ -239,6 +315,14 @@ var testReporterParams = map[string]ReporterParams{
 		call: func(t test.Test) {
 			t.Errorf("fail")
 			t.Errorf("fail")
+		},
+	},
+	"fatal consumed": {
+		mockSetup: test.Fatal("fail"),
+		call: func(t test.Test) {
+			//revive:disable-next-line:unreachable-code // needed for testing
+			t.Fatal("fail")
+			t.Fatal("fail")
 		},
 	},
 	"fatalf consumed": {
@@ -290,6 +374,13 @@ var testReporterParams = map[string]ReporterParams{
 	"fatalf missing": {
 		mockSetup: mock.Chain(test.Errorf("fail"), test.Fatalf("fail")),
 		failSetup: test.MissingCalls(test.Fatalf("fail")),
+		call: func(t test.Test) {
+			t.Errorf("fail")
+		},
+	},
+	"fail missing": {
+		mockSetup: mock.Chain(test.Errorf("fail"), test.Fail()),
+		failSetup: test.MissingCalls(test.Fail()),
 		call: func(t test.Test) {
 			t.Errorf("fail")
 		},

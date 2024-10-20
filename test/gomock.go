@@ -40,6 +40,27 @@ func (v *Validator) EXPECT() *Recorder {
 	return v.recorder
 }
 
+// Error receive expected method call to `Error`.
+func (v *Validator) Error(args ...any) {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Error", args...)
+}
+
+// Error indicate an expected method call to `Error`.
+func (r *Recorder) Error(args ...any) *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Error",
+		reflect.TypeOf((*Validator)(nil).Error), args...)
+}
+
+// Error creates a validation method call setup for `Error`.
+func Error(args ...any) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Error(args...).Do(mocks.Do(Reporter.Error))
+	}
+}
+
 // Errorf receive expected method call to `Errorf`.
 func (v *Validator) Errorf(format string, args ...any) {
 	v.ctrl.T.Helper()
@@ -62,6 +83,27 @@ func Errorf(format string, args ...any) mock.SetupFunc {
 	}
 }
 
+// Fatal receive expected method call to `Fatal`.
+func (v *Validator) Fatal(args ...any) {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Fatal", args...)
+}
+
+// Fatal indicate an expected method call to `Fatal`.
+func (r *Recorder) Fatal(args ...any) *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Fatal",
+		reflect.TypeOf((*Validator)(nil).Fatal), args...)
+}
+
+// Fatal creates a validation method call setup for `Fatal`.
+func Fatal(args ...any) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Fatal(args...).Do(mocks.Do(Reporter.Fatal))
+	}
+}
+
 // Fatalf receive expected method call to `Fatalf`.
 func (v *Validator) Fatalf(format string, args ...any) {
 	v.ctrl.T.Helper()
@@ -81,6 +123,27 @@ func Fatalf(format string, args ...any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
 			Fatalf(format, args...).Do(mocks.Do(Reporter.Fatalf))
+	}
+}
+
+// Fail receive expected method call to `Fail`.
+func (v *Validator) Fail() {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Fail")
+}
+
+// Fail indicate an expected method call to `Fail`.
+func (r *Recorder) Fail() *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Fail",
+		reflect.TypeOf((*Validator)(nil).Fail))
+}
+
+// Fail creates a validation method call setup for `Fail`.
+func Fail() mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Fail().Do(mocks.Do(Reporter.Fail))
 	}
 }
 
