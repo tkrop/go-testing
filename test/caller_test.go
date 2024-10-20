@@ -20,6 +20,13 @@ type Caller struct {
 	path string
 }
 
+// Error is the caller reporter function to capture the callers file and line
+// number of the `Error` call.
+func (c *Caller) Error(_ ...any) {
+	_, path, line, _ := runtime.Caller(1)
+	c.path = path + ":" + strconv.Itoa(line)
+}
+
 // Errorf is the caller reporter function to capture the callers file and line
 // number of the `Errorf` call.
 func (c *Caller) Errorf(_ string, _ ...any) {
@@ -27,9 +34,25 @@ func (c *Caller) Errorf(_ string, _ ...any) {
 	c.path = path + ":" + strconv.Itoa(line)
 }
 
+// Fatal is the caller reporter function to capture the callers file and line
+// number of the `Fatal` call.
+func (c *Caller) Fatal(_ ...any) {
+	_, path, line, _ := runtime.Caller(1)
+	c.path = path + ":" + strconv.Itoa(line)
+	panic("finished") // prevents goexit.
+}
+
 // Fatalf is the caller reporter function to capture the callers file and line
 // number of the `Fatalf` call.
 func (c *Caller) Fatalf(_ string, _ ...any) {
+	_, path, line, _ := runtime.Caller(1)
+	c.path = path + ":" + strconv.Itoa(line)
+	panic("finished") // prevents goexit.
+}
+
+// Fail is the caller reporter function to capture the callers file and line
+// number of the `Fail` call.
+func (c *Caller) Fail() {
 	_, path, line, _ := runtime.Caller(1)
 	c.path = path + ":" + strconv.Itoa(line)
 	panic("finished") // prevents goexit.
@@ -43,6 +66,8 @@ func (c *Caller) FailNow() {
 	panic("finished") // prevents goexit.
 }
 
+// Panic is the caller reporter function to capture the callers file and line
+// number of the `Panic` call.
 func (c *Caller) Panic(_ any) {
 	_, path, line, _ := runtime.Caller(1)
 	c.path = path + ":" + strconv.Itoa(line)
@@ -67,13 +92,25 @@ func getCaller(call func(t test.Reporter)) string {
 }
 
 var (
+	// CallerError provides the file with line number of the `Error` call.
+	CallerError = getCaller(func(t test.Reporter) {
+		t.Error("fail")
+	})
 	// CallerErrorf provides the file with line number of the `Errorf` call.
 	CallerErrorf = getCaller(func(t test.Reporter) {
 		t.Errorf("fail")
 	})
+	// CallerFatal provides the file with line number of the `Fatal` call.
+	CallerFatal = getCaller(func(t test.Reporter) {
+		t.Fatal("fail")
+	})
 	// CallerFatalf provides the file with line number of the `Fatalf` call.
 	CallerFatalf = getCaller(func(t test.Reporter) {
 		t.Fatalf("fail")
+	})
+	// CallerFail provides the file with line number of the `Fail` call.
+	CallerFail = getCaller(func(t test.Reporter) {
+		t.Fail()
 	})
 	// CallerFailNow provides the file with line number of the `FailNow` call.
 	CallerFailNow = getCaller(func(t test.Reporter) {
@@ -92,10 +129,17 @@ var (
 		}
 		return dir
 	}()
-	// CallerTestErrorf provides the file with the line number of the `Errorf`
+	// CallerTestError provides the file with the line number of the `Error`
 	// call in the test context implementation.
-	CallerTestErrorf = path.Join(SourceDir, "context.go:276")
+	CallerTestError = path.Join(SourceDir, "context.go:356")
 	// CallerReporterErrorf provides the file with the line number of the
 	// `Errorf` call in the test reporter/validator implementation.
-	CallerReporterErrorf = path.Join(SourceDir, "gomock.go:61")
+	CallerReporterError = path.Join(SourceDir, "gomock.go:60")
+
+	// CallerTestErrorf provides the file with the line number of the `Errorf`
+	// call in the test context implementation.
+	CallerTestErrorf = path.Join(SourceDir, "context.go:374")
+	// CallerReporterErrorf provides the file with the line number of the
+	// `Errorf` call in the test reporter/validator implementation.
+	CallerReporterErrorf = path.Join(SourceDir, "gomock.go:82")
 )

@@ -3,6 +3,7 @@ package test_test
 import (
 	"regexp"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/tkrop/go-testing/internal/sync"
 	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/test"
@@ -58,13 +59,38 @@ func (m TestParamMap) GetSlice() []TestParam {
 var (
 	// TestEmpty is a test function that does nothing.
 	TestEmpty = func(test.Test) {}
-	// TestErrorf is a test function that fails with an error message.
+	// TestSkip is a test function that skips the test.
+	TestSkip = func(t test.Test) { t.Skip("skip") }
+	// TestSkipf is a test function that skips the test with a formatted message.
+	TestSkipf = func(t test.Test) { t.Skipf("skip") }
+	// TestSkipNow is a test function that skips the test immediately.
+	TestSkipNow = func(t test.Test) { t.SkipNow() }
+	// TestLog is a test function that logs a message.
+	TestLog = func(t test.Test) { t.Log("log") }
+	// TestLogf is a test function that logs a formatted message.
+	TestLogf = func(t test.Test) { t.Logf("log") }
+	// TestError is a test function that fails with an error message.
+	TestError = func(t test.Test) { t.Error("fail") }
+	// TestErrorf is a test function that fails with a formatted error message.
 	TestErrorf = func(t test.Test) { t.Errorf("fail") }
-	// TestFatalf is a test function that fails with a fatal error message.
+	// TestFatal is a test function that fails with a fatal error message.
+	TestFatal = func(t test.Test) {
+		// Duplicate terminal failures are ignored.
+		go func() { t.Fatal("fail") }()
+		t.Fatal("fail")
+	}
+	// TestFatalf is a test function that fails with a fatal formatted error
+	// message.
 	TestFatalf = func(t test.Test) {
 		// Duplicate terminal failures are ignored.
 		go func() { t.Fatalf("fail") }()
 		t.Fatalf("fail")
+	}
+	// TestFail is a test function that fails.
+	TestFail = func(t test.Test) {
+		// Duplicate terminal failures are ignored.
+		go func() { t.Fail() }()
+		t.Fail()
 	}
 	// TestFailNow is a test function that fails immediately.
 	TestFailNow = func(t test.Test) {
@@ -87,12 +113,46 @@ var testParams = TestParamMap{
 		test:   TestEmpty,
 		expect: test.Success,
 	},
+	"base skip": {
+		test:   TestSkip,
+		expect: test.Success,
+	},
+	"base skipf": {
+		test:   TestSkipf,
+		expect: test.Success,
+	},
+	"base skipnow": {
+		test:   TestSkipNow,
+		expect: test.Success,
+	},
+	"base log": {
+		test:   TestLog,
+		expect: test.Success,
+	},
+	"base logf": {
+		test:   TestLogf,
+		expect: test.Success,
+	},
+	"base error": {
+		test:   TestError,
+		expect: test.Failure,
+	},
 	"base errorf": {
 		test:   TestErrorf,
 		expect: test.Failure,
 	},
+	"base fatal": {
+		test:     TestFatal,
+		expect:   test.Failure,
+		consumed: true,
+	},
 	"base fatalf": {
 		test:     TestFatalf,
+		expect:   test.Failure,
+		consumed: true,
+	},
+	"base fail": {
+		test:     TestFail,
 		expect:   test.Failure,
 		consumed: true,
 	},
@@ -111,12 +171,46 @@ var testParams = TestParamMap{
 		test:   test.InRun(test.Success, TestEmpty),
 		expect: test.Success,
 	},
+	"inrun success with skip": {
+		test:   test.InRun(test.Success, TestSkip),
+		expect: test.Success,
+	},
+	"inrun success with skipf": {
+		test:   test.InRun(test.Success, TestSkipf),
+		expect: test.Success,
+	},
+	"inrun success with skipnow": {
+		test:   test.InRun(test.Success, TestSkipNow),
+		expect: test.Success,
+	},
+	"inrun success with log": {
+		test:   test.InRun(test.Success, TestLog),
+		expect: test.Success,
+	},
+	"inrun success with logf": {
+		test:   test.InRun(test.Success, TestLogf),
+		expect: test.Success,
+	},
+	"inrun success with error": {
+		test:   test.InRun(test.Success, TestError),
+		expect: test.Failure,
+	},
 	"inrun success with errorf": {
 		test:   test.InRun(test.Success, TestErrorf),
 		expect: test.Failure,
 	},
+	"inrun success with fatal": {
+		test:     test.InRun(test.Success, TestFatal),
+		expect:   test.Failure,
+		consumed: true,
+	},
 	"inrun success with fatalf": {
 		test:     test.InRun(test.Success, TestFatalf),
+		expect:   test.Failure,
+		consumed: true,
+	},
+	"inrun success with fail": {
+		test:     test.InRun(test.Success, TestFail),
 		expect:   test.Failure,
 		consumed: true,
 	},
@@ -135,12 +229,46 @@ var testParams = TestParamMap{
 		test:   test.InRun(test.Failure, TestEmpty),
 		expect: test.Failure,
 	},
+	"inrun failure with skip": {
+		test:   test.InRun(test.Failure, TestSkip),
+		expect: test.Failure,
+	},
+	"inrun failure with skipf": {
+		test:   test.InRun(test.Failure, TestSkipf),
+		expect: test.Failure,
+	},
+	"inrun failure with skipnow": {
+		test:   test.InRun(test.Failure, TestSkipNow),
+		expect: test.Failure,
+	},
+	"inrun failure with log": {
+		test:   test.InRun(test.Failure, TestLog),
+		expect: test.Failure,
+	},
+	"inrun failure with logf": {
+		test:   test.InRun(test.Failure, TestLogf),
+		expect: test.Failure,
+	},
+	"inrun failure with error": {
+		test:   test.InRun(test.Failure, TestError),
+		expect: test.Success,
+	},
 	"inrun failure with errorf": {
 		test:   test.InRun(test.Failure, TestErrorf),
 		expect: test.Success,
 	},
+	"inrun failure with fatal": {
+		test:     test.InRun(test.Failure, TestFatal),
+		expect:   test.Success,
+		consumed: true,
+	},
 	"inrun failure with fatalf": {
 		test:     test.InRun(test.Failure, TestFatalf),
+		expect:   test.Success,
+		consumed: true,
+	},
+	"inrun failure with fail": {
+		test:     test.InRun(test.Failure, TestFail),
 		expect:   test.Success,
 		consumed: true,
 	},
@@ -175,4 +303,7 @@ func ExecTest(t test.Test, param TestParam) {
 
 	// Then
 	wg.Wait()
+	if param.expect == test.Failure {
+		assert.True(t, t.Failed())
+	}
 }

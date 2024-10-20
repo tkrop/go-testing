@@ -124,14 +124,12 @@ func methodsMockIFaceFunc(mocktest, test, mock string) []*Method {
 		}, {
 			Name: "err", Type: "error",
 		}},
-		Variadic: false,
 	}, {
 		Name: "CallC",
 		Params: []*Param{{
 			Name: "test", Type: aliasType(test, "Context"),
 		}},
-		Results:  []*Param{},
-		Variadic: false,
+		Results: []*Param{},
 	}}
 }
 
@@ -172,13 +170,25 @@ var (
 		pathTest, pathTesting, pathMock)
 
 	methodsTestTest = []*Method{{
+		Name: "Cleanup",
+		Params: []*Param{
+			{Name: "cleanup", Type: "func()"},
+		},
+		Results: []*Param{},
+	}, {
 		Name:   "Deadline",
 		Params: []*Param{},
 		Results: []*Param{
 			{Name: "deadline", Type: "time.Time"},
 			{Name: "ok", Type: "bool"},
 		},
-		Variadic: false,
+	}, {
+		Name: "Error",
+		Params: []*Param{
+			{Name: "args", Type: "[]any"},
+		},
+		Results:  []*Param{},
+		Variadic: true,
 	}, {
 		Name: "Errorf",
 		Params: []*Param{
@@ -188,10 +198,24 @@ var (
 		Results:  []*Param{},
 		Variadic: true,
 	}, {
-		Name:     "FailNow",
-		Params:   []*Param{},
+		Name:    "Fail",
+		Params:  []*Param{},
+		Results: []*Param{},
+	}, {
+		Name:    "FailNow",
+		Params:  []*Param{},
+		Results: []*Param{},
+	}, {
+		Name:    "Failed",
+		Params:  []*Param{},
+		Results: []*Param{{Type: "bool"}},
+	}, {
+		Name: "Fatal",
+		Params: []*Param{
+			{Name: "args", Type: "[]any"},
+		},
 		Results:  []*Param{},
-		Variadic: false,
+		Variadic: true,
 	}, {
 		Name: "Fatalf",
 		Params: []*Param{
@@ -201,36 +225,76 @@ var (
 		Results:  []*Param{},
 		Variadic: true,
 	}, {
-		Name:     "Helper",
-		Params:   []*Param{},
-		Results:  []*Param{},
-		Variadic: false,
+		Name:    "Helper",
+		Params:  []*Param{},
+		Results: []*Param{},
 	}, {
-		Name:     "Name",
-		Params:   []*Param{},
-		Results:  []*Param{{Type: "string"}},
-		Variadic: false,
-	}, {
-		Name:     "Parallel",
-		Params:   []*Param{},
+		Name: "Log",
+		Params: []*Param{
+			{Name: "args", Type: "[]any"},
+		},
 		Results:  []*Param{},
-		Variadic: false,
+		Variadic: true,
+	}, {
+		Name: "Logf",
+		Params: []*Param{
+			{Name: "format", Type: "string"},
+			{Name: "args", Type: "[]any"},
+		},
+		Results:  []*Param{},
+		Variadic: true,
+	}, {
+		Name:    "Name",
+		Params:  []*Param{},
+		Results: []*Param{{Type: "string"}},
+	}, {
+		Name:    "Parallel",
+		Params:  []*Param{},
+		Results: []*Param{},
 	}, {
 		Name: "Setenv",
 		Params: []*Param{
 			{Name: "key", Type: "string"},
 			{Name: "value", Type: "string"},
 		},
-		Results:  []*Param{},
-		Variadic: false,
+		Results: []*Param{},
 	}, {
-		Name:     "TempDir",
-		Params:   []*Param{},
-		Results:  []*Param{{Type: "string"}},
-		Variadic: false,
+		Name: "Skip",
+		Params: []*Param{
+			{Name: "args", Type: "[]any"},
+		},
+		Results:  []*Param{},
+		Variadic: true,
+	}, {
+		Name:    "SkipNow",
+		Params:  []*Param{},
+		Results: []*Param{},
+	}, {
+		Name: "Skipf",
+		Params: []*Param{
+			{Name: "format", Type: "string"},
+			{Name: "args", Type: "[]any"},
+		},
+		Results:  []*Param{},
+		Variadic: true,
+	}, {
+		Name:    "Skipped",
+		Params:  []*Param{},
+		Results: []*Param{{Type: "bool"}},
+	}, {
+		Name:    "TempDir",
+		Params:  []*Param{},
+		Results: []*Param{{Type: "string"}},
 	}}
 
 	methodsTestReporter = []*Method{{
+		Name: "Error",
+		Params: []*Param{
+			{Name: "args", Type: "[]any"},
+		},
+		Results:  []*Param{},
+		Variadic: true,
+	}, {
 		Name: "Errorf",
 		Params: []*Param{
 			{Name: "format", Type: "string"},
@@ -239,10 +303,20 @@ var (
 		Results:  []*Param{},
 		Variadic: true,
 	}, {
-		Name:     "FailNow",
-		Params:   []*Param{},
+		Name:    "Fail",
+		Params:  []*Param{},
+		Results: []*Param{},
+	}, {
+		Name:    "FailNow",
+		Params:  []*Param{},
+		Results: []*Param{},
+	}, {
+		Name: "Fatal",
+		Params: []*Param{
+			{Name: "args", Type: "[]any"},
+		},
 		Results:  []*Param{},
-		Variadic: false,
+		Variadic: true,
 	}, {
 		Name: "Fatalf",
 		Params: []*Param{
@@ -252,10 +326,9 @@ var (
 		Results:  []*Param{},
 		Variadic: true,
 	}, {
-		Name:     "Panic",
-		Params:   []*Param{{Name: "arg", Type: "any"}},
-		Results:  []*Param{},
-		Variadic: false,
+		Name:    "Panic",
+		Params:  []*Param{{Name: "arg", Type: "any"}},
+		Results: []*Param{},
 	}}
 
 	methodsGoMockTestReporter = []*Method{{

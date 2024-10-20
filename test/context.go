@@ -16,7 +16,7 @@ import (
 
 // Test is a minimal interface for abstracting test methods that are needed to
 // setup an isolated test environment for GoMock and Testify.
-type Test interface {
+type Test interface { //nolint:interfacebloat // Minimal interface.
 	// Name provides the test name.
 	Name() string
 	// Helper declares a test helper function.
@@ -31,29 +31,61 @@ type Test interface {
 	// Deadline returns the deadline of the test and a flag indicating whether
 	// the deadline is set.
 	Deadline() (deadline time.Time, ok bool)
+	// Skip is a helper method to skip the test.
+	Skip(args ...any)
+	// Skipf is a helper method to skip the test with a formatted message.
+	Skipf(format string, args ...any)
+	// SkipNow is a helper method to skip the test immediately.
+	SkipNow()
+	// Skipped reports whether the test has been skipped.
+	Skipped() bool
+	// Log provides a logging function for the test.
+	Log(args ...any)
+	// Logf provides a logging function for the test.
+	Logf(format string, args ...any)
+	// Error handles a failure messages when a test is supposed to continue.
+	Error(args ...any)
 	// Errorf handles a failure messages when a test is supposed to continue.
 	Errorf(format string, args ...any)
+	// Fatal handles a fatal failure message that immediate aborts of the test
+	// execution.
+	Fatal(args ...any)
 	// Fatalf handles a fatal failure message that immediate aborts of the test
 	// execution.
 	Fatalf(format string, args ...any)
+	// Fail handles a failure message that immediate aborts of the test
+	// execution.
+	Fail()
 	// FailNow handles fatal failure notifications without log output that
 	// aborts test execution immediately.
 	FailNow()
+	// Failed reports whether the test has failed.
+	Failed() bool
+	// Cleanup is a function called to setup test cleanup after execution.
+	Cleanup(cleanup func())
 }
 
 // Reporter is a minimal interface for abstracting test report methods that are
 // needed to setup an isolated test environment for GoMock and Testify.
 type Reporter interface {
-	// Panic reports a panic.
-	Panic(arg any)
+	// Error reports a failure messages when a test is supposed to continue.
+	Error(args ...any)
 	// Errorf reports a failure messages when a test is supposed to continue.
 	Errorf(format string, args ...any)
+	// Fatal reports a fatal failure message that immediate aborts of the test
+	// execution.
+	Fatal(args ...any)
 	// Fatalf reports a fatal failure message that immediate aborts of the test
 	// execution.
 	Fatalf(format string, args ...any)
+	// Fail reports a failure message that immediate aborts of the test
+	// execution.
+	Fail()
 	// FailNow reports fatal failure notifications without log output that
 	// aborts test execution immediately.
 	FailNow()
+	// Panic reports a panic.
+	Panic(arg any)
 }
 
 // Cleanuper defines an interface to add a custom mehtod that is called after
@@ -235,7 +267,6 @@ func (t *Context) Parallel() {
 // TempDir delegates the request to the parent test context.
 func (t *Context) TempDir() string {
 	t.t.Helper()
-
 	return t.t.TempDir()
 }
 
@@ -243,6 +274,7 @@ func (t *Context) TempDir() string {
 // `*testing.T`. Else it is swallowing the request silently.
 func (t *Context) Setenv(key, value string) {
 	t.t.Helper()
+
 	t.t.Setenv(key, value)
 }
 
@@ -257,6 +289,72 @@ func (t *Context) Deadline() (time.Time, bool) {
 		return t.deadline, true
 	}
 	return t.t.Deadline()
+}
+
+// Skip delegates request to the parent context. It is a helper method to skip
+// the test.
+func (t *Context) Skip(args ...any) {
+	t.t.Helper()
+
+	t.t.Skip(args...)
+}
+
+// Skipf delegates request to the parent context. It is a helper method to skip
+// the test with a formatted message.
+func (t *Context) Skipf(format string, args ...any) {
+	t.t.Helper()
+
+	t.t.Skipf(format, args...)
+}
+
+// SkipNow delegates request to the parent context. It is a helper method to skip
+// the test immediately.
+func (t *Context) SkipNow() {
+	t.t.Helper()
+
+	t.t.SkipNow()
+}
+
+// Skipped delegates request to the parent context. It reports whether the test
+// has been skipped.
+func (t *Context) Skipped() bool {
+	t.t.Helper()
+
+	return t.t.Skipped()
+}
+
+// Log delegates request to the parent context. It provides a logging function
+// for the test.
+func (t *Context) Log(args ...any) {
+	t.t.Helper()
+
+	t.t.Log(args...)
+}
+
+// Logf delegates request to the parent context. It provides a logging function
+// for the test.
+func (t *Context) Logf(format string, args ...any) {
+	t.t.Helper()
+
+	t.t.Logf(format, args...)
+}
+
+// Error handles failure messages where the test is supposed to continue. On
+// an expected success, the failure is also delegated to the parent test
+// context. Else it delegates the request to the test reporter if available.
+func (t *Context) Error(args ...any) {
+	t.t.Helper()
+
+	t.failed.Store(true)
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if t.expect == Success {
+		t.t.Error(args...)
+	} else if t.reporter != nil {
+		t.reporter.Error(args...)
+	}
 }
 
 // Errorf handles failure messages where the test is supposed to continue. On
@@ -275,6 +373,29 @@ func (t *Context) Errorf(format string, args ...any) {
 	} else if t.reporter != nil {
 		t.reporter.Errorf(format, args...)
 	}
+}
+
+// Fatal handles a fatal failure message that immediate aborts of the test
+// execution. On an expected success, the failure handling is also delegated
+// to the parent test context. Else it delegates the request to the test
+// reporter if available.
+func (t *Context) Fatal(args ...any) {
+	t.t.Helper()
+
+	if t.failed.Swap(true) {
+		runtime.Goexit()
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	defer t.unlock()
+
+	if t.expect == Success {
+		t.t.Fatal(args...)
+	} else if t.reporter != nil {
+		t.reporter.Fatal(args...)
+	}
+	runtime.Goexit()
 }
 
 // Fatalf handles a fatal failure message that immediate aborts of the test
@@ -300,6 +421,28 @@ func (t *Context) Fatalf(format string, args ...any) {
 	runtime.Goexit()
 }
 
+// Fail handles a failure message that immediate aborts of the test execution.
+// On an expected success, the failure handling is also delegated to the parent
+// test context. Else it delegates the request to the test reporter if available.
+func (t *Context) Fail() {
+	t.t.Helper()
+
+	if t.failed.Swap(true) {
+		runtime.Goexit()
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	defer t.unlock()
+
+	if t.expect == Success {
+		t.t.Fail()
+	} else if t.reporter != nil {
+		t.reporter.Fail()
+	}
+	runtime.Goexit()
+}
+
 // FailNow handles fatal failure notifications without log output that aborts
 // test execution immediately. On an expected success, it the failure handling
 // is also delegated to the parent test context. Else it delegates the request
@@ -321,6 +464,13 @@ func (t *Context) FailNow() {
 		t.reporter.FailNow()
 	}
 	runtime.Goexit()
+}
+
+// Failed reports whether the test has failed.
+func (t *Context) Failed() bool {
+	t.t.Helper()
+
+	return t.failed.Load()
 }
 
 // Offset fr original stack in case of panic handling.
@@ -441,6 +591,10 @@ func (t *Context) register() {
 func (t *Context) finish() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+
+	if t.t.Skipped() {
+		return
+	}
 
 	switch t.expect {
 	case Success:
