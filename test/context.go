@@ -2,9 +2,9 @@ package test
 
 import (
 	"math"
+	"regexp"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	gosync "sync"
 	"sync/atomic"
 	"testing"
@@ -450,10 +450,10 @@ func (t *Context) Failed() bool {
 	return t.failed.Load()
 }
 
-// Offset fr original stack in case of panic handling.
-//
-// TODO: check offset or/and find a better solution to handle panic stack.
-const panicOriginStackOffset = 10
+// regexPanic is a regular expression to extract the actual important panic
+// stack trace removing the distracting parts from the test framework.
+var regexPanic = regexp.MustCompile(`(?m)\nruntime\/debug\.Stack\(\)` +
+	`(\n|.)*runtime\/panic\.go:([0-9]+)[^\n]*\n`)
 
 // Panic handles failure notifications of panics that also abort the test
 // execution immediately.
@@ -469,10 +469,8 @@ func (t *Context) Panic(arg any) {
 	defer t.unlock()
 
 	if t.expect == Success {
-		stack := strings.SplitN(string(debug.Stack()),
-			"\n", panicOriginStackOffset)
-		t.Fatalf("panic: %v\n%s\n%s", arg, stack[0],
-			stack[panicOriginStackOffset-1])
+		stack := regexPanic.Split(string(debug.Stack()), -1)
+		t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[1])
 	} else if t.reporter != nil {
 		t.reporter.Panic(arg)
 	}

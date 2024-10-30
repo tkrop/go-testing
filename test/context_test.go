@@ -130,7 +130,6 @@ type TestDeadlineParam struct {
 	failure            test.Expect
 }
 
-// TODO: fix unit test for deadline!!
 var TestDeadlineParams = map[string]TestDeadlineParam{
 	"failed": {
 		time:    0,
