@@ -12,12 +12,12 @@ export GOPATH ?= $(shell $(GO) env GOPATH)
 export GOBIN ?= $(GOPATH)/bin
 
 # Setup go-make version to use desired build and config scripts.
-GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.108
+GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.114
 INSTALL_FLAGS ?= -mod=readonly -buildvcs=auto
 # Request targets from go-make targets target.
 TARGETS := $(shell command -v $(GOBIN)/go-make >/dev/null || \
 	$(GO) install $(INSTALL_FLAGS) $(GOMAKE_DEP) >/dev/stderr && \
-	$(GOBIN)/go-make show-targets 2>/dev/null)
+	MAKEFLAGS="" $(GOBIN)/go-make show-targets 2>/dev/null)
 # Declare all targets phony to make them available for auto-completion.
 .PHONY:: $(TARGETS)
 
