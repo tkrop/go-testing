@@ -67,7 +67,7 @@ If you have access to the HTTP request/response client, you can use the usual
 ```go
 func TestUnit(t *testing.T) {
     // Given
-    gock := tock.Controller(t)
+    gock := gock.Controller(t)
 
     ...
 
@@ -87,7 +87,7 @@ implements this interface and therefore can be simply used as drop in entity.
 ```go
 func TestUnit(t *testing.T) {
     // Given
-    gock := tock.Controller(t)
+    gock := gock.Controller(t)
 
     ...
 
