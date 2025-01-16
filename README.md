@@ -153,10 +153,11 @@ tests](#requirements-for-parallel-isolated-tests).
 
 ### Why strong validation?
 
-Test are only meaningful, if they validate ensure pre-conditions and validate
-post-conditions sufficiently strict. Without validation test cannot ensure that
-the system under test behaves as expected — even with 100% code and branch
-coverage. As a consequence, a system may fail in unexpected ways in production.
+Test are only meaningful, if they ensure/validate pre-conditions as well as
+validate/ensure post-conditions sufficiently strict. Without validation test
+cannot ensure that the system under test behaves as expected — even with 100%
+code and branch coverage. As a consequence, a system may fail in unexpected
+ways in production.
 
 Thus, it is advised to validate input parameters for mocked requests and to
 carefully define the order of mock requests and responses. The [`mock`](mock)
@@ -170,7 +171,7 @@ The `testing` framework consists of the following sub-packages:
 
 * [`test`](test) provides a small framework to isolate the test execution and
   safely check whether a test fails or succeeds as expected in combination with
-  the [`mock`](mock) package — even in if a system under test spans detached
+  the [`mock`](mock) package — even if a system under test spans detached
   [`go`-routines][go-routines].
 
 * [`mock`](mock) provides the means to set up a simple chain as well as a
