@@ -179,8 +179,8 @@ func TestSliceRunFiltered(t *testing.T) {
 // simplified test pattern that only works on `test.Test` and not `testing.T“.
 func TestRunnerPanic(t *testing.T) {
 	defer func() {
-		assert.Equal(t, "testing: t.Parallel called after t.Setenv;"+
-			" cannot set environment variables in parallel tests", recover())
+		assert.Equal(t, "testing: test using t.Setenv or t.Chdir"+
+			" can not use t.Parallel", recover())
 	}()
 	t.Setenv("TESTING", "before")
 
