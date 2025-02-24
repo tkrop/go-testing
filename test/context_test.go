@@ -71,8 +71,8 @@ var testPanicParams = map[string]PanicParam{
 			t.Setenv("TESTING", "during")
 			assert.Equal(t, "during", os.Getenv("TESTING"))
 		},
-		expect: test.Panic("testing: t.Setenv called after t.Parallel;" +
-			" cannot set environment variables in parallel tests"),
+		expect: test.Panic("testing: test using t.Setenv or t.Chdir" +
+			" can not use t.Parallel"),
 	},
 
 	"setenv before run without parallel": {
@@ -92,8 +92,8 @@ var testPanicParams = map[string]PanicParam{
 			t.Setenv("TESTING", "before")
 			assert.Equal(t, "before", os.Getenv("TESTING"))
 		},
-		expect: test.Panic("testing: t.Parallel called after t.Setenv;" +
-			" cannot set environment variables in parallel tests"),
+		expect: test.Panic("testing: test using t.Setenv or t.Chdir" +
+			" can not use t.Parallel"),
 	},
 
 	"swallow multiple parallel calls": {
