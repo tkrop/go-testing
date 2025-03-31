@@ -99,9 +99,17 @@ var (
 		t.FailNow()
 	}
 	// TestPanic is a test function that panics.
-	TestPanic = func(t test.Test) {
+	TestPanic = func(test.Test) {
 		// Duplicate terminal failures are ignored.
-		go func() { t.(*test.Context).Panic("fail") }()
+		go func() {
+			// Recover from panic to avoid test abort.
+			defer func() {
+				if r := recover(); r != "fail" {
+					panic(r)
+				}
+			}()
+			panic("fail")
+		}()
 		panic("fail")
 	}
 )

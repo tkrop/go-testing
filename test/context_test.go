@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tkrop/go-testing/mock"
@@ -46,18 +47,52 @@ func TestTempDir(t *testing.T) {
 	}))
 }
 
-// PanicParam is a test parameter type for testing the test context with panic
-// cases.
-type PanicParam struct {
+// ContextParam is a test parameter type for testing the test context.
+type ContextParam struct {
+	setup mock.SetupFunc
+	test  func(test.Test)
+}
+
+// testContextParams is a map of test parameters for testing the test context.
+var testContextParams = map[string]ContextParam{
+	"panic": {
+		setup: mock.Chain(
+			test.Fatalf("panic: %v\n%s\n%s", "test", gomock.Any(), gomock.Any()),
+		),
+		test: func(test.Test) {
+			panic("test")
+		},
+	},
+	// TODO: add more test cases for the test context.
+}
+
+// TestContext is testing the test context with single simple test cases.
+func TestContext(t *testing.T) {
+	for name, param := range testContextParams {
+		name, param := name, param
+		t.Run(name, test.Run(test.Success, func(t test.Test) {
+			// Given
+			mock.NewMocks(t).Expect(param.setup)
+
+			// When
+			test.New(t, test.Success).
+				Run(param.test, !test.Parallel)
+		}))
+	}
+}
+
+// ParallelParam is a test parameter type for testing the test context in
+// conflicting parallel cases resulting in panics.
+type ParallelParam struct {
+	setup    mock.SetupFunc
 	parallel bool
 	before   func(test.Test)
 	during   func(test.Test)
-	expect   mock.SetupFunc
 }
 
-// testPanicParams is a map of test parameters for testing the test context with
-// panic cases.
-var testPanicParams = map[string]PanicParam{
+// testParallelParams is a map of test parameters for testing the test context
+// in conflicting parallel cases resulting in a panics.
+var testParallelParams = map[string]ParallelParam{
 	"setenv in run without parallel": {
 		during: func(t test.Test) {
 			t.Setenv("TESTING", "during")
@@ -66,13 +101,13 @@ var testPanicParams = map[string]PanicParam{
 	},
 
 	"setenv in run with parallel": {
+		setup: test.Panic("testing: test using t.Setenv or t.Chdir" +
+			" can not use t.Parallel"),
 		parallel: true,
 		during: func(t test.Test) {
 			t.Setenv("TESTING", "during")
 			assert.Equal(t, "during", os.Getenv("TESTING"))
 		},
-		expect: test.Panic("testing: test using t.Setenv or t.Chdir" +
-			" can not use t.Parallel"),
 	},
 
 	"setenv before run without parallel": {
@@ -87,13 +122,13 @@ var testPanicParams = map[string]PanicParam{
 	},
 
 	"setenv before run with parallel": {
+		setup: test.Panic("testing: test using t.Setenv or t.Chdir" +
+			" can not use t.Parallel"),
 		parallel: true,
 		before: func(t test.Test) {
 			t.Setenv("TESTING", "before")
 			assert.Equal(t, "before", os.Getenv("TESTING"))
 		},
-		expect: test.Panic("testing: test using t.Setenv or t.Chdir" +
-			" can not use t.Parallel"),
 	},
 
 	"swallow multiple parallel calls": {
@@ -104,20 +139,21 @@ var testPanicParams = map[string]PanicParam{
 	},
 }
 
-// TestContextPanic is testing the test context with panic cases.
-func TestContextPanic(t *testing.T) {
-	for name, param := range testPanicParams {
+// TestContextParallel is testing the test context in conflicting parallel
+// cases creating panics.
+func TestContextParallel(t *testing.T) {
+	for name, param := range testParallelParams {
 		name, param := name, param
 		t.Run(name, test.RunSeq(test.Success, func(t test.Test) {
 			// Given
 			if param.before != nil {
-				mock.NewMocks(t).Expect(param.expect)
+				mock.NewMocks(t).Expect(param.setup)
 				param.before(t)
 			}
 
 			// When
 			test.New(t, test.Success).Run(func(t test.Test) {
-				mock.NewMocks(t).Expect(param.expect)
+				mock.NewMocks(t).Expect(param.setup)
 				param.during(t)
 			}, param.parallel)
 		}))
