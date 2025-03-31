@@ -262,6 +262,7 @@ func (t *Context) Deadline() (time.Time, bool) {
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
+
 	if !t.deadline.IsZero() {
 		return t.deadline, true
 	}
@@ -359,12 +360,7 @@ func (t *Context) Errorf(format string, args ...any) {
 func (t *Context) Fatal(args ...any) {
 	t.t.Helper()
 
-	if t.failed.Swap(true) {
-		runtime.Goexit()
-	}
-
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.lockOrExit()
 	defer t.unlock()
 
 	if t.expect == Success {
@@ -382,12 +378,7 @@ func (t *Context) Fatal(args ...any) {
 func (t *Context) Fatalf(format string, args ...any) {
 	t.t.Helper()
 
-	if t.failed.Swap(true) {
-		runtime.Goexit()
-	}
-
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.lockOrExit()
 	defer t.unlock()
 
 	if t.expect == Success {
@@ -404,12 +395,7 @@ func (t *Context) Fatalf(format string, args ...any) {
 func (t *Context) Fail() {
 	t.t.Helper()
 
-	if t.failed.Swap(true) {
-		runtime.Goexit()
-	}
-
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.lockOrExit()
 	defer t.unlock()
 
 	if t.expect == Success {
@@ -427,12 +413,7 @@ func (t *Context) Fail() {
 func (t *Context) FailNow() {
 	t.t.Helper()
 
-	if t.failed.Swap(true) {
-		runtime.Goexit()
-	}
-
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.lockOrExit()
 	defer t.unlock()
 
 	if t.expect == Success {
@@ -460,17 +441,12 @@ var regexPanic = regexp.MustCompile(`(?m)\nruntime\/debug\.Stack\(\)` +
 func (t *Context) Panic(arg any) {
 	t.t.Helper()
 
-	if t.failed.Swap(true) {
-		runtime.Goexit()
-	}
-
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.lockOrExit()
 	defer t.unlock()
 
 	if t.expect == Success {
 		stack := regexPanic.Split(string(debug.Stack()), -1)
-		t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[1])
+		t.t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[1])
 	} else if t.reporter != nil {
 		t.reporter.Panic(arg)
 	}
@@ -583,10 +559,22 @@ func (t *Context) finish() {
 	}
 }
 
+// lockOrExit either locks the test mutex or aborts a test in case of a pending
+// test failure to ensure that only the first failure is reported.
+func (t *Context) lockOrExit() {
+	t.t.Helper()
+
+	if t.expect == Failure && t.failed.Swap(true) {
+		runtime.Goexit()
+	}
+	t.mu.Lock()
+}
+
 // unlock unlocks the wait group of the test by consuming the wait group
 // counter completely.
 func (t *Context) unlock() {
 	if t.wg != nil {
 		t.wg.Add(math.MinInt)
 	}
+	t.mu.Unlock()
 }
