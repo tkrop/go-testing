@@ -1,3 +1,5 @@
+## Maintained by: github.com/tkrop/go-make
+
 # Translates the 'golangci-lint' settings into an Codacy understandable format.
 
 # When set to false, ignores files with "GENERATED" header.

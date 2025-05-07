@@ -1,3 +1,5 @@
+## Maintained by: github.com/tkrop/go-make
+
 engines:
   duplication:
     minTokenMatch: 50
