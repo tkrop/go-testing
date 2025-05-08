@@ -37,8 +37,12 @@ enableAllRules = true
 [rule.import-shadowing]
   disabled = true
 
-# Exluding '.'-import makes test package separation unnecessary difficult.
+# Excluding '.'-import makes test package separation unnecessary difficult.
 [rule.dot-imports]
+  disabled = true
+
+# Excluding unchecked type assertion since ending in panic is usually okay.
+[rule.unchecked-type-assertion]
   disabled = true
 
 # Fails to disable writers that actually cannot return errors.
