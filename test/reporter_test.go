@@ -163,7 +163,7 @@ func TestCallMatcher(t *testing.T) {
 type ReporterParams struct {
 	mockSetup mock.SetupFunc
 	failSetup func(test.Test, *mock.Mocks) mock.SetupFunc
-	call      func(test.Test)
+	call      test.Func
 }
 
 var testReporterParams = map[string]ReporterParams{

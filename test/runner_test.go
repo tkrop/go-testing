@@ -30,13 +30,11 @@ func TestAnyRunSeq(t *testing.T) {
 
 	for _, param := range testParams {
 		finished := false
-		test.Any[TestParam](t, TestParam{
-			test:   param.test,
-			expect: param.expect,
-		}).RunSeq(func(t test.Test, param TestParam) {
-			defer func() { finished = true }()
-			ExecTest(t, param)
-		}).Cleanup(func() {
+		test.Any[TestParam](t, param.Copy()).
+			RunSeq(func(t test.Test, param TestParam) {
+				defer func() { finished = true }()
+				ExecTest(t, param)
+			}).Cleanup(func() {
 			assert.True(t, finished)
 		})
 	}
@@ -49,15 +47,12 @@ func TestAnyRunNamed(t *testing.T) {
 	for name, param := range testParams {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
-		test.Any[TestParam](t, TestParam{
-			name:   test.Name(name),
-			test:   param.test,
-			expect: param.expect,
-		}).Run(func(t test.Test, param TestParam) {
-			defer func() { finished = true }()
-			assert.Equal(t, tname, t.Name())
-			ExecTest(t, param)
-		}).Cleanup(func() {
+		test.Any[TestParam](t, param.Rename(name)).
+			Run(func(t test.Test, param TestParam) {
+				defer func() { finished = true }()
+				assert.Equal(t, tname, t.Name())
+				ExecTest(t, param)
+			}).Cleanup(func() {
 			assert.True(t, finished, tname)
 		})
 	}
@@ -71,15 +66,12 @@ func TestAnyRunSeqNamed(t *testing.T) {
 	for name, param := range testParams {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
-		test.Any[TestParam](t, TestParam{
-			name:   test.Name(name),
-			test:   param.test,
-			expect: param.expect,
-		}).RunSeq(func(t test.Test, param TestParam) {
-			defer func() { finished = true }()
-			assert.Equal(t, tname, t.Name())
-			ExecTest(t, param)
-		}).Cleanup(func() {
+		test.Any[TestParam](t, param.Rename(name)).
+			RunSeq(func(t test.Test, param TestParam) {
+				defer func() { finished = true }()
+				assert.Equal(t, tname, t.Name())
+				ExecTest(t, param)
+			}).Cleanup(func() {
 			assert.True(t, finished, tname)
 		})
 	}
@@ -93,16 +85,14 @@ func TestAnyRunFiltered(t *testing.T) {
 	for name, param := range testParams {
 		pattern, finished := "base", false
 		tname := t.Name() + "/" + test.TestName(name, param)
-		test.Any[TestParam](t, TestParam{
-			name:   test.Name(name),
-			test:   param.test,
-			expect: param.expect,
-		}).Filter(pattern, true).Run(func(t test.Test, param TestParam) {
-			defer func() { finished = true }()
-			assert.Equal(t, tname, t.Name())
-			assert.Contains(t, t.Name(), pattern)
-			ExecTest(t, param)
-		}).Cleanup(func() {
+		test.Any[TestParam](t, param.Rename(name)).
+			Filter(pattern, true).
+			Run(func(t test.Test, param TestParam) {
+				defer func() { finished = true }()
+				assert.Equal(t, tname, t.Name())
+				assert.Contains(t, t.Name(), pattern)
+				ExecTest(t, param)
+			}).Cleanup(func() {
 			if strings.Contains(tname, pattern) {
 				assert.True(t, finished, tname)
 			}
@@ -130,7 +120,8 @@ func TestMapRunFiltered(t *testing.T) {
 	pattern, count := "base", atomic.Int32{}
 	expect := testParams.FilterBy(pattern)
 
-	test.Map(t, testParams).Filter(pattern, true).
+	test.Map(t, testParams).
+		Filter(pattern, true).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
 			assert.Contains(t, t.Name(), pattern)
@@ -162,7 +153,8 @@ func TestSliceRunFiltered(t *testing.T) {
 	pattern, count := "inrun", atomic.Int32{}
 	expect := testParams.FilterBy(pattern)
 
-	test.Slice(t, testParams.GetSlice()).Filter(pattern, true).
+	test.Slice(t, testParams.GetSlice()).
+		Filter(pattern, true).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
 			assert.Contains(t, t.Name(), pattern)

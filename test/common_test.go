@@ -20,10 +20,38 @@ type ParamParam struct {
 // well as the test runner using the same parameter sets.
 type TestParam struct {
 	name     test.Name
+	before   test.SetupFunc
 	setup    mock.SetupFunc
-	test     func(test.Test)
+	test     test.Func
+	after    test.CleanupFunc
 	expect   test.Expect
 	consumed bool
+}
+
+// Rename returns a new test parameter set with the given name.
+func (p TestParam) Rename(name string) TestParam {
+	return TestParam{
+		name:     test.Name(name),
+		before:   p.before,
+		setup:    p.setup,
+		test:     p.test,
+		after:    p.after,
+		expect:   p.expect,
+		consumed: p.consumed,
+	}
+}
+
+// Rename returns a new test parameter set with the given name.
+func (p TestParam) Copy() TestParam {
+	return TestParam{
+		name:     p.name,
+		before:   p.before,
+		setup:    p.setup,
+		test:     p.test,
+		after:    p.after,
+		expect:   p.expect,
+		consumed: p.consumed,
+	}
 }
 
 // TestParamMap is a map of test parameters for testing the test context as
@@ -100,18 +128,12 @@ var (
 	}
 	// TestPanic is a test function that panics.
 	TestPanic = func(test.Test) {
-		// Duplicate terminal failures are ignored.
-		go func() {
-			// Recover from panic to avoid test abort.
-			defer func() {
-				if r := recover(); r != "fail" {
-					panic(r)
-				}
-			}()
-			panic("fail")
-		}()
 		panic("fail")
 	}
+	// CleanupEmpty is a cleanup function that does nothing.
+	CleanupEmpty = func() {}
+	// CleanupPanic is a cleanup function that panics.
+	CleanupPanic = func() { panic("cleanup") }
 )
 
 // testParams is the generic map of test parameters for testing the test
@@ -121,8 +143,19 @@ var testParams = TestParamMap{
 		test:   TestEmpty,
 		expect: test.Success,
 	},
+	"base cleanup": {
+		test:   TestEmpty,
+		after:  CleanupEmpty,
+		expect: test.Success,
+	},
 	"base skip": {
 		test:   TestSkip,
+		expect: test.Success,
+	},
+	"base skip before": {
+		before: TestSkip,
+		test:   TestEmpty,
+		after:  CleanupPanic,
 		expect: test.Success,
 	},
 	"base skipf": {

@@ -22,7 +22,7 @@ type ExpectMap map[string]test.Expect
 
 // TestMap defines a map of test functions that is subject of the actual
 // permutation.
-type TestMap map[string]func(t test.Test)
+type TestMap map[string]test.Func
 
 // Test permutation test.
 type Test struct {

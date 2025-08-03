@@ -856,7 +856,7 @@ func TestFuncPanic(t *testing.T) {
 
 type FailureParam struct {
 	expect test.Expect
-	test   func(test.Test)
+	test   test.Func
 }
 
 var testFailureParams = map[string]FailureParam{
