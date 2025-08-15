@@ -1,23 +1,21 @@
 package gock_test
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
 
 	"github.com/h2non/gock"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
-
-var errAny = errors.New("any error")
 
 // NewFooMatcher creates a special foo matcher.
 func NewFooMatcher() *gock.MockMatcher {
 	matcher := gock.NewEmptyMatcher()
 	matcher.Add(func(req *http.Request, _ *gock.Request) (bool, error) {
 		if req.URL.Scheme == "https" {
-			return true, errAny
+			return true, assert.AnError
 		}
 		return true, nil
 	})

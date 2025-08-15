@@ -34,9 +34,10 @@ func TestAnyRunSeq(t *testing.T) {
 			RunSeq(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
 				ExecTest(t, param)
-			}).Cleanup(func() {
-			assert.True(t, finished)
-		})
+			}).
+			Cleanup(func() {
+				assert.True(t, finished)
+			})
 	}
 }
 
@@ -52,9 +53,10 @@ func TestAnyRunNamed(t *testing.T) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
 				ExecTest(t, param)
-			}).Cleanup(func() {
-			assert.True(t, finished, tname)
-		})
+			}).
+			Cleanup(func() {
+				assert.True(t, finished, tname)
+			})
 	}
 }
 
@@ -71,9 +73,10 @@ func TestAnyRunSeqNamed(t *testing.T) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
 				ExecTest(t, param)
-			}).Cleanup(func() {
-			assert.True(t, finished, tname)
-		})
+			}).
+			Cleanup(func() {
+				assert.True(t, finished, tname)
+			})
 	}
 }
 
@@ -92,11 +95,12 @@ func TestAnyRunFiltered(t *testing.T) {
 				assert.Equal(t, tname, t.Name())
 				assert.Contains(t, t.Name(), pattern)
 				ExecTest(t, param)
-			}).Cleanup(func() {
-			if strings.Contains(tname, pattern) {
-				assert.True(t, finished, tname)
-			}
-		})
+			}).
+			Cleanup(func() {
+				if strings.Contains(tname, pattern) {
+					assert.True(t, finished, tname)
+				}
+			})
 	}
 }
 

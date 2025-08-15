@@ -198,8 +198,8 @@ var testFileParams = map[string]FileParams{
 			Target: targetStdout,
 		}},
 		expectName:  os.Stdout.Name(),
-		error:       errAny,
-		expectWrite: NewErrFileWriting(fileStdout, errAny),
+		error:       assert.AnError,
+		expectWrite: NewErrFileWriting(fileStdout, assert.AnError),
 	},
 
 	"no such directory": {
