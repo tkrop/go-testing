@@ -17,8 +17,7 @@ jobs:
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         LANG: en_US.UTF-8
-      # using --trace has a side effect on the the test output.
-      run: make --trace all
+      run: make --trace all || ( find && false )
 
     - name: Send coverage report
       uses: shogo82148/actions-goveralls@v1
