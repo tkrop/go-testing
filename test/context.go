@@ -209,6 +209,9 @@ func (t *Context) Reporter(reporter Reporter) {
 // missing mock calls.
 func (t *Context) Cleanup(cleanup func()) {
 	t.t.Helper()
+	if cleanup == nil {
+		return
+	}
 
 	t.mu.Lock()
 	defer t.mu.Unlock()

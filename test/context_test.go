@@ -20,7 +20,8 @@ func TestRun(t *testing.T) {
 	for name, param := range testParams {
 		name, param := name, param
 		t.Run(name, test.Run(param.expect, func(t test.Test) {
-			ExecTest(t, param)
+			param.CheckName(t)
+			param.ExecTest(t)
 		}))
 	}
 }
@@ -33,7 +34,8 @@ func TestRunSeq(t *testing.T) {
 	for name, param := range testParams {
 		name, param := name, param
 		t.Run(name, test.RunSeq(param.expect, func(t test.Test) {
-			ExecTest(t, param)
+			param.CheckName(t)
+			param.ExecTest(t)
 		}))
 	}
 }

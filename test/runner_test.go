@@ -17,7 +17,8 @@ func TestAnyRun(t *testing.T) {
 		expect: test.Failure,
 	}).Run(func(t test.Test, param TestParam) {
 		defer func() { finished = true }()
-		ExecTest(t, param)
+		param.CheckName(t)
+		param.ExecTest(t)
 	}).Cleanup(func() {
 		assert.True(t, finished)
 	})
@@ -28,12 +29,13 @@ func TestAnyRun(t *testing.T) {
 func TestAnyRunSeq(t *testing.T) {
 	t.Parallel()
 
-	for _, param := range testParams {
+	for name, param := range testParams {
 		finished := false
-		test.Any[TestParam](t, param.Copy()).
+		test.Any[TestParam](t, param.Rename(name)).
 			RunSeq(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
-				ExecTest(t, param)
+				param.CheckName(t)
+				param.ExecTest(t)
 			}).
 			Cleanup(func() {
 				assert.True(t, finished)
@@ -52,7 +54,8 @@ func TestAnyRunNamed(t *testing.T) {
 			Run(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
-				ExecTest(t, param)
+				param.CheckName(t)
+				param.ExecTest(t)
 			}).
 			Cleanup(func() {
 				assert.True(t, finished, tname)
@@ -72,7 +75,8 @@ func TestAnyRunSeqNamed(t *testing.T) {
 			RunSeq(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
-				ExecTest(t, param)
+				param.CheckName(t)
+				param.ExecTest(t)
 			}).
 			Cleanup(func() {
 				assert.True(t, finished, tname)
@@ -94,7 +98,9 @@ func TestAnyRunFiltered(t *testing.T) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
 				assert.Contains(t, t.Name(), pattern)
-				ExecTest(t, param)
+				assert.Contains(t, string(param.name), pattern)
+				param.CheckName(t)
+				param.ExecTest(t)
 			}).
 			Cleanup(func() {
 				if strings.Contains(tname, pattern) {
@@ -111,7 +117,8 @@ func TestMapRun(t *testing.T) {
 	test.Map(t, testParams).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
-			ExecTest(t, param)
+			param.CheckName(t)
+			param.ExecTest(t)
 		}).
 		Cleanup(func() {
 			assert.Equal(t, len(testParams), int(count.Load()))
@@ -129,8 +136,11 @@ func TestMapRunFiltered(t *testing.T) {
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
 			assert.Contains(t, t.Name(), pattern)
-			// assert.Contains(t, expect, param)
-			ExecTest(t, param)
+			name := strings.ReplaceAll(t.Name()[19:], "-", " ")
+			assert.Contains(t, name, pattern)
+			assert.NotNil(t, expect[name])
+			param.CheckName(t)
+			param.ExecTest(t)
 		}).
 		Cleanup(func() {
 			assert.Equal(t, len(expect), int(count.Load()))
@@ -144,7 +154,8 @@ func TestSliceRun(t *testing.T) {
 	test.Slice(t, testParams.GetSlice()).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
-			ExecTest(t, param)
+			param.CheckName(t)
+			param.ExecTest(t)
 		}).
 		Cleanup(func() {
 			assert.Equal(t, len(testParams), int(count.Load()))
@@ -161,9 +172,11 @@ func TestSliceRunFiltered(t *testing.T) {
 		Filter(pattern, true).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
-			assert.Contains(t, t.Name(), pattern)
-			// assert.Contains(t, expect, param)
-			ExecTest(t, param)
+			name := string(param.name)
+			assert.Contains(t, name, pattern)
+			assert.NotNil(t, expect[name])
+			param.CheckName(t)
+			param.ExecTest(t)
 		}).
 		Cleanup(func() {
 			assert.Equal(t, len(expect), int(count.Load()))
@@ -181,7 +194,9 @@ func TestRunnerPanic(t *testing.T) {
 	t.Setenv("TESTING", "before")
 
 	test.Any[ParamParam](t, []ParamParam{{expect: true}}).
-		Run(func(test.Test, ParamParam) {})
+		Run(func(t test.Test, param ParamParam) {
+			param.CheckName(t)
+		})
 }
 
 // This test is checking the runner for recovering from panics in parallel
@@ -193,7 +208,9 @@ func TestInvalidTypePanic(t *testing.T) {
 	}()
 
 	test.Any[TestParam](t, ParamParam{expect: false}).
-		Run(func(test.Test, TestParam) {})
+		Run(func(t test.Test, param TestParam) {
+			param.CheckName(t)
+		})
 }
 
 func TestNameCastFallback(t *testing.T) {
@@ -205,5 +222,7 @@ func TestNameCastFallback(t *testing.T) {
 
 func TestExpectCastFallback(t *testing.T) {
 	test.Any[ParamParam](t, ParamParam{expect: false}).
-		Run(func(test.Test, ParamParam) {})
+		Run(func(t test.Test, param ParamParam) {
+			param.CheckName(t)
+		})
 }

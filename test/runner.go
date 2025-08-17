@@ -212,7 +212,7 @@ func (r *runner[P]) run(
 			if r.filter != nil && !r.filter(name) {
 				continue
 			}
-			r.t.Run(name, r.setup(param, call, parallel))
+			r.t.Run(name, r.test(param, call, parallel))
 		}
 
 	case []P:
@@ -222,7 +222,7 @@ func (r *runner[P]) run(
 			if r.filter != nil && !r.filter(name) {
 				continue
 			}
-			r.t.Run(name, r.setup(param, call, parallel))
+			r.t.Run(name, r.test(param, call, parallel))
 		}
 
 	case P:
@@ -231,9 +231,9 @@ func (r *runner[P]) run(
 			return r
 		}
 		if name != string(unknown) {
-			r.t.Run(name, r.setup(params, call, parallel))
+			r.t.Run(name, r.test(params, call, parallel))
 		} else {
-			r.setup(params, call, parallel)(r.t)
+			r.test(params, call, parallel)(r.t)
 		}
 
 	default:
@@ -242,36 +242,12 @@ func (r *runner[P]) run(
 	return r
 }
 
-// setup sets up the test case by creating the wrapper method, registering the
-// test case in the waiting group, calling the test specific setup function and
-// preparing the test specific cleanup function, iff the setup and the cleanup
-// functions are defined by the parameter sett and provide non-nil values.
-func (r *runner[P]) setup(
-	param P, call ParamFunc[P], parallel bool,
-) func(*testing.T) {
-	r.wg.Add(1)
-
-	access := NewAccessor(param)
-	if access != nil {
-		var setup SetupFunc
-		before := access.Find(setup, "before")
-		if before, ok := before.(SetupFunc); ok && before != nil {
-			before(r.t)
-		}
-
-		var cleanup CleanupFunc
-		after := access.Find(cleanup, "after")
-		if after, ok := after.(CleanupFunc); ok && after != nil {
-			r.t.Cleanup(after)
-		}
-	}
-	return r.test(param, call, parallel)
-}
-
 // test creates the wrapper method executing eventually the test.
 func (r *runner[P]) test(
 	param P, call ParamFunc[P], parallel bool,
 ) func(*testing.T) {
+	r.wg.Add(1)
+
 	return func(t *testing.T) {
 		t.Helper()
 
