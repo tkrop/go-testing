@@ -1,7 +1,6 @@
 package mock_test
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -58,8 +57,6 @@ const (
 )
 
 var (
-	errAny = errors.New("any error")
-
 	absUnknown, _ = filepath.Abs(dirUnknown)
 
 	nameIFace     = &Type{Name: iface}

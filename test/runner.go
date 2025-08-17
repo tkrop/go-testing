@@ -36,6 +36,15 @@ func TestName[P any](name string, param P) string {
 	return string(unknown)
 }
 
+// SetupFunc defines the common test setup function signature.
+type SetupFunc func(Test)
+
+// ParamFunc defines the common parameterized test function signature.
+type ParamFunc[P any] func(t Test, param P)
+
+// CleanupFunc defines the common test cleanup function signature.
+type CleanupFunc func()
+
 // Runner is a generic test runner interface.
 type Runner[P any] interface {
 	// Filter sets up a filter for the test cases using the given pattern and
@@ -59,17 +68,17 @@ type Runner[P any] interface {
 	// created by appending the index to the test name. If the test parameter
 	// sets are provided as a single parameter set, the test case name is used
 	// as the test name. The test case name is normalized before being used.
-	Run(call func(t Test, param P)) Runner[P]
+	Run(call ParamFunc[P]) Runner[P]
 	// RunSeq runs the test parameter sets in a sequence. If the test parameter
 	// sets are provided as a map, the test case name is used as the test name.
 	// If the test parameter sets are provided as a slice, the test case name is
 	// created by appending the index to the test name. If the test parameter
 	// sets are provided as a single parameter set, the test case name is used
 	// as the test name. The test case name is normalized before being used.
-	RunSeq(call func(t Test, param P)) Runner[P]
+	RunSeq(call ParamFunc[P]) Runner[P]
 	// Cleanup register a function to be called to cleanup after all tests have
 	// finished to remove the shared resources.
-	Cleanup(call func())
+	Cleanup(call CleanupFunc)
 }
 
 // runner is a generic parameterized test runner struct.
@@ -153,18 +162,18 @@ func (r *runner[P]) StopEarly(early time.Duration) Runner[P] {
 }
 
 // Run runs the test parameter sets (by default) parallel.
-func (r *runner[P]) Run(call func(t Test, param P)) Runner[P] {
+func (r *runner[P]) Run(call ParamFunc[P]) Runner[P] {
 	return r.run(call, Parallel)
 }
 
 // RunSeq runs the test parameter sets in a sequence.
-func (r *runner[P]) RunSeq(call func(t Test, param P)) Runner[P] {
+func (r *runner[P]) RunSeq(call ParamFunc[P]) Runner[P] {
 	return r.run(call, !Parallel)
 }
 
 // Cleanup register a function to be called for cleanup after all tests have
-// been finished.
-func (r *runner[P]) Cleanup(call func()) {
+// been finished - successful and failing.
+func (r *runner[P]) Cleanup(call CleanupFunc) {
 	r.t.Cleanup(func() {
 		r.t.Helper()
 		r.wg.Wait()
@@ -193,7 +202,7 @@ func (*runner[P]) recoverParallel() {
 
 // Run runs the test parameter sets either parallel or in sequence.
 func (r *runner[P]) run(
-	call func(t Test, param P), parallel bool,
+	call ParamFunc[P], parallel bool,
 ) Runner[P] {
 	switch params := r.params.(type) {
 	case map[string]P:
@@ -203,7 +212,6 @@ func (r *runner[P]) run(
 			if r.filter != nil && !r.filter(name) {
 				continue
 			}
-			r.wg.Add(1)
 			r.t.Run(name, r.test(param, call, parallel))
 		}
 
@@ -214,7 +222,6 @@ func (r *runner[P]) run(
 			if r.filter != nil && !r.filter(name) {
 				continue
 			}
-			r.wg.Add(1)
 			r.t.Run(name, r.test(param, call, parallel))
 		}
 
@@ -223,7 +230,6 @@ func (r *runner[P]) run(
 		if r.filter != nil && !r.filter(name) {
 			return r
 		}
-		r.wg.Add(1)
 		if name != string(unknown) {
 			r.t.Run(name, r.test(params, call, parallel))
 		} else {
@@ -238,8 +244,10 @@ func (r *runner[P]) run(
 
 // test creates the wrapper method executing eventually the test.
 func (r *runner[P]) test(
-	param P, call func(t Test, param P), parallel bool,
+	param P, call ParamFunc[P], parallel bool,
 ) func(*testing.T) {
+	r.wg.Add(1)
+
 	return func(t *testing.T) {
 		t.Helper()
 

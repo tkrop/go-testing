@@ -214,7 +214,7 @@ var testMatchParams = map[string]MatchParams{
 	},
 	"missing schema": {
 		url:         "https://foo.com/bar",
-		expectError: errAny,
+		expectError: assert.AnError,
 	},
 }
 

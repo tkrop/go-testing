@@ -1,7 +1,6 @@
 package mock_test
 
 import (
-	"errors"
 	"os"
 	"path"
 	"strings"
@@ -23,8 +22,6 @@ import (
 //go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mocks_test.go  IFace,XFace
 
 //revive:enable:line-length-limit
-
-var errAny = errors.New("any error")
 
 type IFace interface {
 	CallA(string)
@@ -71,19 +68,14 @@ func CallC(input string) mock.SetupFunc {
 	}
 }
 
-var (
-	// Generic source directory for caller path evaluation.
-	SourceDir = func() string {
-		dir, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
-		return dir
-	}()
-	// CallerCallA provides the file with the line number of the `CallA` call
-	// in mock.
-	CallerCallA = path.Join(SourceDir, "mock/mocks_test.go:35")
-)
+// Generic source directory for caller path evaluation.
+var SourceDir = func() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return dir
+}()
 
 type MockParams struct {
 	mockSetup mock.SetupFunc
@@ -120,7 +112,7 @@ var testMockParams = map[string]MockParams{
 	},
 	"single mock with unexpected call": {
 		failSetup: test.UnexpectedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mocks_test.go:125"), "ok"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:117"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
@@ -130,8 +122,8 @@ var testMockParams = map[string]MockParams{
 			CallA("ok"),
 		),
 		failSetup: test.ConsumedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mocks_test.go:137"),
-			path.Join(SourceDir, "mocks_test.go:37"), "ok"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:129"),
+			path.Join(SourceDir, "mocks_test.go:34"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 			mock.Get(mocks, NewMockIFace).CallA("ok")
@@ -701,8 +693,8 @@ var testFuncParams = map[string]FuncParams{
 		call: func(any) (any, any, any, any) {
 			return nil, nil, nil, nil
 		},
-		result: []any{"string", 1, true, errAny},
-		expect: []any{"string", 1, true, errAny},
+		result: []any{"string", 1, true, assert.AnError},
+		expect: []any{"string", 1, true, assert.AnError},
 	},
 }
 
@@ -856,7 +848,7 @@ func TestFuncPanic(t *testing.T) {
 
 type FailureParam struct {
 	expect test.Expect
-	test   func(test.Test)
+	test   test.Func
 }
 
 var testFailureParams = map[string]FailureParam{

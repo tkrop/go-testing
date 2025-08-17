@@ -11,14 +11,11 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-const (
-	anyError   = "any error"
-	otherError = "other error"
-)
-
 var (
-	errAny   = errors.New(anyError)
-	errOther = errors.New(otherError)
+	anErrorString  = assert.AnError.Error()
+	anErrorMessage = "is equal to " + anErrorString + " "
+	otherError     = "general other error for testing"
+	errOther       = errors.New(otherError)
 )
 
 type MatcherParams struct {
@@ -30,35 +27,35 @@ type MatcherParams struct {
 }
 
 var testErrorMatcherParams = map[string]MatcherParams{
-	"error-matcher-success-string-string": {
+	"success string-string": {
 		matcher:       test.EqError,
-		base:          anyError,
-		match:         anyError,
+		base:          anErrorString,
+		match:         anErrorString,
 		expectMatches: true,
-		expectString:  "is equal to any error (string)",
+		expectString:  anErrorMessage + "(string)",
 	},
-	"error-matcher-success-string-error": {
+	"success string-error": {
 		matcher:       test.EqError,
-		base:          anyError,
-		match:         errAny,
+		base:          anErrorString,
+		match:         assert.AnError,
 		expectMatches: true,
-		expectString:  "is equal to any error (string)",
+		expectString:  anErrorMessage + "(string)",
 	},
-	"error-matcher-success-error-string": {
+	"success error-string": {
 		matcher:       test.EqError,
-		base:          errAny,
-		match:         anyError,
+		base:          assert.AnError,
+		match:         anErrorString,
 		expectMatches: true,
-		expectString:  "is equal to any error (*errors.errorString)",
+		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"error-matcher-success-error-error": {
+	"success error-error": {
 		matcher:       test.EqError,
-		base:          errAny,
-		match:         errAny,
+		base:          assert.AnError,
+		match:         assert.AnError,
 		expectMatches: true,
-		expectString:  "is equal to any error (*errors.errorString)",
+		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"error-matcher-success-other-other": {
+	"success other-other": {
 		matcher:       test.EqError,
 		base:          1,
 		match:         1,
@@ -66,35 +63,35 @@ var testErrorMatcherParams = map[string]MatcherParams{
 		expectString:  "is equal to 1 (int)",
 	},
 
-	"error-matcher-failure-string-string": {
+	"failure string-string": {
 		matcher:       test.EqError,
-		base:          errAny,
+		base:          assert.AnError,
 		match:         errOther,
 		expectMatches: false,
-		expectString:  "is equal to any error (*errors.errorString)",
+		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"error-matcher-failure-string-error": {
+	"failure string-error": {
 		matcher:       test.EqError,
-		base:          anyError,
+		base:          anErrorString,
 		match:         errOther,
 		expectMatches: false,
-		expectString:  "is equal to any error (string)",
+		expectString:  anErrorMessage + "(string)",
 	},
-	"error-matcher-failure-error-string": {
+	"failure error-string": {
 		matcher:       test.EqError,
-		base:          errAny,
+		base:          assert.AnError,
 		match:         otherError,
 		expectMatches: false,
-		expectString:  "is equal to any error (*errors.errorString)",
+		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"error-matcher-failure-error-error": {
+	"failure error-error": {
 		matcher:       test.EqError,
-		base:          errAny,
+		base:          assert.AnError,
 		match:         errOther,
 		expectMatches: false,
-		expectString:  "is equal to any error (*errors.errorString)",
+		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"error-matcher-failure-other-other": {
+	"failure other-other": {
 		matcher:       test.EqError,
 		base:          1,
 		match:         false,
@@ -119,7 +116,7 @@ func TestErrorMatcher(t *testing.T) {
 }
 
 var testCallMatcherParams = map[string]MatcherParams{
-	"call-matcher-success-call-call": {
+	"success-call-call": {
 		matcher:       test.EqCall,
 		base:          test.Errorf("fail"),
 		match:         test.Errorf("fail"),
@@ -128,7 +125,7 @@ var testCallMatcherParams = map[string]MatcherParams{
 			"(is equal to fail (string)) " + CallerReporterErrorf +
 			" (*gomock.Call)",
 	},
-	"call-matcher-success-any-nay": {
+	"success-any-nay": {
 		matcher:       test.EqCall,
 		base:          "any string",
 		match:         "any string",
@@ -163,7 +160,7 @@ func TestCallMatcher(t *testing.T) {
 type ReporterParams struct {
 	mockSetup mock.SetupFunc
 	failSetup func(test.Test, *mock.Mocks) mock.SetupFunc
-	call      func(test.Test)
+	call      test.Func
 }
 
 var testReporterParams = map[string]ReporterParams{

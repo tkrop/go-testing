@@ -20,7 +20,8 @@ func TestRun(t *testing.T) {
 	for name, param := range testParams {
 		name, param := name, param
 		t.Run(name, test.Run(param.expect, func(t test.Test) {
-			ExecTest(t, param)
+			param.CheckName(t)
+			param.ExecTest(t)
 		}))
 	}
 }
@@ -33,7 +34,8 @@ func TestRunSeq(t *testing.T) {
 	for name, param := range testParams {
 		name, param := name, param
 		t.Run(name, test.RunSeq(param.expect, func(t test.Test) {
-			ExecTest(t, param)
+			param.CheckName(t)
+			param.ExecTest(t)
 		}))
 	}
 }
@@ -50,7 +52,7 @@ func TestTempDir(t *testing.T) {
 // ContextParam is a test parameter type for testing the test context.
 type ContextParam struct {
 	setup mock.SetupFunc
-	test  func(test.Test)
+	test  test.Func
 }
 
 // testContextParams is a map of test parameters for testing the test context.
@@ -86,8 +88,8 @@ func TestContext(t *testing.T) {
 type ParallelParam struct {
 	setup    mock.SetupFunc
 	parallel bool
-	before   func(test.Test)
-	during   func(test.Test)
+	before   test.SetupFunc
+	during   test.Func
 }
 
 // testParallelParams is a map of test parameters for testing the test context

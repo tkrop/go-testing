@@ -71,10 +71,13 @@ type Cleanuper interface {
 	Cleanup(cleanup func())
 }
 
+// Func defines the common test function signature.
+type Func func(Test)
+
 // Run creates an isolated (by default) parallel test context running the given
 // test function with given expectation. If the expectation is not met, a test
 // failure is created in the parent test context.
-func Run(expect Expect, test func(Test)) func(*testing.T) {
+func Run(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
@@ -85,7 +88,7 @@ func Run(expect Expect, test func(Test)) func(*testing.T) {
 // RunSeq creates an isolated, test context for the given test function with
 // given expectation. If the expectation is not met, a test failure is created
 // in the parent test context.
-func RunSeq(expect Expect, test func(Test)) func(*testing.T) {
+func RunSeq(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
@@ -96,7 +99,7 @@ func RunSeq(expect Expect, test func(Test)) func(*testing.T) {
 // InRun creates an isolated, (by default) sequential test context for the
 // given test function with given expectation. If the expectation is not met, a
 // test failure is created in the parent test context.
-func InRun(expect Expect, test func(Test)) func(Test) {
+func InRun(expect Expect, test Func) Func {
 	return func(t Test) {
 		t.Helper()
 
@@ -206,6 +209,9 @@ func (t *Context) Reporter(reporter Reporter) {
 // missing mock calls.
 func (t *Context) Cleanup(cleanup func()) {
 	t.t.Helper()
+	if cleanup == nil {
+		return
+	}
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -457,7 +463,7 @@ func (t *Context) Panic(arg any) {
 // the failure state after the test function has finished. If the test result
 // is not according to expectation, a failure is created in the parent test
 // context.
-func (t *Context) Run(test func(Test), parallel bool) Test {
+func (t *Context) Run(test Func, parallel bool) Test {
 	t.t.Helper()
 
 	if parallel {
@@ -493,7 +499,7 @@ func (t *Context) Run(test func(Test), parallel bool) Test {
 // the waiting test context.
 //
 // The function is supposed to be called in a goroutine.
-func (t *Context) run(test func(Test), done chan any) {
+func (t *Context) run(test Func, done chan any) {
 	t.t.Helper()
 
 	defer func() {

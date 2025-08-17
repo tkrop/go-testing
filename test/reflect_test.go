@@ -517,13 +517,18 @@ type testBuilderAnyParam struct {
 }
 
 var testBuilderAnyParams = map[string]testBuilderAnyParam{
+	// Test cases for invalid types.
 	"invalid type nil": {
-		target: nil, // nil is type any.
-		expect: test.Panic("target must be struct or struct pointer [nil]"),
+		target: nil,
+		check: func(t test.Test, b test.Builder[any]) {
+			assert.Nil(t, b)
+		},
 	},
 	"invalid type int": {
-		target: 1, // nil is type any.
-		expect: test.Panic("target must be struct or struct pointer [int]"),
+		target: 1,
+		check: func(t test.Test, b test.Builder[any]) {
+			assert.Nil(t, b)
+		},
 	},
 
 	// Test cases for struct instance.

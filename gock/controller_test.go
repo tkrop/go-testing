@@ -36,7 +36,7 @@ var testControllerParams = map[string]ControllerParams{
 	},
 	"missing schema": {
 		url:         "https://foo.com/bar",
-		expectError: errAny,
+		expectError: assert.AnError,
 	},
 }
 

@@ -150,17 +150,7 @@ func NewAccessor[T any](target T) Builder[T] {
 		}
 	}
 
-	panic("target must be struct or struct pointer [" +
-		typeOf(target) + "]")
-}
-
-// typeOf returns the type of the given target instance. If the target is nil,
-// the type is "nil".
-func typeOf(target any) string {
-	if target != nil {
-		return reflect.TypeOf(target).String()
-	}
-	return "nil"
+	return nil
 }
 
 // Set sets the value of the field with the given name. If the name is empty,
@@ -170,14 +160,16 @@ func typeOf(target any) string {
 // panic is raised.
 func (b *builder[T]) Set(name string, value any) Setter[T] {
 	if name != "" {
-		b.set(name, value)
+		field := b.fieldValueOf(name, value)
+		b.valuePtr(field).Elem().Set(b.valueOf(field, value))
 	} else if value == nil && b.rtype.Kind() == reflect.Struct {
 		b.target = reflect.New(b.rtype).Interface()
 	} else if reflect.TypeOf(b.target) == reflect.TypeOf(value) {
 		b.target = value
 	} else {
 		panic("target must be compatible struct pointer [" +
-			typeOf(value) + " => " + typeOf(b.target) + "]")
+			reflect.TypeOf(value).String() + " => " +
+			reflect.TypeOf(b.target).String() + "]")
 	}
 	return b
 }
@@ -245,18 +237,19 @@ func (b *builder[T]) Build() T {
 	}
 }
 
-// set sets the value of the field with the given name. If the value is nil,
-// the field is set to the zero value of the field type. If the field is not
-// found or the value is not assignable to it, a panic is raised.
-func (b *builder[T]) set(name string, value any) {
+// fieldValueOf returns the reflect value of the field with the given name.
+// If the field is not found or the value is not assignable to found field, a
+// panic is raised. The method is used to ensure that the field exists and
+// that the value is compatible with the field type before setting it.
+func (b *builder[T]) fieldValueOf(name string, value any) reflect.Value {
 	field := b.targetValueOf().FieldByName(name)
 	if !field.IsValid() {
 		panic("target field not found [" + name + "]")
 	} else if !b.canBeAssigned(field.Type(), reflect.TypeOf(value)) {
-		panic("value must be compatible [" +
-			typeOf(value) + " => " + field.Type().String() + "]")
+		panic("value must be compatible [" + reflect.TypeOf(value).
+			String() + " => " + field.Type().String() + "]")
 	}
-	b.valuePtr(field).Elem().Set(b.valueOf(field, value))
+	return field
 }
 
 // targetValueOf returns the reflect value of the target instance.

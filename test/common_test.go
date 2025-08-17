@@ -2,6 +2,7 @@ package test_test
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tkrop/go-testing/internal/sync"
@@ -16,14 +17,74 @@ type ParamParam struct {
 	expect bool
 }
 
+// CheckName checks if the test name contains the expected name.
+// It is used to verify that the test name is correctly set in the test runner.
+func (p *ParamParam) CheckName(t test.Test) {
+	assert.Contains(t, t.Name(),
+		strings.ReplaceAll(p.name, " ", "-"))
+}
+
 // TestParam is a generic test parameter type for testing the test context as
 // well as the test runner using the same parameter sets.
 type TestParam struct {
 	name     test.Name
 	setup    mock.SetupFunc
-	test     func(test.Test)
+	test     test.Func
 	expect   test.Expect
 	consumed bool
+}
+
+// Rename returns a new test parameter set with the given name.
+func (p TestParam) Rename(name string) TestParam {
+	return TestParam{
+		name:     test.Name(name),
+		setup:    p.setup,
+		test:     p.test,
+		expect:   p.expect,
+		consumed: p.consumed,
+	}
+}
+
+// Rename returns a new test parameter set with the given name.
+func (p TestParam) Copy() TestParam {
+	return TestParam{
+		name:     p.name,
+		setup:    p.setup,
+		test:     p.test,
+		expect:   p.expect,
+		consumed: p.consumed,
+	}
+}
+
+// CheckName checks if the test name contains the expected name.
+// It is used to verify that the test name is correctly set in the test runner.
+func (p *TestParam) CheckName(t test.Test) {
+	assert.Contains(t, t.Name(),
+		strings.ReplaceAll(string(p.name), " ", "-"))
+}
+
+// ExecTest is the generic function to execute a test with the given test
+// parameters.
+func (p *TestParam) ExecTest(t test.Test) {
+	// Given
+	if p.setup != nil {
+		mock.NewMocks(t).Expect(p.setup)
+	}
+
+	wg := sync.NewLenientWaitGroup()
+	t.(*test.Context).WaitGroup(wg)
+	if p.consumed {
+		wg.Add(1)
+	}
+
+	// When
+	p.test(t)
+
+	// Then
+	wg.Wait()
+	if p.expect == test.Failure {
+		assert.True(t, t.Failed())
+	}
 }
 
 // TestParamMap is a map of test parameters for testing the test context as
@@ -100,18 +161,12 @@ var (
 	}
 	// TestPanic is a test function that panics.
 	TestPanic = func(test.Test) {
-		// Duplicate terminal failures are ignored.
-		go func() {
-			// Recover from panic to avoid test abort.
-			defer func() {
-				if r := recover(); r != "fail" {
-					panic(r)
-				}
-			}()
-			panic("fail")
-		}()
 		panic("fail")
 	}
+	// CleanupEmpty is a cleanup function that does nothing.
+	CleanupEmpty = func() {}
+	// CleanupPanic is a cleanup function that panics.
+	CleanupPanic = func() { panic("cleanup") }
 )
 
 // testParams is the generic map of test parameters for testing the test
@@ -290,28 +345,4 @@ var testParams = TestParamMap{
 		expect:   test.Success,
 		consumed: true,
 	},
-}
-
-// ExecTest is the generic function to execute a test with the given test
-// parameters.
-func ExecTest(t test.Test, param TestParam) {
-	// Given
-	if param.setup != nil {
-		mock.NewMocks(t).Expect(param.setup)
-	}
-
-	wg := sync.NewLenientWaitGroup()
-	t.(*test.Context).WaitGroup(wg)
-	if param.consumed {
-		wg.Add(1)
-	}
-
-	// When
-	param.test(t)
-
-	// Then
-	wg.Wait()
-	if param.expect == test.Failure {
-		assert.True(t, t.Failed())
-	}
 }
