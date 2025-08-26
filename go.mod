@@ -6,7 +6,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/h2non/gock v1.2.0
 	github.com/huandu/go-clone v1.7.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	golang.org/x/text v0.28.0
 	golang.org/x/tools v0.36.0
 )
