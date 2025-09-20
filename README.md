@@ -232,42 +232,28 @@ to create parallel test for a wide range of situations.
 
 ## Building
 
-This project is using [go-make][go-make], which provides default targets for
-most common tasks, to initialize, build, test, and run the software of this
-project. Read the [go-make manual][go-make-man] for more information about
-targets and configuration options.
+This project is using a custom build system called [go-make][go-make], that
+provides default targets for most common tasks. Makefile rules are generated
+based on the project structure and files for common tasks, to initialize,
+build, test, and run the components in this repository.
+
+To get started, run one of the following commands.
+
+```bash
+make help
+make show-targets
+```
+
+Read the [go-make manual][go-make-man] for more information about targets
+and configuration options.
+
+**Not:** [go-make][go-make] installs `pre-commit` and `commit-msg`
+[hooks][git-hooks] calling `make commit` to enforce successful testing and
+linting and `make git-verify message` to validate whether the commit message
+is following the [conventional commit][convent-commit] best practice.
 
 [go-make]: <https://github.com/tkrop/go-make>
 [go-make-man]: <https://github.com/tkrop/go-make/blob/main/MANUAL.md>
-
-The [`Makefile`](Makefile) depends on a preinstalled [`go`][go] for version
-management, and makes heavy use of GNU tools, i.e. [`coretils`][core],
-[`findutils`][find], ['(g)make'][make], [`(g)awk`][awk], [`(g)sed`][sed], and
-not the least [`bash`][bash]. For certain non-core-features it also requires
-[`docker`][docker]/[`podman`][podman] and [`curl`][curl]. On MacOS, it uses
-[brew][brew] to ensure that the latest versions with the exception
-[`docker`][docker]/[`podman`][podman] are.
-
-[go]: <https://go.dev/>
-[brew]: <https://brew.sh/>
-[curl]: <https://curl.se/>
-[docker]: <https://www.docker.com/>
-[podman]: <https://podman.io/>
-[make]: <https://www.gnu.org/software/make/>
-[bash]: <https://www.gnu.org/software/bash/>
-[core]: <https://www.gnu.org/software/coreutils/>
-[find]: <https://www.gnu.org/software/findutils/>
-[awk]: <https://www.gnu.org/software/awk/>
-[sed]: <https://www.gnu.org/software/sed/>
-
-**Not:** [go-make][go-make] automatically installs `pre-commit` and `commit-msg`
-[hooks][git-hooks] overwriting and deleting pre-existing hooks (see also
-[Customizing Git - Git Hooks][git-hooks]). The `pre-commit` hook calls
-`make commit` as an alias for executing  `test-go`, `test-unit`, `lint-<level>`,
-and `lint-markdown` to enforce successful testing and linting. The `commit-msg`
-hook calls `make git-verify message` for validating whether the commit message
-is following the [conventional commit][convent-commit] best practice.
-
 [git-hooks]: <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>
 [convent-commit]: <https://www.conventionalcommits.org/en/v1.0.0/>
 

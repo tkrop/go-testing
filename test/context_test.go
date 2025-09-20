@@ -8,6 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/tkrop/go-testing/internal/sync"
 	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/test"
 )
@@ -79,6 +80,64 @@ func TestContext(t *testing.T) {
 			// When
 			test.New(t, test.Success).
 				Run(param.test, !test.Parallel)
+		}))
+	}
+}
+
+// CleanupParam is a test parameter type for testing the Cleanup method.
+type CleanupParam struct {
+	test test.Func
+	wait int
+}
+
+// testCleanupParams is a map of test parameters for testing the Cleanup method.
+var testCleanupParams = map[string]CleanupParam{
+	"nil cleanup": {
+		test: func(t test.Test) {
+			t.Cleanup(nil)
+		},
+	},
+	"single cleanup": {
+		test: func(t test.Test) {
+			t.Cleanup(func() { t.(*test.Context).Done() })
+		},
+		wait: 1,
+	},
+	"multiple cleanups": {
+		test: func(t test.Test) {
+			t.Cleanup(func() { t.(*test.Context).Done() })
+			t.Cleanup(func() { t.(*test.Context).Done() })
+			t.Cleanup(func() { t.(*test.Context).Done() })
+		},
+		wait: 3,
+	},
+	"cleanup with nil mixed": {
+		test: func(t test.Test) {
+			t.Cleanup(nil)
+			t.Cleanup(func() { t.(*test.Context).Done() })
+			t.Cleanup(nil)
+		},
+		wait: 1,
+	},
+}
+
+// TestCleanup is testing the Cleanup method with various scenarios including nil input.
+func TestCleanup(t *testing.T) {
+	for name, param := range testCleanupParams {
+		name, param := name, param
+		t.Run(name, test.Run(test.Success, func(t test.Test) {
+			// Given
+			wg := sync.NewWaitGroup()
+			wg.Add(param.wait + 1)
+			t.(*test.Context).WaitGroup(wg)
+			t.Cleanup(func() { wg.Wait() })
+
+			// When
+			test.New(t, test.Success).
+				Run(param.test, test.Parallel)
+
+			// Then
+			defer wg.Done()
 		}))
 	}
 }

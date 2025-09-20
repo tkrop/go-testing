@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tkrop/go-testing/internal/slices"
 	"github.com/tkrop/go-testing/internal/sync"
 )
 
@@ -191,6 +190,15 @@ func (t *Context) WaitGroup(wg sync.WaitGroup) {
 	defer t.mu.Unlock()
 
 	t.wg = wg
+}
+
+// Done decrements the wait group of the test by one.
+func (t *Context) Done() {
+	t.t.Helper()
+
+	if t.wg != nil {
+		t.wg.Done()
+	}
 }
 
 // Reporter sets up a test failure reporter. This can be used to validate the
@@ -526,12 +534,8 @@ func (t *Context) register() {
 		c.Cleanup(func() {
 			t.t.Helper()
 
-			t.mu.Lock()
-			cleanups := slices.Reverse(t.cleanups)
-			t.mu.Unlock()
-
-			for _, cleanup := range cleanups {
-				cleanup()
+			for i := len(t.cleanups) - 1; i >= 0; i-- {
+				t.cleanups[i]()
 			}
 		})
 	}

@@ -131,14 +131,14 @@ var (
 	}()
 	// CallerTestError provides the file with the line number of the `Error`
 	// call in the test context implementation.
-	CallerTestError = path.Join(SourceDir, "context.go:340")
+	CallerTestError = path.Join(SourceDir, "context.go:348")
 	// CallerReporterErrorf provides the file with the line number of the
 	// `Errorf` call in the test reporter/validator implementation.
 	CallerReporterError = path.Join(SourceDir, "reporter.go:83")
 
 	// CallerTestErrorf provides the file with the line number of the `Errorf`
 	// call in the test context implementation.
-	CallerTestErrorf = path.Join(SourceDir, "context.go:358")
+	CallerTestErrorf = path.Join(SourceDir, "context.go:366")
 	// CallerReporterErrorf provides the file with the line number of the
 	// `Errorf` call in the test reporter/validator implementation.
 	CallerReporterErrorf = path.Join(SourceDir, "reporter.go:105")

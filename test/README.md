@@ -16,7 +16,7 @@ test environment.
 func TestUnit(t *testing.T) {
     test.Run(test.Success, func(t test.Test){
         // Given
-        mocks := mock.NewMocks(t).Expect(
+        mock.NewMocks(t).Expect(
             test.Panic("fail"),
         )
 
