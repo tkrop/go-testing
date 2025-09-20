@@ -15,20 +15,20 @@ type MainParams struct {
 	ExitCode int
 }
 
-// TestMain creates a test function that runs the given `main`-method in a
+// Main creates a test function that runs the given `main`-method in a
 // separate test process to allow capturing the exit code and checking it
 // against the expectation. This can be applied as follows:
 //
 //	 testMainParams := map[string]test.MainParams{
 //		 "no mocks": {
 //			 Args:     []string{"mock"},
-//			 Env:      []string{},
+//			 Env:      []string{"VAR=value"},
 //			 ExitCode: 0,
 //		 },
 //	 }
 //
-//	 func TestMain(t *testing.T) {
-//		 test.Map(t, testMainParams).Run(test.TestMain(main))
+//	 func Main(t *testing.T) {
+//		 test.Map(t, testMainParams).Run(test.Main(main, "VAR=value"...))
 //	 }
 //
 // The test method is spawning a new test using the `TEST` environment variable
@@ -36,7 +36,7 @@ type MainParams struct {
 // (`Args`) to execute in the spawned process. The test instance is also called
 // setting the given additional environment variables (`Env`) to allow
 // modification of the test environment.
-func TestMain(main func()) func(t Test, param MainParams) {
+func Main(main func(), env ...string) func(t Test, param MainParams) {
 	return func(t Test, param MainParams) {
 		// Switch to execute main function in test process.
 		if name := os.Getenv("TEST"); name != "" {
@@ -54,7 +54,8 @@ func TestMain(main func()) func(t Test, param MainParams) {
 		// regular process exit behavior.
 		// #nosec G204 -- secured by calling only the test instance.
 		cmd := exec.Command(os.Args[0], "-test.run="+t.(*Context).t.Name())
-		cmd.Env = append(append(os.Environ(), "TEST="+t.Name()), param.Env...)
+		cmd.Env = append(append(os.Environ(), "TEST="+t.Name()),
+			append(env, param.Env...)...)
 		if err := cmd.Run(); err != nil || param.ExitCode != 0 {
 			errExit := &exec.ExitError{}
 			if errors.As(err, &errExit) || err != nil {

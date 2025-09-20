@@ -15,5 +15,5 @@ var testMainParams = map[string]test.MainParams{
 }
 
 func TestMain(t *testing.T) {
-	test.Map(t, testMainParams).Run(test.TestMain(main))
+	test.Map(t, testMainParams).Run(test.Main(main))
 }
