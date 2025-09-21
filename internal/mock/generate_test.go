@@ -29,14 +29,8 @@ type GenerateParams struct {
 
 var (
 	// Test directory.
-	testDirGenerate = func() string {
-		dir, err := os.MkdirTemp("", "go-testing-*")
-		if err != nil {
-			panic(err)
-		}
-		return dir
-	}()
-
+	testDirGenerate = test.Must(os.MkdirTemp("", "go-testing-*"))
+	// Failure file.
 	fileFailure = filepath.Join(testDirGenerate, dirSubTest, fileUnknown)
 )
 

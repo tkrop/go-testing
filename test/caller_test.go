@@ -122,13 +122,7 @@ var (
 	})
 
 	// Generic source directory for caller path evaluation.
-	SourceDir = func() string {
-		dir, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
-		return dir
-	}()
+	SourceDir = test.Must(os.Getwd())
 	// CallerTestError provides the file with the line number of the `Error`
 	// call in the test context implementation.
 	CallerTestError = path.Join(SourceDir, "context.go:348")

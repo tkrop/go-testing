@@ -15,21 +15,9 @@ import (
 
 var (
 	// Generated IFace mock without methods.
-	expectIFaceStub = func() string {
-		file, err := os.ReadFile("mock_stub_test.gox")
-		if err != nil {
-			panic(err)
-		}
-		return string(file)
-	}()
+	expectIFaceStub = string(test.Must(os.ReadFile("mock_stub_test.gox")))
 	// Generated IFace mock with methods.
-	expectIFace = func() string {
-		file, err := os.ReadFile("mock_iface_test.gox")
-		if err != nil {
-			panic(err)
-		}
-		return string(file)
-	}()
+	expectIFace = string(test.Must(os.ReadFile("mock_iface_test.gox")))
 )
 
 type TemplateParams struct {
