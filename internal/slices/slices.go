@@ -40,3 +40,16 @@ func PermuteDo[T any](slice []T, do func([]T), i int) {
 func Copy[T any](slice []T) []T {
 	return append(make([]T, 0, len(slice)), slice...)
 }
+
+// Add appends the given slices into a single slice.
+func Add[T any](slices ...[]T) []T {
+	items := 0
+	for _, slice := range slices {
+		items += len(slice)
+	}
+	result := make([]T, 0, items)
+	for _, slice := range slices {
+		result = append(result, slice...)
+	}
+	return result
+}

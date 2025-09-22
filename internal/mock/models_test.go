@@ -143,20 +143,15 @@ func TestNewFiles(t *testing.T) {
 
 var (
 	// Test directory.
-	testDirModels = func() string {
-		dir, err := os.MkdirTemp("", "go-testing-*")
-		if err != nil {
-			panic(err)
-		}
-		return dir
-	}()
-
+	testDirModels = test.Must(os.MkdirTemp("", "go-testing-*"))
+	// Source types.
 	targetStdout = &Type{Package: pkgMock, Path: pathMock, File: "-"}
 	targetCustom = &Type{
 		Package: pkgMock, Path: pathMock,
 		File: filepath.Join(testDirModels, fileMock),
 	}
 	targetNoFile = &Type{Package: pkgMock, Path: pathMock, File: ""}
+	// Test files.
 	fileStdout   = &File{Target: targetStdout}
 	fileCustom   = &File{Target: targetCustom}
 	fileNoTarget = &File{Target: targetNoFile}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/tkrop/go-testing/internal/maps"
+	"github.com/tkrop/go-testing/internal/slices"
 	"github.com/tkrop/go-testing/internal/sync"
 )
 
@@ -112,6 +113,18 @@ func Any[P any](t *testing.T, params any) Runner[P] {
 	}
 }
 
+// Param creates a new parallel test runner with given test parameter sets
+// provided as variadic arguments. The test runner is looking into the
+// parameter set to find a suitable test case name.
+func Param[P any](t *testing.T, params ...P) Runner[P] {
+	t.Helper()
+
+	if len(params) == 1 {
+		return Any[P](t, params[0])
+	}
+	return Any[P](t, params)
+}
+
 // Map creates a new parallel test runner with given test parameter sets
 // provided as a test case name to parameter sets mapping.
 func Map[P any](t *testing.T, params ...map[string]P) Runner[P] {
@@ -123,10 +136,10 @@ func Map[P any](t *testing.T, params ...map[string]P) Runner[P] {
 // Slice creates a new parallel test runner with given test parameter sets
 // provided as a slice. The test runner is looking into the parameter set to
 // find a suitable test case name.
-func Slice[P any](t *testing.T, params []P) Runner[P] {
+func Slice[P any](t *testing.T, params ...[]P) Runner[P] {
 	t.Helper()
 
-	return Any[P](t, params)
+	return Any[P](t, slices.Add(params...))
 }
 
 // Filter filters the test cases by the given pattern and match flag. The

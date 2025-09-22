@@ -9,10 +9,10 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-// TestAnyRun is testing the test runner with single test cases.
-func TestAnyRun(t *testing.T) {
+// TestParamRun is testing the test runner with single test cases.
+func TestParamRun(t *testing.T) {
 	finished := false
-	test.Any[TestParam](t, TestParam{
+	test.Param(t, TestParam{
 		test:   func(t test.Test) { t.FailNow() },
 		expect: test.Failure,
 	}).Run(func(t test.Test, param TestParam) {
@@ -24,14 +24,14 @@ func TestAnyRun(t *testing.T) {
 	})
 }
 
-// TestAnyRunSeq is testing the test runner with single test cases running in
+// TestParamRunSeq is testing the test runner with single test cases running in
 // sequence.
-func TestAnyRunSeq(t *testing.T) {
+func TestParamRunSeq(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
 		finished := false
-		test.Any[TestParam](t, param.Rename(name)).
+		test.Param(t, param.Rename(name)).
 			RunSeq(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
 				param.CheckName(t)
@@ -43,14 +43,14 @@ func TestAnyRunSeq(t *testing.T) {
 	}
 }
 
-// TestAnyRunNamed is testing the test runner with single named test cases.
-func TestAnyRunNamed(t *testing.T) {
+// TestParamRunNamed is testing the test runner with single named test cases.
+func TestParamRunNamed(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
-		test.Any[TestParam](t, param.Rename(name)).
+		test.Param(t, param.Rename(name)).
 			Run(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
@@ -63,15 +63,15 @@ func TestAnyRunNamed(t *testing.T) {
 	}
 }
 
-// TestAnyRunSeqNamed is testing the test runner with single named test cases
+// TestParamRunSeqNamed is testing the test runner with single named test cases
 // running in sequence.
-func TestAnyRunSeqNamed(t *testing.T) {
+func TestParamRunSeqNamed(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
-		test.Any[TestParam](t, param.Rename(name)).
+		test.Param(t, param.Rename(name)).
 			RunSeq(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
@@ -84,15 +84,15 @@ func TestAnyRunSeqNamed(t *testing.T) {
 	}
 }
 
-// TestAnyRunFiltered is testing the test runner with single named test cases
+// TestParamRunFiltered is testing the test runner with single named test cases
 // using run while applying a filter.
-func TestAnyRunFiltered(t *testing.T) {
+func TestParamRunFiltered(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
 		pattern, finished := "base", false
 		tname := t.Name() + "/" + test.TestName(name, param)
-		test.Any[TestParam](t, param.Rename(name)).
+		test.Param(t, param.Rename(name)).
 			Filter(pattern, true).
 			Run(func(t test.Test, param TestParam) {
 				defer func() { finished = true }()
@@ -108,6 +108,42 @@ func TestAnyRunFiltered(t *testing.T) {
 				}
 			})
 	}
+}
+
+// TestParamsRun is testing the test runner with parameterized tests.
+func TestParamsRun(t *testing.T) {
+	count := atomic.Int32{}
+
+	test.Param(t, testParams.GetSlice()...).
+		Run(func(t test.Test, param TestParam) {
+			defer count.Add(1)
+			param.CheckName(t)
+			param.ExecTest(t)
+		}).
+		Cleanup(func() {
+			assert.Equal(t, len(testParams), int(count.Load()))
+		})
+}
+
+// TestParamsRunFiltered is testing the test runner with parameterized tests
+// while applying a filter.
+func TestParamsRunFiltered(t *testing.T) {
+	pattern, count := "inrun", atomic.Int32{}
+	expect := testParams.FilterBy(pattern)
+
+	test.Param(t, testParams.GetSlice()...).
+		Filter(pattern, true).
+		Run(func(t test.Test, param TestParam) {
+			defer count.Add(1)
+			name := string(param.name)
+			assert.Contains(t, name, pattern)
+			assert.NotNil(t, expect[name])
+			param.CheckName(t)
+			param.ExecTest(t)
+		}).
+		Cleanup(func() {
+			assert.Equal(t, len(expect), int(count.Load()))
+		})
 }
 
 // TestMapRun is testing the test runner with maps.
@@ -214,14 +250,14 @@ func TestInvalidTypePanic(t *testing.T) {
 }
 
 func TestNameCastFallback(t *testing.T) {
-	test.Any[ParamParam](t, ParamParam{name: "value"}).
+	test.Param(t, ParamParam{name: "value"}).
 		Run(func(t test.Test, _ ParamParam) {
 			assert.Equal(t, t.Name(), "TestNameCastFallback")
 		})
 }
 
 func TestExpectCastFallback(t *testing.T) {
-	test.Any[ParamParam](t, ParamParam{expect: false}).
+	test.Param(t, ParamParam{expect: false}).
 		Run(func(t test.Test, param ParamParam) {
 			param.CheckName(t)
 		})

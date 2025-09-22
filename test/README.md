@@ -35,8 +35,8 @@ below examples.
 
 The `test` framework supports to run isolated, parameterized, parallel tests
 using a lean test runner. The runner can be instantiated with a single test
-parameter set (`test.Any`), a slice of test parameter sets (`test.Slice`), or a
-map of test case name to test parameter sets (`test.Map` - preferred pattern).
+parameter set (`test.Param`), a slice of test parameter sets (`test.Slice`), or
+a map of test case name to test parameter sets (`test.Map` - preferred pattern).
 The test is started by `Run` that accepts a simple test function as input,
 using a `test.Test` interface, that is compatible with most tools, e.g.
 [`gomock`][gomock].
@@ -44,7 +44,7 @@ using a `test.Test` interface, that is compatible with most tools, e.g.
 
 ```go
 func TestUnit(t *testing.T) {
-    test.Any|Slice|Map(t, testParams).
+    test.Param|Slice|Map|Any(t, testParams).
         Filter("test-case-name", false|true).
         Timeout(5*time.Millisecond).
         StopEarly(time.Millisecond).
@@ -223,11 +223,16 @@ to internal changes.
 Currently, the package supports only one _out-of-the-box_ test pattern to test
 the `main`-methods of commands.
 
+The pattern executes the `main` method in a separate process to protect the
+test execution against `os.Exit` calls while allowing to capture and check the
+exit code against the expectation. The following example demonstrates how to
+use the pattern to test a `main` method:
+
 ```go
 testMainParams := map[string]test.MainParams{
     "no mocks": {
-        Args:     []string{"mock"},
-        Env:      []string{},
+        Args: []string{"mock", "arg1", "arg2"},
+        Env: []string{"VAR=value"},
         ExitCode: 0,
     },
 }
@@ -237,13 +242,16 @@ func TestMain(t *testing.T) {
 }
 ```
 
-The pattern executes the `main`-method in a separate process that setting up
-the command line arguments (`Args`) and modifying the environment variables
-(`Env`) and to capture and compare the exit code of the program execution.
+If the test process is expected to run longer than the default test timeout, a
+context with timeout can be provided to interrupt the test process in time,
+e.g. as follows:
+
+```go
+    Ctx: test.First(context.WithTimeout(context.Bachground(), time.Second))
+```
 
 **Note:** the general approach can be used to test any code calling `os.Exit`,
-however, it is focused on testing the `main`-methods with and without parsing
+however, it is focused on testing the `main` methods with and without parsing
 command line arguments.
-
 
 [gomock]: <https://github.com/golang/mock>

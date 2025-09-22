@@ -160,9 +160,7 @@ var (
 		t.FailNow()
 	}
 	// TestPanic is a test function that panics.
-	TestPanic = func(test.Test) {
-		panic("fail")
-	}
+	TestPanic = func(test.Test) { panic("fail") }
 	// CleanupEmpty is a cleanup function that does nothing.
 	CleanupEmpty = func() {}
 	// CleanupPanic is a cleanup function that panics.

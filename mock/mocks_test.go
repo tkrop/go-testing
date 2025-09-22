@@ -69,13 +69,7 @@ func CallC(input string) mock.SetupFunc {
 }
 
 // Generic source directory for caller path evaluation.
-var SourceDir = func() string {
-	dir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	return dir
-}()
+var SourceDir = test.Must(os.Getwd())
 
 type MockParams struct {
 	mockSetup mock.SetupFunc
@@ -112,7 +106,7 @@ var testMockParams = map[string]MockParams{
 	},
 	"single mock with unexpected call": {
 		failSetup: test.UnexpectedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mocks_test.go:117"), "ok"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:111"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
@@ -122,7 +116,7 @@ var testMockParams = map[string]MockParams{
 			CallA("ok"),
 		),
 		failSetup: test.ConsumedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mocks_test.go:129"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:123"),
 			path.Join(SourceDir, "mocks_test.go:34"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
