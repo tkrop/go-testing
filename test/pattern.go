@@ -99,6 +99,8 @@ func Main(main func()) func(t Test, param MainParam) {
 		cmd := exec.CommandContext(ctx, os.Args[0],
 			"-test.run="+t.(*Context).t.Name())
 
+		// No stdout to allow propagation of coverage results.
+		cmd.Stdin, cmd.Stderr = os.Stdin, os.Stderr
 		cmd.Env = append(os.Environ(), append(param.Env,
 			GoTestingRunVar+"="+t.Name())...)
 
