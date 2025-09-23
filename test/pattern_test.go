@@ -2,6 +2,7 @@ package test_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -51,35 +52,35 @@ func TestMust(t *testing.T) {
 
 var testMainParams = map[string]test.MainParam{
 	"panic": {
-		Env:      []string{"exit=2", "TEST=other"},
+		Env:      []string{"panic=true"},
+		Args:     []string{"panic"},
+		ExitCode: 1,
+	},
+	"exit-1": {
+		Env:      []string{"exit=1", "panic=false"},
+		Args:     []string{"exit-1"},
 		ExitCode: 1,
 	},
 	"exit-0": {
-		Env:      []string{"exit=0", "var=1", "var=2"},
+		Env:      []string{"exit=0", "panic=true", "panic=false"},
+		Args:     []string{"exit-0"},
 		ExitCode: 0,
 	},
-	"exit-1": {
-		Env:      []string{"exit=1", "var=2"},
-		ExitCode: 1,
-	},
 	"sleep": {
-		Args:     []string{"100ms"},
-		Env:      []string{"var=2"},
+		Args:     []string{"sleep", "100ms"},
 		ExitCode: 0,
 	},
 	"deadline": {
+		Args: []string{"deadline", "1s"},
 		Ctx: test.First(context.WithTimeout(context.Background(),
 			time.Millisecond)),
-		Args:     []string{"1s"},
-		Env:      []string{"var=2"},
 		Error:    context.DeadlineExceeded,
 		ExitCode: -1,
 	},
 	"interrupt": {
+		Args: []string{"interrupt", "1s"},
 		Ctx: test.First(context.WithTimeout(context.Background(),
 			500*time.Millisecond)),
-		Args:     []string{"1s"},
-		Env:      []string{"var=2"},
 		ExitCode: -1,
 	},
 }
@@ -93,22 +94,32 @@ func TestMainUnexpected(t *testing.T) {
 	test.Param(t, test.MainParam{}).RunSeq(test.Main(main))
 }
 
-func main() {
-	// Get the expected exit code from the environment.
-	exit, _ := strconv.Atoi(os.Getenv("exit"))
+// ctx returns the current time formatted as RFC3339Nano truncated to 26
+// characters to avoid excessive precision in test output.
+func ctx() string {
+	return fmt.Sprintf("%s [%s]", time.Now().Format(time.RFC3339Nano[0:26]), os.Args[0])
+}
 
+// main is a test main function to demonstrate the usage of `test.Main`.
+func main() {
 	// Check that environment variables are set correctly.
-	if os.Getenv("var") != "2" {
-		panic("env var not set")
+	fmt.Fprintf(os.Stderr, "%s var=%s\n", ctx(), os.Getenv("var"))
+	if os.Getenv("panic") == "true" {
+		fmt.Fprintf(os.Stderr, "%s var=%s\n", ctx(), os.Getenv("var"))
+		panic("supposed to panic")
 	}
 
 	// Simulate some work.
-	if len(os.Args) > 0 {
-		dur, err := time.ParseDuration(os.Args[0])
+	fmt.Fprintf(os.Stderr, "%s args=%v\n", ctx(), os.Args)
+	if len(os.Args) > 1 {
+		fmt.Fprintf(os.Stderr, "%s sleep=%s\n", ctx(), os.Args[1])
+		dur, err := time.ParseDuration(os.Args[1])
 		if err == nil {
 			time.Sleep(dur)
 		}
 	}
 
-	os.Exit(exit)
+	// Exit with given code.
+	fmt.Fprintf(os.Stderr, "%s exit=%s\n", ctx(), os.Getenv("exit"))
+	os.Exit(test.First(strconv.Atoi(os.Getenv("exit"))))
 }
