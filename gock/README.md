@@ -129,6 +129,6 @@ call setup, and validation, it currently provides no support for call order
 validation as [`gomock`][gomock] supports it.
 
 
-[gomock]: <https://github.com/golang/mock>
+[gomock]: <https://go.uber.org/mock>
 [gock]: <https://github.com/h2non/gock>
 [resty]: <https://github.com/go-resty/resty>

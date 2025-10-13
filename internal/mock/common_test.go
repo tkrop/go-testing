@@ -35,7 +35,7 @@ const (
 	pathUnknown  = "github.com/tkrop/go-testing/internal/unknown"
 	pathInternal = "github.com/tkrop/go-testing/internal"
 	pathTesting  = "github.com/tkrop/go-testing/test"
-	pathGoMock   = "github.com/golang/mock/gomock"
+	pathGoMock   = "go.uber.org/mock/gomock"
 
 	fileIFace    = "iface.go"
 	fileMock     = "mock_test.go"

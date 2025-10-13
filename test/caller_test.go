@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	"github.com/tkrop/go-testing/mock"
 	"github.com/tkrop/go-testing/test"

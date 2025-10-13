@@ -258,6 +258,6 @@ for message, param := range testUnitCallParams {
 for more information on requirements in parallel parameterized tests.
 
 
-[gomock]: <https://github.com/golang/mock>
-[gomock-rep]: <https://github.com/golang/mock/blob/v1.6.0/gomock/controller.go#L65>
+[gomock]: <https://go.uber.org/mock>
+[gomock-rep]: <https://go.uber.org/mock/blob/v1.6.0/gomock/controller.go#L65>
 [gock]: <https://github.com/h2non/gock>

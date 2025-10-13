@@ -273,7 +273,7 @@ provide feedback on it as fast as possible.
 
 
 [testing]: <https://pkg.go.dev/testing>
-[gomock]: <https://github.com/golang/mock>
+[gomock]: <https://go.uber.org/mock>
 [gock]: <https://github.com/h2non/gock>
 [monkey]: <https://github.com/bouk/monkey>
 [gin]: <https://github.com/gin-gonic/gin>

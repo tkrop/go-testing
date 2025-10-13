@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"github.com/tkrop/go-testing/gock"
 	"github.com/tkrop/go-testing/test"

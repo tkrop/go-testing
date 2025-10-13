@@ -3,8 +3,8 @@ package gock
 import (
 	"net/http"
 
-	"github.com/golang/mock/gomock"
 	"github.com/h2non/gock"
+	"go.uber.org/mock/gomock"
 
 	"github.com/tkrop/go-testing/test"
 )

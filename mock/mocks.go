@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	"github.com/tkrop/go-testing/internal/reflect"
 	"github.com/tkrop/go-testing/internal/sync"
