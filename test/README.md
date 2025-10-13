@@ -254,4 +254,4 @@ e.g. as follows:
 however, it is focused on testing the `main` methods with and without parsing
 command line arguments.
 
-[gomock]: <https://github.com/golang/mock>
+[gomock]: <https://go.uber.org/mock>

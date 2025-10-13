@@ -12,7 +12,7 @@ var (
 		Alias: "reflect", Path: "reflect",
 	}
 	ImportGomock = &Import{
-		Alias: "gomock", Path: "github.com/golang/mock/gomock",
+		Alias: "gomock", Path: "go.uber.org/mock/gomock",
 	}
 	ImportMock = &Import{
 		Alias: "mock", Path: "github.com/tkrop/go-testing/mock",
