@@ -35,7 +35,7 @@ type TestParam struct {
 }
 
 // Rename returns a new test parameter set with the given name.
-func (p TestParam) Rename(name string) TestParam {
+func (p *TestParam) Rename(name string) TestParam {
 	return TestParam{
 		name:     test.Name(name),
 		setup:    p.setup,
@@ -46,7 +46,7 @@ func (p TestParam) Rename(name string) TestParam {
 }
 
 // Rename returns a new test parameter set with the given name.
-func (p TestParam) Copy() TestParam {
+func (p *TestParam) Copy() TestParam {
 	return TestParam{
 		name:     p.name,
 		setup:    p.setup,
@@ -123,17 +123,17 @@ var (
 	// TestSkip is a test function that skips the test.
 	TestSkip = func(t test.Test) { t.Skip("skip") }
 	// TestSkipf is a test function that skips the test with a formatted message.
-	TestSkipf = func(t test.Test) { t.Skipf("skip") }
+	TestSkipf = func(t test.Test) { t.Skipf("%s", "skip") }
 	// TestSkipNow is a test function that skips the test immediately.
 	TestSkipNow = func(t test.Test) { t.SkipNow() }
 	// TestLog is a test function that logs a message.
 	TestLog = func(t test.Test) { t.Log("log") }
 	// TestLogf is a test function that logs a formatted message.
-	TestLogf = func(t test.Test) { t.Logf("log") }
+	TestLogf = func(t test.Test) { t.Logf("%s", "log") }
 	// TestError is a test function that fails with an error message.
 	TestError = func(t test.Test) { t.Error("fail") }
 	// TestErrorf is a test function that fails with a formatted error message.
-	TestErrorf = func(t test.Test) { t.Errorf("fail") }
+	TestErrorf = func(t test.Test) { t.Errorf("%s", "fail") }
 	// TestFatal is a test function that fails with a fatal error message.
 	TestFatal = func(t test.Test) {
 		// Duplicate terminal failures are ignored.
@@ -144,8 +144,8 @@ var (
 	// message.
 	TestFatalf = func(t test.Test) {
 		// Duplicate terminal failures are ignored.
-		go func() { t.Fatalf("fail") }()
-		t.Fatalf("fail")
+		go func() { t.Fatalf("%s", "fail") }()
+		t.Fatalf("%s", "fail")
 	}
 	// TestFail is a test function that fails.
 	TestFail = func(t test.Test) {

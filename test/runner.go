@@ -149,6 +149,7 @@ func Slice[P any](t *testing.T, params ...[]P) Runner[P] {
 func (r *runner[P]) Filter(
 	pattern string, match bool,
 ) Runner[P] {
+	pattern = strings.ReplaceAll(pattern, " ", "-")
 	regexp := regexp.MustCompile(pattern)
 	r.filter = func(name string) bool {
 		return regexp.MatchString(name) == match

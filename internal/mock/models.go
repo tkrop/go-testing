@@ -112,6 +112,8 @@ func (t *Type) IsPackageMatch(pkgs []*packages.Package) bool {
 			}
 		case pname+"_test" == name:
 			return true
+		default:
+			continue
 		}
 	}
 	return false
@@ -159,7 +161,7 @@ type Param struct {
 // the argument or return parameter list.
 func NewParams(tuple *types.Tuple) []*Param {
 	params := make([]*Param, 0, tuple.Len())
-	for index := 0; index < tuple.Len(); index++ {
+	for index := range tuple.Len() {
 		param := tuple.At(index)
 		params = append(params, &Param{
 			Name: param.Name(),
@@ -193,7 +195,7 @@ type Method struct {
 // interface type.
 func NewMethods(iface *types.Interface) []*Method {
 	methods := make([]*Method, 0, iface.NumMethods())
-	for index := 0; index < iface.NumMethods(); index++ {
+	for index := range iface.NumMethods() {
 		method := iface.Method(index)
 		sign := method.Type().Underlying().(*types.Signature)
 		methods = append(methods, &Method{

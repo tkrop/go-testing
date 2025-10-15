@@ -24,8 +24,8 @@ import (
 //revive:enable:line-length-limit
 
 type IFace interface {
-	CallA(string)
-	CallB(string) string
+	CallA(input string)
+	CallB(input string) string
 }
 
 func CallA(input string) mock.SetupFunc {
@@ -58,7 +58,7 @@ func NoCall() mock.SetupFunc {
 }
 
 type XFace interface {
-	CallC(string)
+	CallC(input string)
 }
 
 func CallC(input string) mock.SetupFunc {
@@ -852,12 +852,12 @@ var testFailureParams = map[string]FailureParam{
 	},
 
 	"errorf": {
-		test:   func(t test.Test) { t.Errorf("fail") },
+		test:   func(t test.Test) { t.Errorf("%s", "fail") },
 		expect: test.Failure,
 	},
 
 	"fatalf": {
-		test:   func(t test.Test) { t.Fatalf("fail") },
+		test:   func(t test.Test) { t.Fatalf("%s", "fail") },
 		expect: test.Failure,
 	},
 

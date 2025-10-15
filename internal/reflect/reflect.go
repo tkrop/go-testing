@@ -160,7 +160,7 @@ func valuesOf(
 	ftype func(i int) reflect.Type, num int, args []any,
 ) []reflect.Value {
 	vs := make([]reflect.Value, 0, num)
-	for i := 0; i < num; i++ {
+	for i := range num {
 		t := ftype(i)
 		arg := argOrNil(i, args...)
 		if arg == nil {
@@ -204,7 +204,7 @@ func AnyFuncOf(args int, variadic bool) reflect.Type {
 	ite := reflect.TypeOf((*any)(nil)).Elem()
 
 	it := make([]reflect.Type, 0, args)
-	for i := 0; i < args; i++ {
+	for i := range args {
 		if i == args-1 && variadic {
 			it = append(it, reflect.TypeOf([]any{}))
 		} else {

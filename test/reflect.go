@@ -61,14 +61,16 @@ type Builder[T any] interface {
 // is returned as is.
 func Find[P, T any](param P, deflt T, names ...string) T {
 	pt, dt := reflect.TypeOf(param), reflect.TypeOf(deflt)
-	if pt.Kind() == dt.Kind() {
+	switch {
+	case pt.Kind() == dt.Kind():
 		return reflect.ValueOf(param).Interface().(T)
-	} else if pt.Kind() == reflect.Struct {
+	case pt.Kind() == reflect.Struct:
 		return NewAccessor[P](param).Find(deflt, names...).(T)
-	} else if pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct {
+	case pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct:
 		return NewAccessor[P](param).Find(deflt, names...).(T)
+	default:
+		return deflt
 	}
-	return deflt
 }
 
 // Builder is used for accessing and modifying unexported fields in a struct
@@ -212,7 +214,7 @@ func (b *builder[T]) Find(deflt any, names ...string) any {
 
 	if len(names) == 0 || slices.Contains(names, "*") {
 		// Fallback to the first field with a matching type.
-		for i := 0; i < b.rtype.NumField(); i++ {
+		for i := range b.rtype.NumField() {
 			tfield := b.rtype.Field(i)
 			if b.canBeAssigned(reflect.TypeOf(deflt), tfield.Type) {
 				vfield := b.targetValueOf().Field(i)

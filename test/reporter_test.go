@@ -118,12 +118,12 @@ func TestErrorMatcher(t *testing.T) {
 var testCallMatcherParams = map[string]MatcherParams{
 	"success-call-call": {
 		matcher:       test.EqCall,
-		base:          test.Errorf("fail"),
-		match:         test.Errorf("fail"),
+		base:          test.Errorf("%s", "fail"),
+		match:         test.Errorf("%s", "fail"),
 		expectMatches: true,
 		expectString: "is equal to *test.Validator.Errorf" +
-			"(is equal to fail (string)) " + CallerReporterErrorf +
-			" (*gomock.Call)",
+			"(is equal to %s (string), is equal to fail (string))" +
+			" " + CallerReporterErrorf + " (*gomock.Call)",
 	},
 	"success-any-nay": {
 		matcher:       test.EqCall,
@@ -171,9 +171,9 @@ var testReporterParams = map[string]ReporterParams{
 		},
 	},
 	"errorf called": {
-		mockSetup: test.Errorf("fail"),
+		mockSetup: test.Errorf("%s", "fail"),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"fatal called": {
@@ -183,9 +183,9 @@ var testReporterParams = map[string]ReporterParams{
 		},
 	},
 	"fatalf called": {
-		mockSetup: test.Fatalf("fail"),
+		mockSetup: test.Fatalf("%s", "fail"),
 		call: func(t test.Test) {
-			t.Fatalf("fail")
+			t.Fatalf("%s", "fail")
 		},
 	},
 	"fail called": {
@@ -224,17 +224,17 @@ var testReporterParams = map[string]ReporterParams{
 	},
 	"errorf undeclared": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
-			"Errorf", CallerErrorf, "fail"),
+			"Errorf", CallerErrorf, "%s", "fail"),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"errorf undeclared twice": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
-			"Errorf", CallerErrorf, "fail"),
+			"Errorf", CallerErrorf, "%s", "fail"),
 		call: func(t test.Test) {
-			t.Errorf("fail")
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"fatal undeclared": {
@@ -255,18 +255,18 @@ var testReporterParams = map[string]ReporterParams{
 	},
 	"fatalf undeclared": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
-			"Fatalf", CallerFatalf, "fail"),
+			"Fatalf", CallerFatalf, "%s", "fail"),
 		call: func(t test.Test) {
-			t.Fatalf("fail")
+			t.Fatalf("%s", "fail")
 		},
 	},
 	"fatalf undeclared twice": {
 		failSetup: test.UnexpectedCall(test.NewValidator,
-			"Fatalf", CallerFatalf, "fail"),
+			"Fatalf", CallerFatalf, "%s", "fail"),
 		call: func(t test.Test) {
 			//revive:disable-next-line:unreachable-code // needed for testing
-			t.Fatalf("fail")
-			t.Fatalf("fail")
+			t.Fatalf("%s", "fail")
+			t.Fatalf("%s", "fail")
 		},
 	},
 	"failnow undeclared": {
@@ -306,12 +306,12 @@ var testReporterParams = map[string]ReporterParams{
 		},
 	},
 	"errorf consumed": {
-		mockSetup: test.Errorf("fail"),
+		mockSetup: test.Errorf("%s", "fail"),
 		failSetup: test.ConsumedCall(test.NewValidator,
-			"Errorf", CallerTestErrorf, CallerReporterErrorf, "fail"),
+			"Errorf", CallerTestErrorf, CallerReporterErrorf, "%s", "fail"),
 		call: func(t test.Test) {
-			t.Errorf("fail")
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"fatal consumed": {
@@ -323,11 +323,11 @@ var testReporterParams = map[string]ReporterParams{
 		},
 	},
 	"fatalf consumed": {
-		mockSetup: test.Fatalf("fail"),
+		mockSetup: test.Fatalf("%s", "fail"),
 		call: func(t test.Test) {
 			//revive:disable-next-line:unreachable-code // needed for testing
-			t.Fatalf("fail")
-			t.Fatalf("fail")
+			t.Fatalf("%s", "fail")
+			t.Fatalf("%s", "fail")
 		},
 	},
 	"failnow consumed": {
@@ -351,49 +351,50 @@ var testReporterParams = map[string]ReporterParams{
 	// a the test environment to expect a failure to get called. To satisfy
 	// this, we need to create at least one failure.
 	"errorf missing": {
-		mockSetup: mock.Chain(test.Errorf("fail"), test.Errorf("fail")),
-		failSetup: test.MissingCalls(test.Errorf("fail")),
+		mockSetup: mock.Chain(test.Errorf("%s", "fail"), test.Errorf("%s", "fail")),
+		failSetup: test.MissingCalls(test.Errorf("%s", "fail")),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"errorf missing two calls": {
 		mockSetup: mock.Chain(
-			test.Errorf("fail"), test.Errorf("fail"), test.Errorf("fail-x"),
+			test.Errorf("%s", "fail"), test.Errorf("%s", "fail"),
+			test.Errorf("%s", "fail-x"),
 		),
 		failSetup: test.MissingCalls(
-			test.Errorf("fail"), test.Errorf("fail-x"),
+			test.Errorf("%s", "fail"), test.Errorf("%s", "fail-x"),
 		),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"fatalf missing": {
-		mockSetup: mock.Chain(test.Errorf("fail"), test.Fatalf("fail")),
-		failSetup: test.MissingCalls(test.Fatalf("fail")),
+		mockSetup: mock.Chain(test.Errorf("%s", "fail"), test.Fatalf("%s", "fail")),
+		failSetup: test.MissingCalls(test.Fatalf("%s", "fail")),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"fail missing": {
-		mockSetup: mock.Chain(test.Errorf("fail"), test.Fail()),
+		mockSetup: mock.Chain(test.Errorf("%s", "fail"), test.Fail()),
 		failSetup: test.MissingCalls(test.Fail()),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"failnow missing": {
-		mockSetup: mock.Chain(test.Errorf("fail"), test.FailNow()),
+		mockSetup: mock.Chain(test.Errorf("%s", "fail"), test.FailNow()),
 		failSetup: test.MissingCalls(test.FailNow()),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 	"panic missing": {
-		mockSetup: mock.Chain(test.Errorf("fail"), test.Panic("fail")),
+		mockSetup: mock.Chain(test.Errorf("%s", "fail"), test.Panic("fail")),
 		failSetup: test.MissingCalls(test.Panic("fail")),
 		call: func(t test.Test) {
-			t.Errorf("fail")
+			t.Errorf("%s", "fail")
 		},
 	},
 }

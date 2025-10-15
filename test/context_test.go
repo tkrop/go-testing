@@ -19,7 +19,6 @@ func TestRun(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
-		name, param := name, param
 		t.Run(name, test.Run(param.expect, func(t test.Test) {
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -33,7 +32,6 @@ func TestRunSeq(t *testing.T) {
 	t.Parallel()
 
 	for name, param := range testParams {
-		name, param := name, param
 		t.Run(name, test.RunSeq(param.expect, func(t test.Test) {
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -72,7 +70,6 @@ var testContextParams = map[string]ContextParam{
 // TestContext is testing the test context with single simple test cases.
 func TestContext(t *testing.T) {
 	for name, param := range testContextParams {
-		name, param := name, param
 		t.Run(name, test.Run(test.Success, func(t test.Test) {
 			// Given
 			mock.NewMocks(t).Expect(param.setup)
@@ -124,7 +121,6 @@ var testCleanupParams = map[string]CleanupParam{
 // TestCleanup is testing the Cleanup method with various scenarios including nil input.
 func TestCleanup(t *testing.T) {
 	for name, param := range testCleanupParams {
-		name, param := name, param
 		t.Run(name, test.Run(test.Success, func(t test.Test) {
 			// Given
 			wg := sync.NewWaitGroup()
@@ -204,7 +200,6 @@ var testParallelParams = map[string]ParallelParam{
 // cases creating panics.
 func TestContextParallel(t *testing.T) {
 	for name, param := range testParallelParams {
-		name, param := name, param
 		t.Run(name, test.RunSeq(test.Success, func(t test.Test) {
 			// Given
 			if param.before != nil {
@@ -284,7 +279,7 @@ func TestDeadline(t *testing.T) {
 					time.Sleep(param.sleep)
 
 					// Then
-					t.Fatalf("finished regularly")
+					t.Fatal("finished regularly")
 				}, !test.Parallel)
 		})
 }

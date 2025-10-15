@@ -14,7 +14,7 @@ import (
 //go:generate mockgen -package=perm_test -destination=mock_iface_test.go -source=perm_test.go  IFace
 
 type IFace interface {
-	CallA(string)
+	CallA(input string)
 }
 
 func CallA(input string) mock.SetupFunc {

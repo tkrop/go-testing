@@ -223,7 +223,7 @@ func UnexpectedCall[T any](
 	return func(_ Test, mocks *mock.Mocks) mock.SetupFunc {
 		return Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
 			mock.Get(mocks, creator), method, reflect.StringArgs(args), caller,
-			//nolint:goerr113 // necessary
+			//nolint:err113 // necessary
 			fmt.Errorf("there are no expected calls "+
 				"of the method \"%s\" for that receiver", method))
 	}
@@ -236,7 +236,7 @@ func ConsumedCall[T any](
 	return func(_ Test, mocks *mock.Mocks) mock.SetupFunc {
 		return Fatalf("Unexpected call to %T.%v(%v) at %s because: %s",
 			mock.Get(mocks, creator), method, reflect.StringArgs(args), caller,
-			fmt.Errorf("\nexpected call at %s has "+ //nolint:goerr113 // necessary
+			fmt.Errorf("\nexpected call at %s has "+ //nolint:err113 // necessary
 				"already been called the max number of times", ecaller))
 	}
 }

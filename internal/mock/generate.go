@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	// Default mock file name.
+	// MockFileDefault default mock file name.
 	MockFileDefault = "mock_all_test.go"
 
-	// Exit code for success.
+	// ExitSuccess exit code for success.
 	ExitSuccess = 0
-	// Exit code for parse error.
+	// ExitParseError exit code for parse error.
 	ExitParseError = 1
-	// Exit code for write error.
+	// ExitWriteError exit code for write error.
 	ExitWriteError = 2
 )
 

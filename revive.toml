@@ -21,15 +21,23 @@ warningCode = 0
 # Enables all available rules
 enableAllRules = true
 
+# Reports on missing or wrong file headers.
 # No need to enforce a file header.
 [rule.file-header]
   disabled = true
 
-# Reports on each file in a package.
+# Reports on each file in a package having no package comments.
+# Rule prevents from having a central package documentation in `doc.go`.
 [rule.package-comments]
   disabled = true
 
-# Reports on comments mismatching comments.
+# Reports on mismatches between directory names and package names.
+# Rule prevents having a clearer hyphen readable directory name.
+[rule.package-directory-mismatch]
+  disabled = true
+
+# Reports on exported comments not matching the name as first word.
+# Rule prevents being more relaxed in comment writing.
 [rule.exported]
   disabled = true
 
@@ -64,6 +72,23 @@ enableAllRules = true
 # Rule prevents intentional usage of similar private method names.
 [rule.confusing-naming]
   disabled = true
+
+# Rule prevents intentional usage of explicit exhaustive switches.
+[rule.useless-fallthrough]
+  disabled = true
+
+# Rule prevents intentional usage of explicit exhaustive switches.
+[rule.enforce-switch-style]
+  disabled = true
+
+# Rule prevents intentional usage of explicit branches.
+[rule.identical-switch-branches]
+  disabled = true
+
+# Rule prevents intentional usage of explicit branches.
+[rule.identical-ifelseif-branches]
+  disabled = true
+
 
 # Enables a more experienced cyclomatic complexity (we enabled a log of rules
 # to counter-act the complexity trap).
