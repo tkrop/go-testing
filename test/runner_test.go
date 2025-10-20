@@ -128,8 +128,9 @@ func TestParamsRun(t *testing.T) {
 // TestParamsRunFiltered is testing the test runner with parameterized tests
 // while applying a filter.
 func TestParamsRunFiltered(t *testing.T) {
-	pattern, count := "inrun", atomic.Int32{}
+	pattern, count := "inrun failure", atomic.Int32{}
 	expect := testParams.FilterBy(pattern)
+	assert.NotEmpty(t, expect)
 
 	test.Param(t, testParams.GetSlice()...).
 		Filter(pattern, true).
@@ -166,6 +167,7 @@ func TestMapRun(t *testing.T) {
 func TestMapRunFiltered(t *testing.T) {
 	pattern, count := "base", atomic.Int32{}
 	expect := testParams.FilterBy(pattern)
+	assert.NotEmpty(t, expect)
 
 	test.Map(t, testParams).
 		Filter(pattern, true).
@@ -201,8 +203,9 @@ func TestSliceRun(t *testing.T) {
 // TestSliceRunFiltered is testing the test runner with slices while applying
 // a filter.
 func TestSliceRunFiltered(t *testing.T) {
-	pattern, count := "inrun", atomic.Int32{}
+	pattern, count := "inrun success", atomic.Int32{}
 	expect := testParams.FilterBy(pattern)
+	assert.NotEmpty(t, expect)
 
 	test.Slice(t, testParams.GetSlice()).
 		Filter(pattern, true).

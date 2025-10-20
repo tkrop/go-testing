@@ -14,7 +14,8 @@ import (
 // IFace is an interface for testing.
 type IFace interface {
 	CallA(value *Struct, args ...*reflect.Value) ([]any, error)
-	//revive:disable-next-line:use-any // needed for testing
+	//nolint:gofmt // needed for testing.
+	//revive:disable-next-line:use-any // needed for testing.
 	CallB() (fn func([]*mock.File) []interface{}, err error)
 	CallC(test test.Context)
 }

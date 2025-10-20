@@ -496,7 +496,7 @@ func (t *Context) Run(test Func, parallel bool) Test {
 	case <-done:
 		// Panic is already handled by the reporter.
 	case <-time.After(wait):
-		t.Fatalf("stopped by deadline")
+		t.Fatal("stopped by deadline")
 	}
 
 	return t

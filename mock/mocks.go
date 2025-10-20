@@ -554,11 +554,11 @@ func inOrderDetachTail(anchors []*Call, calls []detachTail) []*Call {
 }
 
 var (
-	// Error type for unsupported type errors.
+	// ErrTypeNotSupported type for unsupported type errors.
 	ErrTypeNotSupported = errors.New("type not supported")
 
-	// Error type for unsupported mode errors.
-	ErrModeNotSupprted = errors.New("mode not supported")
+	// ErrModeNotSupported type for unsupported mode errors.
+	ErrModeNotSupported = errors.New("mode not supported")
 )
 
 // NewErrNoCall creates an error with given call type to panic on incorrect
@@ -572,12 +572,12 @@ func NewErrNoCall(call any) error {
 // supported.
 func NewErrDetachMode(mode DetachMode) error {
 	return fmt.Errorf("%w [mode: %v]",
-		ErrModeNotSupprted, mode)
+		ErrModeNotSupported, mode)
 }
 
 // NewErrDetachNotAllowed creates an error that the detach mode is not
 // supported.
 func NewErrDetachNotAllowed(mode DetachMode) error {
 	return fmt.Errorf("%w [mode: %v] not supported in sub",
-		ErrModeNotSupprted, mode)
+		ErrModeNotSupported, mode)
 }

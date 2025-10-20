@@ -228,9 +228,8 @@ unlocks the waiting group in case of failures:
 func TestUnitCall(t *testing.T) {
     t.Parallel()
 
-for message, param := range testUnitCallParams {
-        message, param := message, param
-        t.Run(message, test.Run(param.expect, func(t test.Test) {
+for name, param := range testUnitCallParams {
+        t.Run(name, test.Run(param.expect, func(t test.Test) {
             t.Parallel()
 
             // Given

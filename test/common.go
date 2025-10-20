@@ -17,7 +17,8 @@ const (
 	// unknown default unknown test case name.
 	unknown Name = "unknown"
 
-	// Flag to run test by default sequential instead of parallel.
+	// Parallel is the global flag to switch test runs to be executed in
+	// parallel instead of sequentially.
 	Parallel = true
 )
 

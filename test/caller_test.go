@@ -98,7 +98,7 @@ var (
 	})
 	// CallerErrorf provides the file with line number of the `Errorf` call.
 	CallerErrorf = getCaller(func(t test.Reporter) {
-		t.Errorf("fail")
+		t.Errorf("%s", "fail")
 	})
 	// CallerFatal provides the file with line number of the `Fatal` call.
 	CallerFatal = getCaller(func(t test.Reporter) {
@@ -106,7 +106,7 @@ var (
 	})
 	// CallerFatalf provides the file with line number of the `Fatalf` call.
 	CallerFatalf = getCaller(func(t test.Reporter) {
-		t.Fatalf("fail")
+		t.Fatalf("%s", "fail")
 	})
 	// CallerFail provides the file with line number of the `Fail` call.
 	CallerFail = getCaller(func(t test.Reporter) {

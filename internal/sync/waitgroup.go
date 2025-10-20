@@ -17,7 +17,7 @@ type WaitGroup interface {
 
 // Synchronizer is an interface to setup the wait group of a component.
 type Synchronizer interface {
-	WaitGroup(WaitGroup)
+	WaitGroup(wg WaitGroup)
 }
 
 // NewWaitGroup creates a new standard wait group.

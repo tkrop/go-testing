@@ -1,6 +1,6 @@
 module github.com/tkrop/go-testing
 
-go 1.25.1
+go 1.25.3
 
 require (
 	github.com/h2non/gock v1.2.0

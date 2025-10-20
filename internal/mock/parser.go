@@ -6,13 +6,13 @@ import (
 )
 
 const (
-	// Default directory for package loading.
+	// DirDefault default directory for package loading.
 	DirDefault = "."
-	// Magic constant defining packages read from file.
+	// ReadFromFile magic constant defining packages read from file.
 	ReadFromFile = "command-line-arguments"
-	// Default value of mock interface name pattern.
+	// MockPatternDefault default pattern of mock interface name pattern.
 	MockPatternDefault = "Mock*"
-	// Default value of interface regex matching pattern.
+	// MatchPatternDefault default value of interface regex matching pattern.
 	MatchPatternDefault = ".*"
 )
 

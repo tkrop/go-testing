@@ -114,7 +114,6 @@ func TestUnit(t *testing.T) {
     t.Parallel()
 
     for name, param := range testParams {
-        name, param := name, param
         t.Run(name, test.Run(param.expect, func(t test.Test) {
             t.Parallel()
 
