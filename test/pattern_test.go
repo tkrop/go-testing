@@ -20,7 +20,7 @@ type MustParam struct {
 	expect any
 }
 
-var testMustParams = map[string]MustParam{
+var mustTestCases = map[string]MustParam{
 	"nil": {},
 	"string": {
 		arg:    "value",
@@ -38,7 +38,7 @@ var testMustParams = map[string]MustParam{
 }
 
 func TestMust(t *testing.T) {
-	test.Map(t, testMustParams).Run(func(t test.Test, param MustParam) {
+	test.Map(t, mustTestCases).Run(func(t test.Test, param MustParam) {
 		// Given
 		mock.NewMocks(t).Expect(param.setup)
 
@@ -50,7 +50,7 @@ func TestMust(t *testing.T) {
 	})
 }
 
-var testMainParams = map[string]test.MainParam{
+var mainTestCases = map[string]test.MainParam{
 	"panic": {
 		Env:      []string{"panic=true"},
 		Args:     []string{"panic"},
@@ -86,7 +86,7 @@ var testMainParams = map[string]test.MainParam{
 }
 
 func TestMain(t *testing.T) {
-	test.Map(t, testMainParams).Run(test.Main(main))
+	test.Map(t, mainTestCases).Run(test.Main(main))
 }
 
 func TestMainUnexpected(t *testing.T) {

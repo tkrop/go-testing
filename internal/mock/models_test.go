@@ -54,7 +54,7 @@ type NewFilesParams struct {
 	expectFiles []*File
 }
 
-var testNewFilesParams = map[string]NewFilesParams{
+var newFilesTestCases = map[string]NewFilesParams{
 	"target once": {
 		mocks: []*Mock{{Target: targetDefault}},
 		expectFiles: []*File{{
@@ -128,7 +128,7 @@ var testNewFilesParams = map[string]NewFilesParams{
 }
 
 func TestNewFiles(t *testing.T) {
-	test.Map(t, testNewFilesParams).
+	test.Map(t, newFilesTestCases).
 		Run(func(t test.Test, param NewFilesParams) {
 			// Given
 			mocks := clone.Clone(param.mocks).([]*Mock)
@@ -167,7 +167,7 @@ type FileParams struct {
 	expectClose error
 }
 
-var testFileParams = map[string]FileParams{
+var fileTestCases = map[string]FileParams{
 	"file stdout": {
 		file: fileStdout,
 		mocks: []*Mock{{
@@ -213,7 +213,7 @@ var testFileParams = map[string]FileParams{
 }
 
 func TestFile(t *testing.T) {
-	test.Map(t, testFileParams).
+	test.Map(t, fileTestCases).
 		Run(func(t test.Test, param FileParams) {
 			// Given
 			fmocks := clone.Clone(param.mocks).([]*Mock)

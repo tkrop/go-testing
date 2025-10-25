@@ -33,7 +33,7 @@ type testBuilderStructParam struct {
 	check  func(test.Test, test.Builder[Struct])
 }
 
-var testBuilderStructParams = map[string]testBuilderStructParam{
+var builderStructTestCases = map[string]testBuilderStructParam{
 	"struct get init": {
 		target: structInit,
 		check: func(t test.Test, b test.Builder[Struct]) {
@@ -179,7 +179,7 @@ var testBuilderStructParams = map[string]testBuilderStructParam{
 }
 
 func TestBuilderStruct(t *testing.T) {
-	test.Map(t, testBuilderStructParams).
+	test.Map(t, builderStructTestCases).
 		Run(func(t test.Test, param testBuilderStructParam) {
 			// Given
 			mock.NewMocks(t).Expect(param.expect)
@@ -202,7 +202,7 @@ type testBuilderPtrStructParam struct {
 	check  func(test.Test, test.Builder[*Struct])
 }
 
-var testBuilderPtrStructParams = map[string]testBuilderPtrStructParam{
+var builderPtrStructTestCases = map[string]testBuilderPtrStructParam{
 	// Test cases for nil interface pointer.
 	"nil any get": {
 		target: nil,
@@ -493,7 +493,7 @@ var testBuilderPtrStructParams = map[string]testBuilderPtrStructParam{
 }
 
 func TestBuilderPtrStruct(t *testing.T) {
-	test.Map(t, testBuilderPtrStructParams).
+	test.Map(t, builderPtrStructTestCases).
 		Run(func(t test.Test, param testBuilderPtrStructParam) {
 			// Given
 			mock.NewMocks(t).Expect(param.expect)
@@ -516,7 +516,7 @@ type testBuilderAnyParam struct {
 	check  func(test.Test, test.Builder[any])
 }
 
-var testBuilderAnyParams = map[string]testBuilderAnyParam{
+var builderAnyTestCases = map[string]testBuilderAnyParam{
 	// Test cases for invalid types.
 	"invalid type nil": {
 		target: nil,
@@ -799,7 +799,7 @@ var testBuilderAnyParams = map[string]testBuilderAnyParam{
 }
 
 func TestBuilderAny(t *testing.T) {
-	test.Map(t, testBuilderAnyParams).
+	test.Map(t, builderAnyTestCases).
 		Run(func(t test.Test, param testBuilderAnyParam) {
 			// Given
 			mock.NewMocks(t).Expect(param.expect)
@@ -822,7 +822,7 @@ type testFindParam struct {
 	expect any
 }
 
-var testFindParams = map[string]testFindParam{
+var findTestCases = map[string]testFindParam{
 	// Test cases for values.
 	"int": {
 		param:  1,
@@ -897,7 +897,7 @@ var testFindParams = map[string]testFindParam{
 }
 
 func TestFind(t *testing.T) {
-	test.Map(t, testFindParams).
+	test.Map(t, findTestCases).
 		Run(func(t test.Test, param testFindParam) {
 			// When
 			expect := test.Find(param.param, param.deflt, param.names...)

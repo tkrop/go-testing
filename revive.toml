@@ -100,7 +100,8 @@ enableAllRules = true
 [rule.cognitive-complexity]
   arguments = [20]
 
-# Limit line-length to increase readability.
+# Limit line-length to increase readability (compromise between 80 and 120 is
+# at 100).
 [rule.line-length-limit]
   arguments = [100]
 

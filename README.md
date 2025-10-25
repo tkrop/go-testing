@@ -75,7 +75,7 @@ type UnitParams struct {
     expectError  error
 }
 
-var testUnitParams = map[string]UnitParams {
+var unitTestCases = map[string]UnitParams {
     "success" {
         mockSetup: mock.Chain(
             CallMockA(input..., output...),
@@ -88,7 +88,7 @@ var testUnitParams = map[string]UnitParams {
 }
 
 func TestUnit(t *testing.T) {
-    test.Map(t, testParams).
+    test.Map(t, unitTestCases).
         Timeout(50 * time.Millisecond)
         Run(func(t test.Test, param UnitParams){
 

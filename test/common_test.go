@@ -167,9 +167,9 @@ var (
 	CleanupPanic = func() { panic("cleanup") }
 )
 
-// testParams is the generic map of test parameters for testing the test
+// commonTestCases is the generic map of test parameters for testing the test
 // context as well as the test runner.
-var testParams = TestParamMap{
+var commonTestCases = TestParamMap{
 	"base nothing": {
 		test:   TestEmpty,
 		expect: test.Success,

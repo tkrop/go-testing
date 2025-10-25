@@ -48,7 +48,7 @@ mock calls. The `ExpectMap` itself can be incomplete and contain any subset of
 the full permutation list with the expected results. E.g.
 
 ```go
-var testPermParams = perm.ExpectMap{
+var permTestCases = perm.ExpectMap{
     "a-b-c-d": test.ExpectSuccess,
     "a-b-d-c": test.ExpectSuccess,
     "a-d-b-c": test.ExpectSuccess,
@@ -62,12 +62,12 @@ var testPermParams = perm.ExpectMap{
 
 The nice part of the permutation framework is, that it now allows to complete
 the permutation by defining a default value for all remaining permutations by
-calling `testPermParams.Remain(test.ExpectSuccess)` fluently. This can be than
+calling `permTestCases.Remain(test.ExpectSuccess)` fluently. This can be than
 used in a parameterized test.
 
 ```go
 func TestDetach(t *testing.T) {
-    for message, expect := range testPermParams.Remain(test.ExpectFailure) {
+    for message, expect := range permTestCases.Remain(test.ExpectFailure) {
         t.Run(message, test.Run(expect, func(t *test.TestingT) {
             require.NotEmpty(t, message)
 

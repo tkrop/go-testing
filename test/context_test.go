@@ -18,7 +18,7 @@ import (
 func TestRun(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testParams {
+	for name, param := range commonTestCases {
 		t.Run(name, test.Run(param.expect, func(t test.Test) {
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -31,7 +31,7 @@ func TestRun(t *testing.T) {
 func TestRunSeq(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testParams {
+	for name, param := range commonTestCases {
 		t.Run(name, test.RunSeq(param.expect, func(t test.Test) {
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -54,8 +54,8 @@ type ContextParam struct {
 	test  test.Func
 }
 
-// testContextParams is a map of test parameters for testing the test context.
-var testContextParams = map[string]ContextParam{
+// contextTestCases is a map of test parameters for testing the test context.
+var contextTestCases = map[string]ContextParam{
 	"panic": {
 		setup: mock.Chain(
 			test.Fatalf("panic: %v\n%s\n%s", "test", gomock.Any(), gomock.Any()),
@@ -69,7 +69,7 @@ var testContextParams = map[string]ContextParam{
 
 // TestContext is testing the test context with single simple test cases.
 func TestContext(t *testing.T) {
-	for name, param := range testContextParams {
+	for name, param := range contextTestCases {
 		t.Run(name, test.Run(test.Success, func(t test.Test) {
 			// Given
 			mock.NewMocks(t).Expect(param.setup)
@@ -87,8 +87,8 @@ type CleanupParam struct {
 	wait int
 }
 
-// testCleanupParams is a map of test parameters for testing the Cleanup method.
-var testCleanupParams = map[string]CleanupParam{
+// cleanupTestCases is a map of test parameters for testing the Cleanup method.
+var cleanupTestCases = map[string]CleanupParam{
 	"nil cleanup": {
 		test: func(t test.Test) {
 			t.Cleanup(nil)
@@ -120,7 +120,7 @@ var testCleanupParams = map[string]CleanupParam{
 
 // TestCleanup is testing the Cleanup method with various scenarios including nil input.
 func TestCleanup(t *testing.T) {
-	for name, param := range testCleanupParams {
+	for name, param := range cleanupTestCases {
 		t.Run(name, test.Run(test.Success, func(t test.Test) {
 			// Given
 			wg := sync.NewWaitGroup()
@@ -147,9 +147,9 @@ type ParallelParam struct {
 	during   test.Func
 }
 
-// testParallelParams is a map of test parameters for testing the test context
+// parallelTestCases is a map of test parameters for testing the test context
 // in conflicting parallel cases resulting in a panics.
-var testParallelParams = map[string]ParallelParam{
+var parallelTestCases = map[string]ParallelParam{
 	"setenv in run without parallel": {
 		during: func(t test.Test) {
 			t.Setenv("TESTING", "during")
@@ -199,7 +199,7 @@ var testParallelParams = map[string]ParallelParam{
 // TestContextParallel is testing the test context in conflicting parallel
 // cases creating panics.
 func TestContextParallel(t *testing.T) {
-	for name, param := range testParallelParams {
+	for name, param := range parallelTestCases {
 		t.Run(name, test.RunSeq(test.Success, func(t test.Test) {
 			// Given
 			if param.before != nil {
@@ -222,7 +222,7 @@ type TestDeadlineParam struct {
 	failure            test.Expect
 }
 
-var TestDeadlineParams = map[string]TestDeadlineParam{
+var deadlineTestCases = map[string]TestDeadlineParam{
 	"failed": {
 		time:    0,
 		early:   0,
@@ -267,7 +267,7 @@ var TestDeadlineParams = map[string]TestDeadlineParam{
 func TestDeadline(t *testing.T) {
 	t.Parallel()
 
-	test.Map(t, TestDeadlineParams).
+	test.Map(t, deadlineTestCases).
 		Timeout(0).StopEarly(0).
 		Run(func(t test.Test, param TestDeadlineParam) {
 			mock.NewMocks(t).Expect(param.expect)

@@ -77,7 +77,7 @@ type MockParams struct {
 	call      func(test.Test, *mock.Mocks)
 }
 
-var testMockParams = map[string]MockParams{
+var mockTestCAses = map[string]MockParams{
 	"single mock with single call": {
 		mockSetup: mock.Setup(
 			CallA("ok"),
@@ -149,7 +149,7 @@ var testMockParams = map[string]MockParams{
 }
 
 func TestMocks(t *testing.T) {
-	test.Map(t, testMockParams).
+	test.Map(t, mockTestCAses).
 		Run(func(t test.Test, param MockParams) {
 			// Given
 			mocks := mock.NewMocks(t)
@@ -262,7 +262,7 @@ func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
 		})
 }
 
-var testSetupParams = perm.ExpectMap{
+var setupTestCases = perm.ExpectMap{
 	"b2-b1-a-c": test.Failure,
 	"b2-b1-c-a": test.Failure,
 	"b2-c-b1-a": test.Failure,
@@ -278,7 +278,7 @@ var testSetupParams = perm.ExpectMap{
 }
 
 func TestSetup(t *testing.T) {
-	perms := testSetupParams.Remain(test.Success)
+	perms := setupTestCases.Remain(test.Success)
 	test.Map(t, perms).Run(func(t test.Test, expect test.Expect) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
@@ -301,12 +301,12 @@ func TestSetup(t *testing.T) {
 	})
 }
 
-var testChainParams = perm.ExpectMap{
+var chainTestCases = perm.ExpectMap{
 	"a-b1-b2-c": test.Success,
 }
 
 func TestChain(t *testing.T) {
-	perms := testChainParams.Remain(test.Failure)
+	perms := chainTestCases.Remain(test.Failure)
 	test.Map(t, perms).Run(func(t test.Test, expect test.Expect) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
@@ -329,7 +329,7 @@ func TestChain(t *testing.T) {
 	})
 }
 
-var testSetupChainParams = perm.ExpectMap{
+var setupChainTestCases = perm.ExpectMap{
 	"a-b-c-d": test.Success,
 	"a-c-b-d": test.Success,
 	"a-c-d-b": test.Success,
@@ -339,7 +339,7 @@ var testSetupChainParams = perm.ExpectMap{
 }
 
 func TestSetupChain(t *testing.T) {
-	perms := testSetupChainParams.Remain(test.Failure)
+	perms := setupChainTestCases.Remain(test.Failure)
 	test.Map(t, perms).Run(func(t test.Test, expect test.Expect) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
@@ -367,7 +367,7 @@ func TestSetupChain(t *testing.T) {
 }
 
 func TestChainSetup(t *testing.T) {
-	perms := testSetupChainParams.Remain(test.Failure)
+	perms := setupChainTestCases.Remain(test.Failure)
 	test.Map(t, perms).Run(func(t test.Test, expect test.Expect) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
@@ -394,7 +394,7 @@ func TestChainSetup(t *testing.T) {
 	})
 }
 
-var testParallelChainParams = perm.ExpectMap{
+var parallelChainTestCases = perm.ExpectMap{
 	"a-b-c-d-e-f": test.Success,
 	"a-b-c-e-d-f": test.Success,
 	"a-b-e-c-d-f": test.Success,
@@ -410,7 +410,7 @@ var testParallelChainParams = perm.ExpectMap{
 }
 
 func TestParallelChain(t *testing.T) {
-	perms := testParallelChainParams.Remain(test.Failure)
+	perms := parallelChainTestCases.Remain(test.Failure)
 	test.Map(t, perms).Run(func(t test.Test, expect test.Expect) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
@@ -439,7 +439,7 @@ func TestParallelChain(t *testing.T) {
 	})
 }
 
-var testChainSubParams = perm.ExpectMap{
+var chainSubTestCases = perm.ExpectMap{
 	"a-b-c-d-e-f": test.Success,
 	"a-c-b-d-e-f": test.Success,
 	"a-c-d-b-e-f": test.Success,
@@ -459,8 +459,8 @@ var testChainSubParams = perm.ExpectMap{
 }
 
 func TestChainSub(t *testing.T) {
-	perms := testChainSubParams
-	// perms := testChainSubParams.Remain(test.ExpectSuccess)
+	perms := chainSubTestCases
+	// perms := chainSubTestCases.Remain(test.ExpectSuccess)
 	test.Map(t, perms).Run(func(t test.Test, expect test.Expect) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
@@ -487,7 +487,7 @@ func TestChainSub(t *testing.T) {
 	})
 }
 
-var testDetachParams = perm.ExpectMap{
+var detachTestCases = perm.ExpectMap{
 	"a-b-c-d": test.Success,
 	"a-b-d-c": test.Success,
 	"a-d-b-c": test.Success,
@@ -499,7 +499,7 @@ var testDetachParams = perm.ExpectMap{
 }
 
 func TestDetach(t *testing.T) {
-	perms := testDetachParams.Remain(test.Failure)
+	perms := detachTestCases.Remain(test.Failure)
 	test.Map(t, perms).Run(func(t test.Test, expect test.Expect) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
@@ -525,7 +525,7 @@ type PanicParams struct {
 	expectError error
 }
 
-var testPanicParams = map[string]PanicParams{
+var panicTestCases = map[string]PanicParams{
 	"setup": {
 		setup:       mock.Setup(NoCall()),
 		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
@@ -561,7 +561,7 @@ var testPanicParams = map[string]PanicParams{
 }
 
 func TestPanic(t *testing.T) {
-	test.Map(t, testPanicParams).Run(func(t test.Test, param PanicParams) {
+	test.Map(t, panicTestCases).Run(func(t test.Test, param PanicParams) {
 		// Given
 		defer func() {
 			err := recover()
@@ -582,7 +582,7 @@ type GetSubSliceParams struct {
 	expectSlice any
 }
 
-var testGetSubSliceParams = map[string]GetSubSliceParams{
+var getSubSliceTestCases = map[string]GetSubSliceParams{
 	"first": {
 		slice: []any{"a", "b", "c", "d", "e"},
 		from:  0, to: 0,
@@ -626,7 +626,7 @@ var testGetSubSliceParams = map[string]GetSubSliceParams{
 }
 
 func TestGetSubSlice(t *testing.T) {
-	test.Map(t, testGetSubSliceParams).
+	test.Map(t, getSubSliceTestCases).
 		Run(func(t test.Test, param GetSubSliceParams) {
 			// When
 			slice := mock.GetSubSlice(param.from, param.to, param.slice)
@@ -643,7 +643,7 @@ type FuncParams struct {
 	expect    []any
 }
 
-var testFuncParams = map[string]FuncParams{
+var funcTestCases = map[string]FuncParams{
 	"in-0-out-0": {
 		call: func(any) {},
 	},
@@ -692,7 +692,7 @@ var testFuncParams = map[string]FuncParams{
 	},
 }
 
-var testFuncDoNoReturnParams = map[string]FuncParams{
+var funcDoNoReturnTestCases = map[string]FuncParams{
 	"in-0-no-out-1": {
 		call:   func(any) string { return "okay" },
 		result: []any{},
@@ -720,7 +720,7 @@ var testFuncDoNoReturnParams = map[string]FuncParams{
 }
 
 func TestFuncDo(t *testing.T) {
-	test.Map(t, testFuncParams, testFuncDoNoReturnParams).
+	test.Map(t, funcTestCases, funcDoNoReturnTestCases).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
 			mocks := MockSetup(t, param.mockSetup)
@@ -748,7 +748,7 @@ func TestFuncDo(t *testing.T) {
 		})
 }
 
-var testFuncReturnNoneParams = map[string]FuncParams{
+var funcReturnNoneTestCases = map[string]FuncParams{
 	"in-0-no-out-1": {
 		mockSetup: test.Panic("not enough arguments"),
 		call:      func(any) string { return "okay" },
@@ -780,7 +780,7 @@ var testFuncReturnNoneParams = map[string]FuncParams{
 }
 
 func TestFuncReturn(t *testing.T) {
-	test.Map(t, testFuncParams, testFuncReturnNoneParams).
+	test.Map(t, funcTestCases, funcReturnNoneTestCases).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
 			mocks := MockSetup(t, param.mockSetup)
@@ -809,7 +809,7 @@ func TestFuncReturn(t *testing.T) {
 }
 
 func TestFuncPanic(t *testing.T) {
-	test.Map(t, testFuncParams, testFuncDoNoReturnParams).
+	test.Map(t, funcTestCases, funcDoNoReturnTestCases).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
 			mocks := MockSetup(t, param.mockSetup)
@@ -845,7 +845,7 @@ type FailureParam struct {
 	test   test.Func
 }
 
-var testFailureParams = map[string]FailureParam{
+var failureTestCases = map[string]FailureParam{
 	"success": {
 		test:   func(test.Test) {},
 		expect: test.Success,
@@ -873,7 +873,7 @@ var testFailureParams = map[string]FailureParam{
 }
 
 func TestFailures(t *testing.T) {
-	test.Map(t, testFailureParams).
+	test.Map(t, failureTestCases).
 		Run(func(t test.Test, param FailureParam) {
 			// Given
 			mocks := mock.NewMocks(t).Expect(CallA("a"))
@@ -898,14 +898,14 @@ type WaitParam struct {
 	expect test.Expect
 }
 
-var testWaitParams = map[string]WaitParam{
+var waitTestCases = map[string]WaitParam{
 	"simple wait": {
 		expect: test.Success,
 	},
 }
 
 func TestFuncWait(t *testing.T) {
-	test.Map(t, testWaitParams).
+	test.Map(t, waitTestCases).
 		Run(func(t test.Test, _ WaitParam) {
 			// Given
 			mocks := mock.NewMocks(t)

@@ -29,7 +29,7 @@ func TestParamRun(t *testing.T) {
 func TestParamRunSeq(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testParams {
+	for name, param := range commonTestCases {
 		finished := false
 		test.Param(t, param.Rename(name)).
 			RunSeq(func(t test.Test, param TestParam) {
@@ -47,7 +47,7 @@ func TestParamRunSeq(t *testing.T) {
 func TestParamRunNamed(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testParams {
+	for name, param := range commonTestCases {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
 		test.Param(t, param.Rename(name)).
@@ -68,7 +68,7 @@ func TestParamRunNamed(t *testing.T) {
 func TestParamRunSeqNamed(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testParams {
+	for name, param := range commonTestCases {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
 		test.Param(t, param.Rename(name)).
@@ -89,7 +89,7 @@ func TestParamRunSeqNamed(t *testing.T) {
 func TestParamRunFiltered(t *testing.T) {
 	t.Parallel()
 
-	for name, param := range testParams {
+	for name, param := range commonTestCases {
 		pattern, finished := "base", false
 		tname := t.Name() + "/" + test.TestName(name, param)
 		test.Param(t, param.Rename(name)).
@@ -114,14 +114,14 @@ func TestParamRunFiltered(t *testing.T) {
 func TestParamsRun(t *testing.T) {
 	count := atomic.Int32{}
 
-	test.Param(t, testParams.GetSlice()...).
+	test.Param(t, commonTestCases.GetSlice()...).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
 		}).
 		Cleanup(func() {
-			assert.Equal(t, len(testParams), int(count.Load()))
+			assert.Equal(t, len(commonTestCases), int(count.Load()))
 		})
 }
 
@@ -129,10 +129,10 @@ func TestParamsRun(t *testing.T) {
 // while applying a filter.
 func TestParamsRunFiltered(t *testing.T) {
 	pattern, count := "inrun failure", atomic.Int32{}
-	expect := testParams.FilterBy(pattern)
+	expect := commonTestCases.FilterBy(pattern)
 	assert.NotEmpty(t, expect)
 
-	test.Param(t, testParams.GetSlice()...).
+	test.Param(t, commonTestCases.GetSlice()...).
 		Filter(pattern, true).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
@@ -151,14 +151,14 @@ func TestParamsRunFiltered(t *testing.T) {
 func TestMapRun(t *testing.T) {
 	count := atomic.Int32{}
 
-	test.Map(t, testParams).
+	test.Map(t, commonTestCases).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
 		}).
 		Cleanup(func() {
-			assert.Equal(t, len(testParams), int(count.Load()))
+			assert.Equal(t, len(commonTestCases), int(count.Load()))
 		})
 }
 
@@ -166,10 +166,10 @@ func TestMapRun(t *testing.T) {
 // filter.
 func TestMapRunFiltered(t *testing.T) {
 	pattern, count := "base", atomic.Int32{}
-	expect := testParams.FilterBy(pattern)
+	expect := commonTestCases.FilterBy(pattern)
 	assert.NotEmpty(t, expect)
 
-	test.Map(t, testParams).
+	test.Map(t, commonTestCases).
 		Filter(pattern, true).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
@@ -189,14 +189,14 @@ func TestMapRunFiltered(t *testing.T) {
 func TestSliceRun(t *testing.T) {
 	count := atomic.Int32{}
 
-	test.Slice(t, testParams.GetSlice()).
+	test.Slice(t, commonTestCases.GetSlice()).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
 		}).
 		Cleanup(func() {
-			assert.Equal(t, len(testParams), int(count.Load()))
+			assert.Equal(t, len(commonTestCases), int(count.Load()))
 		})
 }
 
@@ -204,10 +204,10 @@ func TestSliceRun(t *testing.T) {
 // a filter.
 func TestSliceRunFiltered(t *testing.T) {
 	pattern, count := "inrun success", atomic.Int32{}
-	expect := testParams.FilterBy(pattern)
+	expect := commonTestCases.FilterBy(pattern)
 	assert.NotEmpty(t, expect)
 
-	test.Slice(t, testParams.GetSlice()).
+	test.Slice(t, commonTestCases.GetSlice()).
 		Filter(pattern, true).
 		Run(func(t test.Test, param TestParam) {
 			defer count.Add(1)

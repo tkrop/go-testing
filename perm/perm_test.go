@@ -41,7 +41,7 @@ func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
 	return mock.NewMocks(t).Expect(mockSetup)
 }
 
-var testPermTestParams = perm.ExpectMap{
+var permTestCases = perm.ExpectMap{
 	"b-a-c-d-e-f": test.Success,
 	"a-b-c-d-e-f": test.Success,
 	"a-c-b-d-e-f": test.Success,
@@ -51,7 +51,7 @@ var testPermTestParams = perm.ExpectMap{
 }
 
 func TestPermTest(t *testing.T) {
-	test.Map(t, testPermTestParams.Remain(test.Failure)).
+	test.Map(t, permTestCases.Remain(test.Failure)).
 		Run(func(t test.Test, expect test.Expect) {
 			// Given
 			name := strings.Split(t.Name(), "/")[1]

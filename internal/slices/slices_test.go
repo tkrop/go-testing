@@ -37,7 +37,7 @@ type TestAddIntParam struct {
 	expect []int
 }
 
-var testAddIntParams = map[string]TestAddIntParam{
+var addIntTestCases = map[string]TestAddIntParam{
 	"add-multiple-int-slices": {
 		slices: [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}},
 		expect: []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
@@ -65,7 +65,7 @@ var testAddIntParams = map[string]TestAddIntParam{
 }
 
 func TestAddInt(t *testing.T) {
-	test.Map(t, testAddIntParams).
+	test.Map(t, addIntTestCases).
 		Run(func(t test.Test, param TestAddIntParam) {
 			// When
 			result := slices.Add[int](param.slices...)
@@ -79,7 +79,7 @@ type TestAddStringParam struct {
 	expect []string
 }
 
-var testAddStringParams = map[string]TestAddStringParam{
+var addStringTestCases = map[string]TestAddStringParam{
 	"add-string-slices": {
 		slices: [][]string{{"hello", "world"}, {"foo", "bar"}},
 		expect: []string{"hello", "world", "foo", "bar"},
@@ -95,7 +95,7 @@ var testAddStringParams = map[string]TestAddStringParam{
 }
 
 func TestAdd(t *testing.T) {
-	test.Map(t, testAddStringParams).
+	test.Map(t, addStringTestCases).
 		Run(func(t test.Test, param TestAddStringParam) {
 			// When
 			result := slices.Add(param.slices...)

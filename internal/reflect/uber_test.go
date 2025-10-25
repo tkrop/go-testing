@@ -39,7 +39,7 @@ type StringArgsParam struct {
 	expect []string
 }
 
-var testStringArgsParams = map[string]StringArgsParam{
+var stringArgsTestCases = map[string]StringArgsParam{
 	// Testing single value conversion behavior.
 	"nil-value": {
 		args:   []any{nil},
@@ -148,7 +148,7 @@ var testStringArgsParams = map[string]StringArgsParam{
 }
 
 func TestStringArgs(t *testing.T) {
-	test.Map(t, testStringArgsParams).
+	test.Map(t, stringArgsTestCases).
 		Run(func(t test.Test, param StringArgsParam) {
 			// When
 			result := reflect.StringArgs(param.args)

@@ -44,7 +44,7 @@ using a `test.Test` interface, that is compatible with most tools, e.g.
 
 ```go
 func TestUnit(t *testing.T) {
-    test.Param|Slice|Map|Any(t, testParams).
+    test.Param|Slice|Map|Any(t, unitTestCases).
         Filter("test-case-name", false|true).
         Timeout(5*time.Millisecond).
         StopEarly(time.Millisecond).
@@ -88,7 +88,7 @@ test function that is run in isolation.
 
 ```go
 func TestUnit(t *testing.T) {
-    test.Map(t, testParams).
+    test.Map(t, unitTestCases).
         Run|RunSeq(func(t test.Test, param UnitParams){
             // Given
 
@@ -113,7 +113,7 @@ parameterized, parallel, isolated test wrapper using the basic abstraction
 func TestUnit(t *testing.T) {
     t.Parallel()
 
-    for name, param := range testParams {
+    for name, param := range unitTestCases {
         t.Run(name, test.Run(param.expect, func(t test.Test) {
             t.Parallel()
 
@@ -228,7 +228,7 @@ exit code against the expectation. The following example demonstrates how to
 use the pattern to test a `main` method:
 
 ```go
-testMainParams := map[string]test.MainParams{
+mainTestCases := map[string]test.MainParams{
     "no mocks": {
         Args: []string{"mock", "arg1", "arg2"},
         Env: []string{"VAR=value"},
@@ -237,7 +237,7 @@ testMainParams := map[string]test.MainParams{
 }
 
 func TestMain(t *testing.T) {
-    test.Map(t, testMainParams).Run(test.TestMain(main))
+    test.Map(t, mainTestCases).Run(test.TestMain(main))
 }
 ```
 
