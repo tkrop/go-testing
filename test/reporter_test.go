@@ -26,7 +26,7 @@ type MatcherParams struct {
 	expectString  string
 }
 
-var testErrorMatcherParams = map[string]MatcherParams{
+var errorMatcherTestCases = map[string]MatcherParams{
 	"success string-string": {
 		matcher:       test.EqError,
 		base:          anErrorString,
@@ -101,7 +101,7 @@ var testErrorMatcherParams = map[string]MatcherParams{
 }
 
 func TestErrorMatcher(t *testing.T) {
-	test.Map(t, testErrorMatcherParams).
+	test.Map(t, errorMatcherTestCases).
 		Run(func(t test.Test, param MatcherParams) {
 			// Given
 			matcher := param.matcher(param.base)
@@ -115,7 +115,7 @@ func TestErrorMatcher(t *testing.T) {
 		})
 }
 
-var testCallMatcherParams = map[string]MatcherParams{
+var callMatcherTestCases = map[string]MatcherParams{
 	"success-call-call": {
 		matcher:       test.EqCall,
 		base:          test.Errorf("%s", "fail"),
@@ -142,7 +142,7 @@ func evalCall(arg any, mocks *mock.Mocks) any {
 }
 
 func TestCallMatcher(t *testing.T) {
-	test.Map(t, testCallMatcherParams).
+	test.Map(t, callMatcherTestCases).
 		Run(func(t test.Test, param MatcherParams) {
 			// Given - send mock calls to unchecked test context.
 			mocks := mock.NewMocks(test.New(t, test.Success))
@@ -163,7 +163,7 @@ type ReporterParams struct {
 	call      test.Func
 }
 
-var testReporterParams = map[string]ReporterParams{
+var reporterTestCases = map[string]ReporterParams{
 	"error called": {
 		mockSetup: test.Error("fail"),
 		call: func(t test.Test) {
@@ -400,7 +400,7 @@ var testReporterParams = map[string]ReporterParams{
 }
 
 func TestReporter(t *testing.T) {
-	test.Map(t, testReporterParams).
+	test.Map(t, reporterTestCases).
 		Run(func(t test.Test, param ReporterParams) {
 			// Given
 			mocks := mock.NewMocks(t)

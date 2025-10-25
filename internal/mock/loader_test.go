@@ -54,7 +54,7 @@ type LoaderSearchParams struct {
 	expect *Type
 }
 
-var testLoaderSearchParams = map[string]LoaderSearchParams{
+var loaderSearchTestCases = map[string]LoaderSearchParams{
 	"fail": {
 		loader: loaderFail,
 		target: typePathDflt,
@@ -186,7 +186,7 @@ var testLoaderSearchParams = map[string]LoaderSearchParams{
 }
 
 func TestLoaderSearch(t *testing.T) {
-	test.Map(t, testLoaderSearchParams).
+	test.Map(t, loaderSearchTestCases).
 		Run(func(t test.Test, param LoaderSearchParams) {
 			// Given
 			target := param.target.Copy()
@@ -206,7 +206,7 @@ type LoaderLoadParams struct {
 	expectLen   int
 }
 
-var testLoaderLoadParams = map[string]LoaderLoadParams{
+var loaderLoadTestCases = map[string]LoaderLoadParams{
 	"file loading": {
 		loader:    loaderMock,
 		source:    targetTest.With(typeFileDflt),
@@ -225,7 +225,7 @@ var testLoaderLoadParams = map[string]LoaderLoadParams{
 }
 
 func TestLoaderLoad(t *testing.T) {
-	test.Map(t, testLoaderLoadParams).
+	test.Map(t, loaderLoadTestCases).
 		Run(func(t test.Test, param LoaderLoadParams) {
 			// When
 			pkgs, err := param.loader.Load(param.source.Path).Get()
@@ -243,7 +243,7 @@ type LoaderIFacesParams struct {
 	expectError  error
 }
 
-var testLoaderIFacesParams = map[string]LoaderIFacesParams{
+var loaderIFacesTestCases = map[string]LoaderIFacesParams{
 	"file default": {
 		loader: loaderMock,
 		source: targetTest.With(typeFileDflt),
@@ -324,7 +324,7 @@ var testLoaderIFacesParams = map[string]LoaderIFacesParams{
 }
 
 func TestLoaderIFaces(t *testing.T) {
-	test.Map(t, testLoaderIFacesParams).
+	test.Map(t, loaderIFacesTestCases).
 		Run(func(t test.Test, param LoaderIFacesParams) {
 			// Given
 			source := param.source.Copy()

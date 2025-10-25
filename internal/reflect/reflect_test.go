@@ -38,7 +38,7 @@ type ArgOfParams struct {
 	expect any
 }
 
-var testArgOfParams = map[string]ArgOfParams{
+var argOfTestCases = map[string]ArgOfParams{
 	"nil": {
 		value:  reflect.ValueOf(nil),
 		expect: nil,
@@ -149,7 +149,7 @@ var testArgOfParams = map[string]ArgOfParams{
 }
 
 func TestArgOf(t *testing.T) {
-	test.Map(t, testArgOfParams).
+	test.Map(t, argOfTestCases).
 		Run(func(t test.Test, param ArgOfParams) {
 			// When
 			arg := reflect.ArgOf(param.value)
@@ -172,7 +172,7 @@ type ArgsOfParams struct {
 	args   []any
 }
 
-var testArgsOfParams = map[string]ArgsOfParams{
+var argsOfTestCases = map[string]ArgsOfParams{
 	"values-nil": {
 		values: nil,
 		args:   nil,
@@ -247,7 +247,7 @@ var testArgsOfParams = map[string]ArgsOfParams{
 }
 
 func TestArgsOf(t *testing.T) {
-	test.Map(t, testArgsOfParams).
+	test.Map(t, argsOfTestCases).
 		Run(func(t test.Test, param ArgsOfParams) {
 			// When
 			args := reflect.ArgsOf(param.values...)
@@ -266,7 +266,7 @@ type ValuesParams struct {
 	expectArgs []any
 }
 
-var testValuesInParams = map[string]ValuesParams{
+var valuesInTestCases = map[string]ValuesParams{
 	"args-nil": {
 		setup: test.Panic("not enough arguments"),
 		call:  func(any) {},
@@ -358,7 +358,7 @@ var testValuesInParams = map[string]ValuesParams{
 }
 
 func TestValuesIn(t *testing.T) {
-	test.Map(t, testValuesInParams).
+	test.Map(t, valuesInTestCases).
 		Run(func(t test.Test, param ValuesParams) {
 			// Given
 			mock.NewMocks(t).Expect(param.setup)
@@ -372,7 +372,7 @@ func TestValuesIn(t *testing.T) {
 		})
 }
 
-var testValuesOutParams = map[string]ValuesParams{
+var valuesOutTestCases = map[string]ValuesParams{
 	"method-nil": {
 		call:       func() {},
 		args:       nil,
@@ -467,7 +467,7 @@ var testValuesOutParams = map[string]ValuesParams{
 }
 
 func TestValuesOut(t *testing.T) {
-	test.Map(t, testValuesOutParams).
+	test.Map(t, valuesOutTestCases).
 		Run(func(t test.Test, param ValuesParams) {
 			// Given
 			mock.NewMocks(t).Expect(param.setup)
@@ -487,7 +487,7 @@ type AnyFuncOfParams struct {
 	expect   any
 }
 
-var testAnyFuncOfParams = map[string]AnyFuncOfParams{
+var anyFuncOfTestCases = map[string]AnyFuncOfParams{
 	"args-0": {
 		args: 0, variadic: false, expect: func() {},
 	},
@@ -512,7 +512,7 @@ var testAnyFuncOfParams = map[string]AnyFuncOfParams{
 }
 
 func TestAnyFuncOf(t *testing.T) {
-	test.Map(t, testAnyFuncOfParams).
+	test.Map(t, anyFuncOfTestCases).
 		Run(func(t test.Test, param AnyFuncOfParams) {
 			// Given
 
@@ -530,7 +530,7 @@ type BaseFuncOfParams struct {
 	expect  any
 }
 
-var testBaseFuncOfParams = map[string]BaseFuncOfParams{
+var baseFuncOfTestCases = map[string]BaseFuncOfParams{
 	"in-0-out-0": {
 		call:   func() {},
 		expect: func() {},
@@ -595,7 +595,7 @@ var testBaseFuncOfParams = map[string]BaseFuncOfParams{
 }
 
 func TestBaseFuncOf(t *testing.T) {
-	test.Map(t, testBaseFuncOfParams).
+	test.Map(t, baseFuncOfTestCases).
 		Run(func(t test.Test, param BaseFuncOfParams) {
 			// Given
 			ctype := reflect.TypeOf(param.call)
@@ -616,7 +616,7 @@ type MakeFuncOfParams struct {
 	expectArgs []any
 }
 
-var testMakeFuncOfParams = map[string]MakeFuncOfParams{
+var makeFuncOfTestCases = map[string]MakeFuncOfParams{
 	"in-0-out-0": {
 		call: func() {},
 	},
@@ -641,7 +641,7 @@ var testMakeFuncOfParams = map[string]MakeFuncOfParams{
 }
 
 func TestMakeFuncOf(t *testing.T) {
-	test.Map(t, testMakeFuncOfParams).
+	test.Map(t, makeFuncOfTestCases).
 		Run(func(t test.Test, param MakeFuncOfParams) {
 			// Given
 			ctype := reflect.TypeOf(param.call)

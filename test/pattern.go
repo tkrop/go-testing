@@ -58,7 +58,7 @@ const GoTestingRunVar = "GO_TESTING_RUN"
 // to capture and check the exit code against the expectation. The following
 // example demonstrates how to use this method to test a `main`-method:
 //
-//	 testMainParams := map[string]test.MainParam{
+//	 mainTestCases := map[string]test.MainParam{
 //		 "with args": {
 //			 Args: []string{"mock", "arg1", "arg2"},
 //			 Env:  []string{"VAR=value"},
@@ -67,7 +67,7 @@ const GoTestingRunVar = "GO_TESTING_RUN"
 //	 }
 //
 //	 func Main(t *testing.T) {
-//		 test.Map(t, testMainParams).Run(test.Main(main))
+//		 test.Map(t, mainTestCases).Run(test.Main(main))
 //	 }
 //
 // If the test process is expected to run longer than the default test timeout,

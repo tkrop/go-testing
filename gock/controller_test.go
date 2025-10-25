@@ -17,7 +17,7 @@ type ControllerParams struct {
 	expectError error
 }
 
-var testControllerParams = map[string]ControllerParams{
+var controllerTestCases = map[string]ControllerParams{
 	"match with bar": {
 		url:         "http://foo.com/bar",
 		expectMatch: test.Success,
@@ -41,7 +41,7 @@ var testControllerParams = map[string]ControllerParams{
 }
 
 func TestController(t *testing.T) {
-	test.Map(t, testControllerParams).
+	test.Map(t, controllerTestCases).
 		Run(func(t test.Test, param ControllerParams) {
 			// Given
 			ctrl := gock.NewGock(gomock.NewController(t))

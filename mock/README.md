@@ -170,7 +170,7 @@ the mock call expectations, in a parameter setup as follows to show the most
 common use cases:
 
 ```go
-var testUnitCallParams = map[string]struct {
+var unitCallTestCases = map[string]struct {
     mockSetup    mock.SetupFunc
     input*...    *model.*
     expect       test.Expect
@@ -228,7 +228,7 @@ unlocks the waiting group in case of failures:
 func TestUnitCall(t *testing.T) {
     t.Parallel()
 
-for name, param := range testUnitCallParams {
+    for name, param := range unitCallTestCases {
         t.Run(name, test.Run(param.expect, func(t test.Test) {
             t.Parallel()
 
@@ -241,13 +241,8 @@ for name, param := range testUnitCallParams {
             mocks.Wait()
 
             // Then
-            if param.expectError != nil {
-                assert.Equal(t, param.expectError, err)
-            } else {
-                require.NoError(t, err)
-            }
             assert.Equal(t, param.expect*, result)
-            ...
+            assert.Equal(t, param.expectError, err)
         }))
     }
 }

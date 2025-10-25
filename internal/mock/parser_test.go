@@ -25,7 +25,7 @@ type ParseParams struct {
 	expectError []error
 }
 
-var testParseParams = map[string]ParseParams{
+var parseTestCases = map[string]ParseParams{
 	"no argument": {
 		loader: loaderTest,
 		args:   []string{},
@@ -493,7 +493,7 @@ var testParseParams = map[string]ParseParams{
 	},
 }
 
-var testParseAddParams = map[string]ParseParams{
+var parseAddTestCases = map[string]ParseParams{
 	"package test": {
 		loader: loaderMock,
 		args: []string{
@@ -591,9 +591,9 @@ func testParse(t test.Test, param ParseParams) {
 }
 
 func TestParseMain(t *testing.T) {
-	test.Map(t, testParseParams).Run(testParse)
+	test.Map(t, parseTestCases).Run(testParse)
 }
 
 func TestParseAdd(t *testing.T) {
-	test.Map(t, testParseAddParams).Run(testParse)
+	test.Map(t, parseAddTestCases).Run(testParse)
 }

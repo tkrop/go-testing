@@ -25,7 +25,7 @@ type TemplateParams struct {
 	expect string
 }
 
-var testTemplateParams = map[string]TemplateParams{
+var templateTestCases = map[string]TemplateParams{
 	"iface no methods": {
 		mocks: []*Mock{{
 			Source: sourceIFaceAny,
@@ -47,7 +47,7 @@ func TestTemplate(t *testing.T) {
 	temp, imports, err := NewTemplate()
 	require.NoError(t, err)
 
-	test.Map(t, testTemplateParams).
+	test.Map(t, templateTestCases).
 		Run(func(t test.Test, param TemplateParams) {
 			// Given
 			imports := clone.Clone(imports).([]*Import)

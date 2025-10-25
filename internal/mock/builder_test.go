@@ -30,7 +30,7 @@ type FileBuilderParams struct {
 	expectFile *File
 }
 
-var testFileBuilderParams = map[string]FileBuilderParams{
+var fileBuilderTestCases = map[string]FileBuilderParams{
 	"import double": {
 		setup: test.Panic(NewErrAliasConflict(
 			importMockTest, pathTest)),
@@ -218,7 +218,7 @@ var testFileBuilderParams = map[string]FileBuilderParams{
 }
 
 func TestFileBuilder(t *testing.T) {
-	test.Map(t, testFileBuilderParams).
+	test.Map(t, fileBuilderTestCases).
 		Run(func(t test.Test, param FileBuilderParams) {
 			mock.NewMocks(t).Expect(param.setup)
 

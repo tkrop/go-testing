@@ -14,7 +14,7 @@ type CopyParam struct {
 	expect map[string]int
 }
 
-var testCopyParams = map[string]CopyParam{
+var copyTestCases = map[string]CopyParam{
 	"empty map": {
 		input:  map[string]int{},
 		expect: map[string]int{},
@@ -30,7 +30,7 @@ var testCopyParams = map[string]CopyParam{
 }
 
 func TestCopy(t *testing.T) {
-	test.Map(t, testCopyParams).
+	test.Map(t, copyTestCases).
 		Run(func(t test.Test, param CopyParam) {
 			// When
 			expect := Copy(param.input)
@@ -46,7 +46,7 @@ type AddParam struct {
 	expect  map[string]int
 }
 
-var testAddParams = map[string]AddParam{
+var addTestCases = map[string]AddParam{
 	"no sources": {
 		target:  map[string]int{"a": 1},
 		sources: []map[string]int{},
@@ -70,7 +70,7 @@ var testAddParams = map[string]AddParam{
 }
 
 func TestAdd(t *testing.T) {
-	test.Map(t, testAddParams).
+	test.Map(t, addTestCases).
 		Run(func(t test.Test, param AddParam) {
 			// When
 			result := Add(param.target, param.sources...)

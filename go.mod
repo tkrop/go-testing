@@ -3,6 +3,7 @@ module github.com/tkrop/go-testing
 go 1.25.3
 
 require (
+	github.com/google/go-cmp v0.7.0
 	github.com/h2non/gock v1.2.0
 	github.com/huandu/go-clone v1.7.3
 	github.com/stretchr/testify v1.11.1

@@ -34,7 +34,7 @@ var (
 	fileFailure = filepath.Join(testDirGenerate, dirSubTest, fileUnknown)
 )
 
-var testGenerateParams = map[string]GenerateParams{
+var generateTestCases = map[string]GenerateParams{
 	"iface": {
 		file:       filepath.Join(testDirGenerate, MockFileDefault),
 		args:       []string{pathTest},
@@ -70,7 +70,7 @@ var testGenerateParams = map[string]GenerateParams{
 
 func TestGenerate(t *testing.T) {
 	gen := NewGenerator(DirDefault, TargetDefault)
-	test.Map(t, testGenerateParams).
+	test.Map(t, generateTestCases).
 		Run(func(t test.Test, param GenerateParams) {
 			// Given
 			args := []string{

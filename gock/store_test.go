@@ -197,7 +197,7 @@ type MatchParams struct {
 	expectError error
 }
 
-var testMatchParams = map[string]MatchParams{
+var matchTestCases = map[string]MatchParams{
 	"match with bar": {
 		url:         "http://foo.com/bar",
 		expectMatch: true,
@@ -219,7 +219,7 @@ var testMatchParams = map[string]MatchParams{
 }
 
 func TestMatch(t *testing.T) {
-	test.Map(t, testMatchParams).
+	test.Map(t, matchTestCases).
 		Run(func(t test.Test, param MatchParams) {
 			// Given
 			store := gock.NewStore(NewFooMatcher())
