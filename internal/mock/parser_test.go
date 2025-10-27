@@ -106,6 +106,20 @@ var parseTestCases = map[string]ParseParams{
 			Methods: methodsLoadIFace,
 		}},
 	},
+	"source package invalid": {
+		loader: NewLoader(DirDefault), // ensure path is not preload.
+		args:   []string{pathUnknown},
+		expectError: []error{
+			NewErrArgFailure(0, ".",
+				NewErrPackageParsing(pathUnknown, []*packages.Package{{
+					Errors: []packages.Error{{
+						Msg: "no required module provides package " + pathUnknown +
+							"; to add it:\n\tgo get " + pathUnknown,
+					}},
+				}}),
+			),
+		},
+	},
 
 	"source path explicit": {
 		loader: loaderTest,
@@ -126,7 +140,7 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source path guessed": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{pathTest},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
@@ -144,7 +158,8 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source path invalid": {
-		loader: loaderMock,
+		// Ensure absolute path is pre-loaded for error message.
+		loader: loaderMock.PreLoad(absUnknown),
 		args:   []string{pathUnknown},
 		expectError: []error{
 			NewErrArgFailure(0, ".",
@@ -158,7 +173,7 @@ var parseTestCases = map[string]ParseParams{
 	},
 
 	"source file explicit": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{"--source-file=" + dirSubTest + "/" + fileIFace},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
@@ -167,7 +182,7 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source file derived": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{"--source=" + dirSubTest + "/" + fileIFace},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
@@ -176,7 +191,7 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source file derived missing": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args: []string{
 			"--source=" + fileUnknown,
 		},
@@ -186,7 +201,7 @@ var parseTestCases = map[string]ParseParams{
 		expectMocks: nil,
 	},
 	"source file guessed": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{dirSubTest + "/" + fileIFace},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
@@ -195,7 +210,7 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source file guessed invalid": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{fileUnknown},
 		expectError: []error{
 			NewErrArgFailure(0, ".",
@@ -210,7 +225,7 @@ var parseTestCases = map[string]ParseParams{
 	},
 
 	"source directory explicit": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{"--source-file=" + dirSubTest},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
@@ -219,7 +234,7 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source directory derived": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{"--source=" + dirSubTest},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
@@ -228,7 +243,7 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source directory guessed": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{dirSubTest},
 		expectMocks: []*Mock{{
 			Source:  sourceIFaceAny,
@@ -237,7 +252,7 @@ var parseTestCases = map[string]ParseParams{
 		}},
 	},
 	"source directory invalid": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{dirUnknown},
 		expectError: []error{
 			NewErrArgFailure(0, ".",
@@ -495,7 +510,7 @@ var parseTestCases = map[string]ParseParams{
 
 var parseAddTestCases = map[string]ParseParams{
 	"package test": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args: []string{
 			pathTesting, "Test",
 			"--target=" + pkgMock, "Reporter=Reporter",
@@ -512,7 +527,7 @@ var parseAddTestCases = map[string]ParseParams{
 	},
 
 	"package test path": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args: []string{
 			dirTest, "Test",
 			"--target=" + pkgMock, "Reporter=Reporter",
@@ -529,7 +544,7 @@ var parseAddTestCases = map[string]ParseParams{
 	},
 
 	"package test file": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args: []string{
 			dirTest + "/" + fileContext, "Test",
 			"--target=" + pkgMock, "Reporter=Reporter",
@@ -546,7 +561,7 @@ var parseAddTestCases = map[string]ParseParams{
 	},
 
 	"package gomock": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args:   []string{pathGoMock, "TestReporter"},
 		expectMocks: []*Mock{{
 			Source:  sourceGoMockTestReporter,
@@ -556,7 +571,7 @@ var parseAddTestCases = map[string]ParseParams{
 	},
 
 	"package test and gomock": {
-		loader: loaderMock,
+		loader: loaderRoot,
 		args: []string{
 			pkgMock,
 			pathTesting, "Test", "Reporter",

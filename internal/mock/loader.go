@@ -14,6 +14,8 @@ import (
 
 // Loader is the generic interface of the package and interface loader.
 type Loader interface {
+	// PreLoad pre-loads the given paths into the cache for later usage.
+	PreLoad(path ...string) Loader
 	// Search searches the go-packages with the given partial source type,
 	// either using the provided file path or the provided package path
 	// information. The file path is normalized assuming that any non-existing
@@ -102,6 +104,14 @@ func NewLoader(dir string) Loader {
 		},
 		cache: map[string]*PkgResponse{},
 	}
+}
+
+// PreLoad pre-loads the given paths into the cache for later usage.
+func (loader *CachedLoader) PreLoad(path ...string) Loader {
+	for _, path := range path {
+		loader.byPath(path)
+	}
+	return loader
 }
 
 // Search searches the go-packages with the given partial source type, either

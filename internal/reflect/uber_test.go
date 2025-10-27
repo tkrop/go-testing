@@ -20,12 +20,12 @@ func (c CustomStringer) String() string {
 	return c.value
 }
 
-// isgomock is a marker struct for generated mocks.
+// isGomock is a marker struct for generated mocks.
 type IsGomock struct{}
 
 // MockStruct simulates a generated mock with isgomock field.
 type MockStruct struct {
-	isgomock IsGomock //nolint:unused // marker for generated mock.
+	isgomock IsGomock
 	value    string
 }
 
@@ -124,11 +124,11 @@ var stringArgsTestCases = map[string]StringArgsParam{
 
 	// Testing mock detection and type name return.
 	"mock-struct": {
-		args:   []any{MockStruct{value: "test"}},
+		args:   []any{MockStruct{value: "test", isgomock: IsGomock{}}},
 		expect: []string{"reflect_test.MockStruct"},
 	},
 	"mock-struct-pointer": {
-		args:   []any{&MockStruct{value: "test"}},
+		args:   []any{&MockStruct{value: "test", isgomock: IsGomock{}}},
 		expect: []string{"*reflect_test.MockStruct"},
 	},
 

@@ -17,12 +17,6 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-//revive:disable:line-length-limit // go:generate line length
-
-//go:generate mockgen -package=mock_test -destination=mock_iface_test.go -source=mocks_test.go  IFace,XFace
-
-//revive:enable:line-length-limit
-
 type IFace interface {
 	CallA(input string)
 	CallB(input string) string
@@ -31,14 +25,14 @@ type IFace interface {
 func CallA(input string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(input).Do(mocks.Do(IFace.CallA))
+			CallA(mocks.Equal(input)).Do(mocks.Do(IFace.CallA))
 	}
 }
 
 func CallB(input string, output string) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallB(input).DoAndReturn(
+			CallB(mocks.Equal(input)).DoAndReturn(
 			mocks.Call(IFace.CallB, func(...any) []any {
 				return []any{output}
 			}))
@@ -58,13 +52,13 @@ func NoCall() mock.SetupFunc {
 }
 
 type XFace interface {
-	CallC(input string)
+	CallC(input any)
 }
 
-func CallC(input string) mock.SetupFunc {
+func CallC(input any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewMockXFace).EXPECT().
-			CallC(input).Do(mocks.Do(XFace.CallC))
+			CallC(mocks.Equal(input)).Do(mocks.Do(XFace.CallC))
 	}
 }
 
@@ -106,7 +100,7 @@ var mockTestCAses = map[string]MockParams{
 	},
 	"single mock with unexpected call": {
 		failSetup: test.UnexpectedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mocks_test.go:111"), "ok"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:105"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
@@ -116,8 +110,8 @@ var mockTestCAses = map[string]MockParams{
 			CallA("ok"),
 		),
 		failSetup: test.ConsumedCall(NewMockIFace,
-			"CallA", path.Join(SourceDir, "mocks_test.go:123"),
-			path.Join(SourceDir, "mocks_test.go:34"), "ok"),
+			"CallA", path.Join(SourceDir, "mocks_test.go:117"),
+			path.Join(SourceDir, "mocks_test.go:28"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 			mock.Get(mocks, NewMockIFace).CallA("ok")

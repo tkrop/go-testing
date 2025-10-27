@@ -1,7 +1,3 @@
-// Package mock contains the basic collection of functions and types for
-// controlling mocks and mock request/response setup. It is part of the public
-// interface and starting to get stable, however, we are still experimenting
-// to optimize the interface and the user experience.
 package mock
 
 import (
@@ -73,6 +69,9 @@ type (
 // SetupFunc common mock setup function signature.
 type SetupFunc func(*Mocks) any
 
+// ConfigFunc common mock handler configuration function signature.
+type ConfigFunc func(*Mocks)
+
 // Mocks common mock handler.
 type Mocks struct {
 	// The mock controller used.
@@ -83,17 +82,29 @@ type Mocks struct {
 	mocks map[reflect.Value]any
 	// A map of mock key value pairs.
 	args map[any]any
+
+	// Internal matcher settings.
+	matcher *MatcherConfig
 }
 
 // NewMocks creates a new mock handler using given test reporter, e.g.
 // [*testing.T], or [test.Test].
-func NewMocks(t gomock.TestReporter) *Mocks {
+func NewMocks(t gomock.TestReporter, fncalls ...ConfigFunc) *Mocks {
 	return (&Mocks{
-		Ctrl:  gomock.NewController(t),
-		wg:    sync.NewLenientWaitGroup(),
-		mocks: map[reflect.Value]any{},
-		args:  map[any]any{},
-	}).syncWith(t)
+		Ctrl:    gomock.NewController(t),
+		wg:      sync.NewLenientWaitGroup(),
+		mocks:   map[reflect.Value]any{},
+		args:    map[any]any{},
+		matcher: NewMatcherConfig(),
+	}).Config(fncalls...).syncWith(t)
+}
+
+// Config configures the mock handler with given config functions.
+func (mocks *Mocks) Config(fncalls ...ConfigFunc) *Mocks {
+	for _, fncall := range fncalls {
+		fncall(mocks)
+	}
+	return mocks
 }
 
 // Get resolves the singleton mock from the mock handler by providing the
