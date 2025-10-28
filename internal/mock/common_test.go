@@ -132,6 +132,7 @@ func methodsMockIFaceFunc(mocktest, test, mock string) []*Method {
 
 var (
 	// Use two different singleton loaders.
+	loaderRoot = NewLoader(DirDefault)
 	loaderMock = NewLoader(DirDefault)
 	loaderTest = NewLoader(dirSubTest)
 	loaderFail = NewLoader(dirUnknown)

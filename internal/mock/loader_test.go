@@ -37,7 +37,7 @@ var (
 	typePkgInternalTest = &Type{Package: pkgInternalTest}
 
 	typeFileDflt   = &Type{File: DirDefault}
-	typeFileTest   = &Type{File: pkgTest}
+	typeFilePkg    = &Type{File: pkgTest}
 	typeFileIFace  = &Type{File: filepath.Join(pkgTest, fileIFace)}
 	typeFileIFaceX = &Type{File: filepath.Join(pkgTest+"x", fileIFace)}
 	typeFileTestX  = &Type{File: filepath.Join(pkgTest, fileUnknown)}
@@ -106,10 +106,10 @@ var loaderSearchTestCases = map[string]LoaderSearchParams{
 		expect: targetInternalTest.With(typeFileUpX),
 	},
 
-	"file test": {
+	"file package": {
 		loader: loaderMock,
-		target: typeFileTest,
-		expect: targetTestTest.With(typeFileTest),
+		target: typeFilePkg,
+		expect: targetTestTest.With(typeFilePkg),
 	},
 	"file iface": {
 		loader: loaderMock,

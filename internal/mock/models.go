@@ -36,6 +36,7 @@ func NewType(name *types.TypeName, fset *token.FileSet) *Type {
 	}
 }
 
+// Copy creates a copy of the type information.
 func (t *Type) Copy() *Type {
 	if t != nil {
 		return &Type{
@@ -107,6 +108,7 @@ func (t *Type) IsPackageMatch(pkgs []*packages.Package) bool {
 		case pname == name:
 			return true
 		case strings.HasSuffix(pname, "_test"):
+			// TODO: find out how to cover this by test.
 			if pname[:len(pname)-5] == name {
 				return true
 			}

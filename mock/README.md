@@ -255,3 +255,45 @@ for more information on requirements in parallel parameterized tests.
 [gomock]: <https://go.uber.org/mock>
 [gomock-rep]: <https://go.uber.org/mock/blob/v1.6.0/gomock/controller.go#L65>
 [gock]: <https://github.com/h2non/gock>
+
+
+## Custom matchers
+
+The mock package provides currently one custom matcher greatly improving the
+output compared to make finding of call differences very simple. The matcher
+can be provided on input value as follows:
+
+```go
+func Call(input..., output..., error) mock.SetupFunc {
+    return func(mocks *mock.Mocks) any {
+        return mock.Get(mocks, NewServiceMock).EXPECT().Call(
+                mocks.Equal(input1), ..., mocks.Equal(inputN)
+            ).{ DoAndReturn(mocks.Do(Service.Call, output..., error))
+            | Return(output..., error).Do(mocks.Do(Service.Call)) }
+        ]
+    }
+}
+```
+
+The output contains improved type information as well as a regular diff of
+the actual and the expected value. The output can be configured by applying
+configuring the mock controller via the following list of functions:
+
+```go
+    mock.Context(int)
+    mock.FromFile(string)
+    mock.FromDate(string)
+    mock.ToFile(string)
+    mock.ToDate(string)
+    mock.Indent(string)
+    mock.MaxDepth(int)
+    mock.DisableMethods(bool)
+    mock.DisablePointerMethods(bool)
+    mock.DisablePointerAddresses(bool)
+    mock.DisableCapabilities(bool)
+    mock.ContinueOnMethods(bool)
+    mock.SortKeys(bool)
+    mock.SpewKeys(bool)
+```
+
+This allows to adjust the output as needed.
