@@ -66,14 +66,14 @@ func CallC(input any) mock.SetupFunc {
 var SourceDir = test.Must(os.Getwd())
 
 type MockParams struct {
-	mockSetup mock.SetupFunc
-	failSetup func(test.Test, *mock.Mocks) mock.SetupFunc
-	call      func(test.Test, *mock.Mocks)
+	setup  mock.SetupFunc
+	misses func(test.Test, *mock.Mocks) mock.SetupFunc
+	call   func(test.Test, *mock.Mocks)
 }
 
 var mockTestCAses = map[string]MockParams{
 	"single mock with single call": {
-		mockSetup: mock.Setup(
+		setup: mock.Setup(
 			CallA("ok"),
 		),
 		call: func(_ test.Test, mocks *mock.Mocks) {
@@ -81,7 +81,7 @@ var mockTestCAses = map[string]MockParams{
 		},
 	},
 	"single mock with two calls": {
-		mockSetup: mock.Setup(
+		setup: mock.Setup(
 			CallA("ok"), CallA("okay"),
 		),
 		call: func(_ test.Test, mocks *mock.Mocks) {
@@ -90,26 +90,26 @@ var mockTestCAses = map[string]MockParams{
 		},
 	},
 	"single mock with missing calls": {
-		mockSetup: mock.Setup(
+		setup: mock.Setup(
 			CallA("ok"), CallA("okay"),
 		),
-		failSetup: test.MissingCalls(CallA("okay")),
+		misses: test.MissingCalls(CallA("okay")),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
 	},
 	"single mock with unexpected call": {
-		failSetup: test.UnexpectedCall(NewMockIFace,
+		misses: test.UnexpectedCall(NewMockIFace,
 			"CallA", path.Join(SourceDir, "mocks_test.go:105"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
 	},
 	"single mock with more than expected calls": {
-		mockSetup: mock.Setup(
+		setup: mock.Setup(
 			CallA("ok"),
 		),
-		failSetup: test.ConsumedCall(NewMockIFace,
+		misses: test.ConsumedCall(NewMockIFace,
 			"CallA", path.Join(SourceDir, "mocks_test.go:117"),
 			path.Join(SourceDir, "mocks_test.go:28"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
@@ -119,7 +119,7 @@ var mockTestCAses = map[string]MockParams{
 	},
 
 	"single mock with many calls": {
-		mockSetup: mock.Setup(
+		setup: mock.Setup(
 			CallA("okay"),
 			CallB("okay", "okay"),
 		),
@@ -129,7 +129,7 @@ var mockTestCAses = map[string]MockParams{
 		},
 	},
 	"multiple mocks with many calls": {
-		mockSetup: mock.Setup(
+		setup: mock.Setup(
 			CallA("okay"),
 			CallB("okay", "okay"),
 			CallC("okay"),
@@ -152,10 +152,10 @@ func TestMocks(t *testing.T) {
 			test.InRun(test.Success, func(tt test.Test) {
 				// Given
 				imocks := mock.NewMocks(tt)
-				if param.failSetup != nil {
-					mocks.Expect(param.failSetup(tt, imocks))
+				if param.misses != nil {
+					mocks.Expect(param.misses(tt, imocks))
 				}
-				imocks.Expect(param.mockSetup)
+				imocks.Expect(param.setup)
 
 				// Connect the mock controller directly to the isolated parent
 				// test environment to capture the mock controller failure.
@@ -189,8 +189,8 @@ func TestMockArgs(t *testing.T) {
 	assert.Equal(t, mocks.GetArg("b"), "b")
 }
 
-func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
-	return mock.NewMocks(t).Expect(mockSetup)
+func MockSetup(t gomock.TestReporter, setup mock.SetupFunc) *mock.Mocks {
+	return mock.NewMocks(t).Expect(setup)
 }
 
 func MockValidate(
@@ -277,7 +277,7 @@ func TestSetup(t *testing.T) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
 		perm := strings.Split(name, "-")
-		mockSetup := mock.Setup(
+		setup := mock.Setup(
 			CallA("a"),
 			mock.Setup(
 				CallB("b", "c"),
@@ -285,7 +285,7 @@ func TestSetup(t *testing.T) {
 			),
 			CallA("c"),
 		)
-		mock := MockSetup(t, mockSetup)
+		mock := MockSetup(t, setup)
 
 		// When
 		test := SetupPermTestABC(mock)
@@ -305,7 +305,7 @@ func TestChain(t *testing.T) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
 		perm := strings.Split(name, "-")
-		mockSetup := mock.Chain(
+		setup := mock.Chain(
 			CallA("a"),
 			mock.Chain(
 				CallB("b", "c"),
@@ -313,7 +313,7 @@ func TestChain(t *testing.T) {
 			),
 			CallA("c"),
 		)
-		mock := MockSetup(t, mockSetup)
+		mock := MockSetup(t, setup)
 
 		// When
 		test := SetupPermTestABC(mock)
@@ -340,7 +340,7 @@ func TestSetupChain(t *testing.T) {
 		perm := strings.Split(name, "-")
 
 		// Basic setup of two independent chains.
-		mockSetup := mock.Setup(
+		setup := mock.Setup(
 			mock.Chain(
 				CallA("a"),
 				CallA("b"),
@@ -350,7 +350,7 @@ func TestSetupChain(t *testing.T) {
 				CallB("d", "e"),
 			),
 		)
-		mock := MockSetup(t, mockSetup)
+		mock := MockSetup(t, setup)
 
 		// When
 		test := SetupPermTestABCD(mock)
@@ -368,7 +368,7 @@ func TestChainSetup(t *testing.T) {
 		perm := strings.Split(name, "-")
 
 		// Frail setup to detach a (sub-)chain.
-		mockSetup := mock.Chain(
+		setup := mock.Chain(
 			CallA("a"),
 			CallA("b"),
 			mock.Setup( // detaching (sub-)chain.
@@ -378,7 +378,7 @@ func TestChainSetup(t *testing.T) {
 				),
 			),
 		)
-		mock := MockSetup(t, mockSetup)
+		mock := MockSetup(t, setup)
 
 		// When
 		test := SetupPermTestABCD(mock)
@@ -409,7 +409,7 @@ func TestParallelChain(t *testing.T) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
 		perm := strings.Split(name, "-")
-		mockSetup := mock.Chain(
+		setup := mock.Chain(
 			CallA("a"),
 			mock.Parallel(
 				CallA("b"),
@@ -423,7 +423,7 @@ func TestParallelChain(t *testing.T) {
 			),
 			CallA("f"),
 		)
-		mock := MockSetup(t, mockSetup)
+		mock := MockSetup(t, setup)
 
 		// When
 		test := SetupPermTestABCDEF(mock)
@@ -459,7 +459,7 @@ func TestChainSub(t *testing.T) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
 		perm := strings.Split(name, "-")
-		mockSetup := mock.Chain(
+		setup := mock.Chain(
 			mock.Sub(0, 0, mock.Chain(
 				CallA("a"),
 				CallA("b"),
@@ -471,7 +471,7 @@ func TestChainSub(t *testing.T) {
 			mock.Sub(0, 0, CallA("e")),
 			mock.Sub(2, 2, mock.Setup(CallA("f"))),
 		)
-		mock := MockSetup(t, mockSetup)
+		mock := MockSetup(t, setup)
 
 		// When
 		test := SetupPermTestABCDEF(mock)
@@ -498,13 +498,13 @@ func TestDetach(t *testing.T) {
 		// Given
 		name := strings.Split(t.Name(), "/")[1]
 		perm := strings.Split(name, "-")
-		mockSetup := mock.Chain(
+		setup := mock.Chain(
 			mock.Detach(mock.None, CallA("a")),
 			mock.Detach(mock.Head, CallA("b")),
 			mock.Detach(mock.Tail, CallB("c", "d")),
 			mock.Detach(mock.Both, CallB("d", "e")),
 		)
-		mock := MockSetup(t, mockSetup)
+		mock := MockSetup(t, setup)
 
 		// When
 		test := SetupPermTestABCD(mock)
@@ -631,10 +631,10 @@ func TestGetSubSlice(t *testing.T) {
 }
 
 type FuncParams struct {
-	mockSetup mock.SetupFunc
-	call      any
-	result    []any
-	expect    []any
+	setup  mock.SetupFunc
+	call   any
+	result []any
+	expect []any
 }
 
 var funcTestCases = map[string]FuncParams{
@@ -717,7 +717,7 @@ func TestFuncDo(t *testing.T) {
 	test.Map(t, funcTestCases, funcDoNoReturnTestCases).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
-			mocks := MockSetup(t, param.mockSetup)
+			mocks := MockSetup(t, param.setup)
 			ctype := reflect.TypeOf(param.call)
 
 			// When
@@ -744,19 +744,19 @@ func TestFuncDo(t *testing.T) {
 
 var funcReturnNoneTestCases = map[string]FuncParams{
 	"in-0-no-out-1": {
-		mockSetup: test.Panic("not enough arguments"),
-		call:      func(any) string { return "okay" },
-		result:    []any{},
-		expect:    []any{""},
+		setup:  test.Panic("not enough arguments"),
+		call:   func(any) string { return "okay" },
+		result: []any{},
+		expect: []any{""},
 	},
 	"in-0-no-out-2": {
-		mockSetup: test.Panic("not enough arguments"),
-		call:      func(any) (string, int) { return "okay", 1 },
-		result:    []any{},
-		expect:    []any{"", 0},
+		setup:  test.Panic("not enough arguments"),
+		call:   func(any) (string, int) { return "okay", 1 },
+		result: []any{},
+		expect: []any{"", 0},
 	},
 	"in-0-no-out-3": {
-		mockSetup: test.Panic("not enough arguments"),
+		setup: test.Panic("not enough arguments"),
 		call: func(any) (string, int, bool) {
 			return "okay", 1, true
 		},
@@ -764,7 +764,7 @@ var funcReturnNoneTestCases = map[string]FuncParams{
 		expect: []any{"", 0, false},
 	},
 	"in-0-no-out-4": {
-		mockSetup: test.Panic("not enough arguments"),
+		setup: test.Panic("not enough arguments"),
 		call: func(any) (string, int, bool, any) {
 			return "oaky", 1, true, nil
 		},
@@ -777,7 +777,7 @@ func TestFuncReturn(t *testing.T) {
 	test.Map(t, funcTestCases, funcReturnNoneTestCases).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
-			mocks := MockSetup(t, param.mockSetup)
+			mocks := MockSetup(t, param.setup)
 			ctype := reflect.TypeOf(param.call)
 
 			// When
@@ -806,7 +806,7 @@ func TestFuncPanic(t *testing.T) {
 	test.Map(t, funcTestCases, funcDoNoReturnTestCases).
 		Run(func(t test.Test, param FuncParams) {
 			// Given
-			mocks := MockSetup(t, param.mockSetup)
+			mocks := MockSetup(t, param.setup)
 			ctype := reflect.TypeOf(param.call)
 			defer func() {
 				require.Equal(t, "panic-test", recover())

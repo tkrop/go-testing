@@ -37,8 +37,8 @@ func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
 		})
 }
 
-func MockSetup(t gomock.TestReporter, mockSetup mock.SetupFunc) *mock.Mocks {
-	return mock.NewMocks(t).Expect(mockSetup)
+func MockSetup(t gomock.TestReporter, setup mock.SetupFunc) *mock.Mocks {
+	return mock.NewMocks(t).Expect(setup)
 }
 
 var permTestCases = perm.ExpectMap{
@@ -57,7 +57,7 @@ func TestPermTest(t *testing.T) {
 			name := strings.Split(t.Name(), "/")[1]
 			perm := strings.Split(name, "-")
 
-			mockSetup := mock.Chain(
+			setup := mock.Chain(
 				CallA("a"),
 				mock.Setup(
 					CallA("b"),
@@ -67,7 +67,7 @@ func TestPermTest(t *testing.T) {
 				CallA("e"),
 				CallA("f"),
 			)
-			mock := MockSetup(t, mockSetup)
+			mock := MockSetup(t, setup)
 
 			// When
 			test := SetupPermTestABCDEF(mock)

@@ -21,9 +21,9 @@ func TestUnit(t *testing.T) {
     // Given
     mocks := mock.NewMocks(t)
 
-    mockSetup := mock.Get(mocks, NewServiceMock).EXPECT()...
+    setup := mock.Get(mocks, NewServiceMock).EXPECT()...
 
-    mocks.Expect(mockSetup)
+    mocks.Expect(setup)
 
     service := NewUnitService(
         mock.Get(mocks, NewServiceMock))
@@ -46,9 +46,9 @@ system under test is very useful.
 ```go
 func SetupUnit(
     t test.Test,
-    mockSetup mock.SetupFunc,
+    setup mock.SetupFunc,
 ) (*Unit, *Mocks) {
-    mocks := mock.NewMocks(t).Expect(mockSetup)
+    mocks := mock.NewMocks(t).Expect(setup)
 
     unit := NewUnitService(
         mock.Get(mocks, NewServiceMock)
@@ -171,24 +171,24 @@ common use cases:
 
 ```go
 var unitCallTestCases = map[string]struct {
-    mockSetup    mock.SetupFunc
+    setup    mock.SetupFunc
     input*...    *model.*
     expect       test.Expect
     expect*...   *model.*
     expectError  error
 }{
     "single mock setup": {
-        mockSetup: Call(...),
+        setup: Call(...),
     }
     "chain mock setup": {
-        mockSetup: mock.Chain(
+        setup: mock.Chain(
             CallA(...),
             CallB(...),
             ...
         )
     }
     "nested chain mock setup": {
-        mockSetup: mock.Chain(
+        setup: mock.Chain(
             CallA(...),
             mock.Chain(
                 CallA(...),
@@ -200,7 +200,7 @@ var unitCallTestCases = map[string]struct {
         )
     }
     "parallel chain mock setup": {
-        mockSetup: mock.Parallel(
+        setup: mock.Parallel(
             CallA(...),
             mock.Chain(
                 CallB(...),
@@ -233,7 +233,7 @@ func TestUnitCall(t *testing.T) {
             t.Parallel()
 
             // Given
-            unit, mocks := SetupTestUnit(t, param.mockSetup)
+            unit, mocks := SetupTestUnit(t, param.setup)
 
             // When
             result, err := unit.UnitCall(param.input*, ...)

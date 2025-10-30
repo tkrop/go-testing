@@ -3,14 +3,16 @@ package test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 
 	"github.com/stretchr/testify/require"
 )
 
-// Must is a convenience function to return the value of the first argument or
-// panic on any error in the second argument.
+// Must is a convenience method returning the value of the first argument and
+// that panics on any error in the second argument using the provided error.
+// The method allows to write concise test setup code.
 func Must[T any](arg T, err error) T {
 	if err != nil {
 		panic(err)
@@ -18,9 +20,38 @@ func Must[T any](arg T, err error) T {
 	return arg
 }
 
+// Cast is a convenience function to cast the given argument to the specified
+// type or panic if the cast fails. The method allows to write concise test
+// setup code granting meaningful type checks.
+func Cast[T any](arg any) T {
+	val, ok := arg.(T)
+	if !ok {
+		panic(fmt.Sprintf("cast failed [%T]: %v", val, arg))
+	}
+	return val
+}
+
 // First is a convenience function to return the first argument and ignore all
-// others arguments.
+// others arguments. The method allows to write concise test setup code.
 func First[T any](arg T, _ ...any) T { return arg }
+
+// TODO: consider following convenience methods:
+//
+// // Check is a convenience method that returns the second argument and swallows
+// // the first used to focus a test on the second.
+// func Check[T any](swallowed any, check T) T {
+// 	return check
+// }
+
+// // Ok is a convenience method to check whether the second boolean argument is
+// // `true` while returning the first argument. If the boolean argument is
+// // `false`, the method panics.
+// func Ok[T any](result T, ok bool) T {
+// 	if !ok {
+// 		panic("bool not okay")
+// 	}
+// 	return result
+// }
 
 // MainParam provides the test parameters for testing a `main`-method.
 type MainParam struct {
