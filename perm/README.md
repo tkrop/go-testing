@@ -73,13 +73,13 @@ func TestDetach(t *testing.T) {
 
             // Given
             perm := strings.Split(message, "-")
-            mockSetup := mock.Chain(
+            setup := mock.Chain(
                 mock.Detach(mock.None, CallA("a")),
                 mock.Detach(mock.Head, CallA("b")),
                 mock.Detach(mock.Tail, CallB("c", "d")),
                 mock.Detach(mock.Both, CallB("d", "e")),
             )
-            mock := MockSetup(t, mockSetup)
+            mock := MockSetup(t, setup)
 
             // When
             test := SetupPermTestABCD(mock)

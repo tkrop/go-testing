@@ -68,7 +68,7 @@ blocks for test isolation.
 
 ```go
 type UnitParams struct {
-    mockSetup    mock.SetupFunc
+    setup        mock.SetupFunc
     input*...    *model.*
     expect       test.Expect
     expect*...   *model.*
@@ -77,7 +77,7 @@ type UnitParams struct {
 
 var unitTestCases = map[string]UnitParams {
     "success" {
-        mockSetup: mock.Chain(
+        setup: mock.Chain(
             CallMockA(input..., output...),
             ...
             test.Panic("failure message"),
@@ -95,7 +95,7 @@ func TestUnit(t *testing.T) {
         // Given
         mocks := mock.NewMock(t).
             SetArg("common-arg", local.input*)...
-            Expect(param.mockSetup)
+            Expect(param.setup)
 
         unit := NewUnitService(
             mock.Get(mocks, NewServiceMock),
