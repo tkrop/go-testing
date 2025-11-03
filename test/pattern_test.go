@@ -381,26 +381,22 @@ type WithDeepCopy struct {
 	Value int
 }
 
-func (d *WithDeepCopy) DeepCopy() any {
-	if d == nil {
-		return nil
+func (d *WithDeepCopy) DeepCopy() *WithDeepCopy {
+	if d != nil {
+		return &WithDeepCopy{Value: d.Value}
 	}
-	out := new(WithDeepCopy)
-	*out = *d
-	return out
+	return nil
 }
 
 type WithDeepCopyObject struct {
 	Value int
 }
 
-func (d *WithDeepCopyObject) DeepCopyObject() any {
-	if d == nil {
-		return nil
+func (d *WithDeepCopyObject) DeepCopyObject() *WithDeepCopyObject {
+	if d != nil {
+		return &WithDeepCopyObject{Value: d.Value}
 	}
-	out := new(WithDeepCopyObject)
-	*out = *d
-	return out
+	return nil
 }
 
 type WithoutDeepCopy struct {

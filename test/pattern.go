@@ -185,26 +185,26 @@ func DeepCopy(seed int64, size, length int) func(t Test, p DeepCopyParams) {
 	// Create a random generator for test values.
 	random := reflect.NewRandom(seed, size, length)
 
-	// Define interfaces for deep copy object methods.
-	type DeepCopyObject interface {
-		DeepCopyObject() any
-	}
-
-	// Define interfaces for deep copy methods.
-	type DeepCopy interface {
-		DeepCopy() any
-	}
-
 	return func(t Test, p DeepCopyParams) {
 		// Given
 		value := random.Random(p.Value)
 
+		rv := reflect.ValueOf(value)
+		if !rv.IsValid() || rv.IsNil() {
+			t.Fatalf("no deep copy method [%T]", value)
+		}
+
 		// When
 		var clone any
-		if obj, ok := value.(DeepCopyObject); ok {
-			clone = obj.DeepCopyObject()
-		} else if obj, ok := value.(DeepCopy); ok {
-			clone = obj.DeepCopy()
+
+		if method := rv.MethodByName("DeepCopyObject"); method.IsValid() {
+			if results := method.Call(nil); len(results) == 1 {
+				clone = results[0].Interface()
+			}
+		} else if method := rv.MethodByName("DeepCopy"); method.IsValid() {
+			if results := method.Call(nil); len(results) == 1 {
+				clone = results[0].Interface()
+			}
 		} else {
 			t.Fatalf("no deep copy method [%T]", value)
 		}
