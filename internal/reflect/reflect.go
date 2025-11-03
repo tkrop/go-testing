@@ -26,6 +26,12 @@ var (
 	TypeOf = reflect.TypeOf
 	// ValueOf alias for `reflect.ValueOf`.
 	ValueOf = reflect.ValueOf
+	// Zero alias for `reflect.Zero`.
+	Zero = reflect.Zero
+	// Ptr alias for `reflect.Ptr`.
+	Ptr = reflect.Ptr
+	// PointerTo alias for `reflect.PointerTo`.
+	PointerTo = reflect.PointerTo
 )
 
 // ArgOf returns the argument of the given value.
