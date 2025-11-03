@@ -439,7 +439,8 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 		DeepCopyParams: test.DeepCopyParams{
 			Value: &WithoutDeepCopy{Value: 6},
 		},
-		setup: test.Fatalf("no deep copy method [%T]", &WithoutDeepCopy{Value: 6}),
+		setup: test.Fatalf("no deep copy method [%T]",
+			&WithoutDeepCopy{Value: 6}),
 	},
 }
 

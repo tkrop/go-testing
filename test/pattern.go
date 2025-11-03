@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -184,33 +185,46 @@ type DeepCopyParams struct {
 func DeepCopy(seed int64, size, length int) func(t Test, p DeepCopyParams) {
 	// Create a random generator for test values.
 	random := reflect.NewRandom(seed, size, length)
+	var mutex sync.Mutex
 
 	return func(t Test, p DeepCopyParams) {
 		// Given
+		mutex.Lock()
 		value := random.Random(p.Value)
-
-		rv := reflect.ValueOf(value)
-		if !rv.IsValid() || rv.IsNil() {
-			t.Fatalf("no deep copy method [%T]", value)
-		}
+		mutex.Unlock()
 
 		// When
-		var clone any
-
-		if method := rv.MethodByName("DeepCopyObject"); method.IsValid() {
-			if results := method.Call(nil); len(results) == 1 {
-				clone = results[0].Interface()
-			}
-		} else if method := rv.MethodByName("DeepCopy"); method.IsValid() {
-			if results := method.Call(nil); len(results) == 1 {
-				clone = results[0].Interface()
-			}
-		} else {
+		result, err := deepCopy(value)
+		if errors.Is(err, errNoDeepCopyMethod) {
 			t.Fatalf("no deep copy method [%T]", value)
 		}
 
 		// Then
-		assert.NotSame(t, value, clone)
-		assert.Equal(t, value, clone)
+		assert.NotSame(t, value, result)
+		assert.Equal(t, value, result)
 	}
 }
+
+// deepCopy performs a deep copy of the given value using the either the
+// `DeepCopyObject` or the `DeepCopy` method - in this order.
+func deepCopy(value any) (any, error) {
+	rv := reflect.ValueOf(value)
+	if !rv.IsValid() || rv.IsNil() {
+		return nil, errNoDeepCopyMethod
+	}
+
+	method := rv.MethodByName("DeepCopyObject")
+	if method.IsValid() {
+		return method.Call(nil)[0].Interface(), nil
+	}
+
+	method = rv.MethodByName("DeepCopy")
+	if method.IsValid() {
+		return method.Call(nil)[0].Interface(), nil
+	}
+
+	return nil, errNoDeepCopyMethod
+}
+
+// errNoDeepCopyMethod is the error returned when no deep copy method is found.
+var errNoDeepCopyMethod = errors.New("no deep copy method")
