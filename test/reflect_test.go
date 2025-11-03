@@ -26,14 +26,14 @@ var (
 	structPtrFinal = NewPtrStruct("set final", "set final")
 )
 
-type testBuilderStructParam struct {
+type BuilderStructParams struct {
 	target Struct
 	setup  func(test.Builder[Struct])
 	expect mock.SetupFunc
 	check  func(test.Test, test.Builder[Struct])
 }
 
-var builderStructTestCases = map[string]testBuilderStructParam{
+var builderStructTestCases = map[string]BuilderStructParams{
 	"struct get init": {
 		target: structInit,
 		check: func(t test.Test, b test.Builder[Struct]) {
@@ -180,7 +180,7 @@ var builderStructTestCases = map[string]testBuilderStructParam{
 
 func TestBuilderStruct(t *testing.T) {
 	test.Map(t, builderStructTestCases).
-		Run(func(t test.Test, param testBuilderStructParam) {
+		Run(func(t test.Test, param BuilderStructParams) {
 			// Given
 			mock.NewMocks(t).Expect(param.expect)
 			accessor := test.NewAccessor(param.target)
@@ -195,14 +195,14 @@ func TestBuilderStruct(t *testing.T) {
 		})
 }
 
-type testBuilderPtrStructParam struct {
+type BuilderPtrStructParams struct {
 	target *Struct
 	setup  func(test.Builder[*Struct])
 	expect mock.SetupFunc
 	check  func(test.Test, test.Builder[*Struct])
 }
 
-var builderPtrStructTestCases = map[string]testBuilderPtrStructParam{
+var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 	// Test cases for nil interface pointer.
 	"nil any get": {
 		target: nil,
@@ -494,7 +494,7 @@ var builderPtrStructTestCases = map[string]testBuilderPtrStructParam{
 
 func TestBuilderPtrStruct(t *testing.T) {
 	test.Map(t, builderPtrStructTestCases).
-		Run(func(t test.Test, param testBuilderPtrStructParam) {
+		Run(func(t test.Test, param BuilderPtrStructParams) {
 			// Given
 			mock.NewMocks(t).Expect(param.expect)
 			accessor := test.NewAccessor(param.target)
@@ -509,14 +509,14 @@ func TestBuilderPtrStruct(t *testing.T) {
 		})
 }
 
-type testBuilderAnyParam struct {
+type BuilderAnyParams struct {
 	target any
 	setup  func(test.Builder[any])
 	expect mock.SetupFunc
 	check  func(test.Test, test.Builder[any])
 }
 
-var builderAnyTestCases = map[string]testBuilderAnyParam{
+var builderAnyTestCases = map[string]BuilderAnyParams{
 	// Test cases for invalid types.
 	"invalid type nil": {
 		target: nil,
@@ -800,7 +800,7 @@ var builderAnyTestCases = map[string]testBuilderAnyParam{
 
 func TestBuilderAny(t *testing.T) {
 	test.Map(t, builderAnyTestCases).
-		Run(func(t test.Test, param testBuilderAnyParam) {
+		Run(func(t test.Test, param BuilderAnyParams) {
 			// Given
 			mock.NewMocks(t).Expect(param.expect)
 			accessor := test.NewAccessor(param.target)
@@ -815,14 +815,14 @@ func TestBuilderAny(t *testing.T) {
 		})
 }
 
-type testFindParam struct {
+type FindParams struct {
 	param  any
 	deflt  any
 	names  []string
 	expect any
 }
 
-var findTestCases = map[string]testFindParam{
+var findTestCases = map[string]FindParams{
 	// Test cases for values.
 	"int": {
 		param:  1,
@@ -898,7 +898,7 @@ var findTestCases = map[string]testFindParam{
 
 func TestFind(t *testing.T) {
 	test.Map(t, findTestCases).
-		Run(func(t test.Test, param testFindParam) {
+		Run(func(t test.Test, param FindParams) {
 			// When
 			expect := test.Find(param.param, param.deflt, param.names...)
 

@@ -48,14 +48,14 @@ func TestTempDir(t *testing.T) {
 	}))
 }
 
-// ContextParam is a test parameter type for testing the test context.
-type ContextParam struct {
+// ContextParams is a test parameter type for testing the test context.
+type ContextParams struct {
 	setup mock.SetupFunc
 	test  test.Func
 }
 
 // contextTestCases is a map of test parameters for testing the test context.
-var contextTestCases = map[string]ContextParam{
+var contextTestCases = map[string]ContextParams{
 	"panic": {
 		setup: mock.Chain(
 			test.Fatalf("panic: %v\n%s\n%s", "test", gomock.Any(), gomock.Any()),
@@ -81,14 +81,14 @@ func TestContext(t *testing.T) {
 	}
 }
 
-// CleanupParam is a test parameter type for testing the Cleanup method.
-type CleanupParam struct {
+// CleanupParams is a test parameter type for testing the Cleanup method.
+type CleanupParams struct {
 	test test.Func
 	wait int
 }
 
 // cleanupTestCases is a map of test parameters for testing the Cleanup method.
-var cleanupTestCases = map[string]CleanupParam{
+var cleanupTestCases = map[string]CleanupParams{
 	"nil cleanup": {
 		test: func(t test.Test) {
 			t.Cleanup(nil)
@@ -138,9 +138,9 @@ func TestCleanup(t *testing.T) {
 	}
 }
 
-// ParallelParam is a test parameter type for testing the test context in
+// ParallelParams is a test parameter type for testing the test context in
 // conflicting parallel cases resulting in panics.
-type ParallelParam struct {
+type ParallelParams struct {
 	setup    mock.SetupFunc
 	parallel bool
 	before   test.SetupFunc
@@ -149,7 +149,7 @@ type ParallelParam struct {
 
 // parallelTestCases is a map of test parameters for testing the test context
 // in conflicting parallel cases resulting in a panics.
-var parallelTestCases = map[string]ParallelParam{
+var parallelTestCases = map[string]ParallelParams{
 	"setenv in run without parallel": {
 		during: func(t test.Test) {
 			t.Setenv("TESTING", "during")
@@ -216,13 +216,13 @@ func TestContextParallel(t *testing.T) {
 	}
 }
 
-type TestDeadlineParam struct {
+type DeadlineParams struct {
 	time, early, sleep time.Duration
 	expect             mock.SetupFunc
 	failure            test.Expect
 }
 
-var deadlineTestCases = map[string]TestDeadlineParam{
+var deadlineTestCases = map[string]DeadlineParams{
 	"failed": {
 		time:    0,
 		early:   0,
@@ -269,7 +269,7 @@ func TestDeadline(t *testing.T) {
 
 	test.Map(t, deadlineTestCases).
 		Timeout(0).StopEarly(0).
-		Run(func(t test.Test, param TestDeadlineParam) {
+		Run(func(t test.Test, param DeadlineParams) {
 			mock.NewMocks(t).Expect(param.expect)
 
 			test.New(t, !param.failure).

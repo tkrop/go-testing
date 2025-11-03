@@ -9,12 +9,12 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-type CopyParam struct {
+type CopyParams struct {
 	input  map[string]int
 	expect map[string]int
 }
 
-var copyTestCases = map[string]CopyParam{
+var copyTestCases = map[string]CopyParams{
 	"empty map": {
 		input:  map[string]int{},
 		expect: map[string]int{},
@@ -31,7 +31,7 @@ var copyTestCases = map[string]CopyParam{
 
 func TestCopy(t *testing.T) {
 	test.Map(t, copyTestCases).
-		Run(func(t test.Test, param CopyParam) {
+		Run(func(t test.Test, param CopyParams) {
 			// When
 			expect := Copy(param.input)
 
@@ -40,13 +40,13 @@ func TestCopy(t *testing.T) {
 		})
 }
 
-type AddParam struct {
+type AddParams struct {
 	target  map[string]int
 	sources []map[string]int
 	expect  map[string]int
 }
 
-var addTestCases = map[string]AddParam{
+var addTestCases = map[string]AddParams{
 	"no sources": {
 		target:  map[string]int{"a": 1},
 		sources: []map[string]int{},
@@ -71,7 +71,7 @@ var addTestCases = map[string]AddParam{
 
 func TestAdd(t *testing.T) {
 	test.Map(t, addTestCases).
-		Run(func(t test.Test, param AddParam) {
+		Run(func(t test.Test, param AddParams) {
 			// When
 			result := Add(param.target, param.sources...)
 

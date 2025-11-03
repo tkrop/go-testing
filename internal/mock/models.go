@@ -151,8 +151,8 @@ func (tm *TypeMatcher) Matches(t *Type) bool {
 			tm.File == t.File[:strings.LastIndex(t.File, ":")])
 }
 
-// Param provides method parameters.
-type Param struct {
+// Params provides method parameters.
+type Params struct {
 	// Method parameter.
 	Name string
 	// Method type.
@@ -161,11 +161,11 @@ type Param struct {
 
 // NewParams creates a new parameter slice based on the given tuple providing
 // the argument or return parameter list.
-func NewParams(tuple *types.Tuple) []*Param {
-	params := make([]*Param, 0, tuple.Len())
+func NewParams(tuple *types.Tuple) []*Params {
+	params := make([]*Params, 0, tuple.Len())
 	for index := range tuple.Len() {
 		param := tuple.At(index)
-		params = append(params, &Param{
+		params = append(params, &Params{
 			Name: param.Name(),
 			Type: ToAny(param.Type().String()),
 		})
@@ -186,9 +186,9 @@ type Method struct {
 	// Name of method.
 	Name string
 	// Method arguments.
-	Params []*Param
+	Params []*Params
 	// Method results.
-	Results []*Param
+	Results []*Params
 	// Flag whether last argument is variadic.
 	Variadic bool
 }

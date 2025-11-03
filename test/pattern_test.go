@@ -15,6 +15,8 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
+//revive:disable:max-public-structs // relaxed in testing.
+
 // Named types for testing.
 type (
 	TestSlice  []string
@@ -28,14 +30,14 @@ type (
 
 var testFunc TestFunc = func(a *any) any { return a }
 
-type MustParam struct {
+type MustParams struct {
 	setup  mock.SetupFunc
 	arg    any
 	err    error
 	expect any
 }
 
-var mustTestCases = map[string]MustParam{
+var mustTestCases = map[string]MustParams{
 	"nil": {},
 	"string": {
 		arg:    "value",
@@ -114,7 +116,7 @@ var mustTestCases = map[string]MustParam{
 }
 
 func TestMust(t *testing.T) {
-	test.Map(t, mustTestCases).Run(func(t test.Test, param MustParam) {
+	test.Map(t, mustTestCases).Run(func(t test.Test, param MustParams) {
 		// Given
 		mock.NewMocks(t).Expect(param.setup)
 
@@ -131,14 +133,14 @@ func TestMust(t *testing.T) {
 	})
 }
 
-type CastParam struct {
+type CastParams struct {
 	setup  mock.SetupFunc
 	arg    any
 	cast   func(arg any) any
 	expect any
 }
 
-var castTestCases = map[string]CastParam{
+var castTestCases = map[string]CastParams{
 	"int to int": {
 		arg:    42,
 		cast:   func(arg any) any { return test.Cast[int](arg) },
@@ -278,7 +280,7 @@ var castTestCases = map[string]CastParam{
 }
 
 func TestCast(t *testing.T) {
-	test.Map(t, castTestCases).Run(func(t test.Test, param CastParam) {
+	test.Map(t, castTestCases).Run(func(t test.Test, param CastParams) {
 		// Given
 		mock.NewMocks(t).Expect(param.setup)
 
@@ -287,16 +289,13 @@ func TestCast(t *testing.T) {
 
 		// Then
 		if strings.Contains(t.Name(), "function") {
-			// For functions, just verify the cast worked (result is not nil)
 			assert.NotNil(t, result)
 		} else if strings.Contains(t.Name(), "pointer to any") {
-			// For pointer tests, check if both are pointers and values match
-			expectedPtr := param.expect.(*TestStruct)
-			resultPtr := result.(*TestStruct)
-			assert.Equal(t, expectedPtr.name, resultPtr.name)
-			assert.Equal(t, expectedPtr.id, resultPtr.id)
+			expect := param.expect.(*TestStruct)
+			result := result.(*TestStruct)
+			assert.Equal(t, expect.name, result.name)
+			assert.Equal(t, expect.id, result.id)
 		} else if param.expect == nil {
-			// For special cases where we just verify no panic occurred
 			assert.NotNil(t, result)
 		} else {
 			assert.Equal(t, param.expect, result)
@@ -304,7 +303,37 @@ func TestCast(t *testing.T) {
 	})
 }
 
-var mainTestCases = map[string]test.MainParam{
+// ctx returns the current time formatted as RFC3339Nano truncated to 26
+// characters to avoid excessive precision in test output.
+func ctx() string {
+	return fmt.Sprintf("%s [%s]", time.Now().Format(time.RFC3339Nano[0:26]), os.Args[0])
+}
+
+// main is a test main function to demonstrate the usage of `test.Main`.
+func main() {
+	// Check that environment variables are set correctly.
+	fmt.Fprintf(os.Stderr, "%s var=%s\n", ctx(), os.Getenv("var"))
+	if os.Getenv("panic") == "true" {
+		fmt.Fprintf(os.Stderr, "%s var=%s\n", ctx(), os.Getenv("var"))
+		panic("supposed to panic")
+	}
+
+	// Simulate some work.
+	fmt.Fprintf(os.Stderr, "%s args=%v\n", ctx(), os.Args)
+	if len(os.Args) > 1 {
+		fmt.Fprintf(os.Stderr, "%s sleep=%s\n", ctx(), os.Args[1])
+		dur, err := time.ParseDuration(os.Args[1])
+		if err == nil {
+			time.Sleep(dur)
+		}
+	}
+
+	// Exit with given code.
+	fmt.Fprintf(os.Stderr, "%s exit=%s\n", ctx(), os.Getenv("exit"))
+	os.Exit(test.First(strconv.Atoi(os.Getenv("exit"))))
+}
+
+var mainTestCases = map[string]test.MainParams{
 	"panic": {
 		Env:      []string{"panic=true"},
 		Args:     []string{"panic"},
@@ -345,35 +374,86 @@ func TestMain(t *testing.T) {
 
 func TestMainUnexpected(t *testing.T) {
 	t.Setenv(test.GoTestingRunVar, "other")
-	test.Param(t, test.MainParam{}).RunSeq(test.Main(main))
+	test.Param(t, test.MainParams{}).RunSeq(test.Main(main))
 }
 
-// ctx returns the current time formatted as RFC3339Nano truncated to 26
-// characters to avoid excessive precision in test output.
-func ctx() string {
-	return fmt.Sprintf("%s [%s]", time.Now().Format(time.RFC3339Nano[0:26]), os.Args[0])
+type WithDeepCopy struct {
+	Value int
 }
 
-// main is a test main function to demonstrate the usage of `test.Main`.
-func main() {
-	// Check that environment variables are set correctly.
-	fmt.Fprintf(os.Stderr, "%s var=%s\n", ctx(), os.Getenv("var"))
-	if os.Getenv("panic") == "true" {
-		fmt.Fprintf(os.Stderr, "%s var=%s\n", ctx(), os.Getenv("var"))
-		panic("supposed to panic")
+func (d *WithDeepCopy) DeepCopy() any {
+	if d == nil {
+		return nil
 	}
+	out := new(WithDeepCopy)
+	*out = *d
+	return out
+}
 
-	// Simulate some work.
-	fmt.Fprintf(os.Stderr, "%s args=%v\n", ctx(), os.Args)
-	if len(os.Args) > 1 {
-		fmt.Fprintf(os.Stderr, "%s sleep=%s\n", ctx(), os.Args[1])
-		dur, err := time.ParseDuration(os.Args[1])
-		if err == nil {
-			time.Sleep(dur)
-		}
+type WithDeepCopyObject struct {
+	Value int
+}
+
+func (d *WithDeepCopyObject) DeepCopyObject() any {
+	if d == nil {
+		return nil
 	}
+	out := new(WithDeepCopyObject)
+	*out = *d
+	return out
+}
 
-	// Exit with given code.
-	fmt.Fprintf(os.Stderr, "%s exit=%s\n", ctx(), os.Getenv("exit"))
-	os.Exit(test.First(strconv.Atoi(os.Getenv("exit"))))
+type WithoutDeepCopy struct {
+	Value int
+}
+
+type DeepCopyParams struct {
+	test.DeepCopyParams
+	setup mock.SetupFunc
+}
+
+var deepCopyTestCases = map[string]DeepCopyParams{
+	"deep-copy-nil": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: (*WithDeepCopy)(nil),
+		},
+	},
+	"deep-copy": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &WithDeepCopy{},
+		},
+	},
+	"deep-copy-object-nil": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: (*WithDeepCopyObject)(nil),
+		},
+	},
+	"deep-copy-object": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &WithDeepCopyObject{},
+		},
+	},
+	"no-method-nil": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: nil,
+		},
+		setup: test.Fatalf("no deep copy method [%T]", nil),
+	},
+	"no-method": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &WithoutDeepCopy{Value: 6},
+		},
+		setup: test.Fatalf("no deep copy method [%T]", &WithoutDeepCopy{Value: 6}),
+	},
+}
+
+func TestDeepCopy(t *testing.T) {
+	test.Map(t, deepCopyTestCases).
+		Run(func(t test.Test, param DeepCopyParams) {
+			// Given
+			mock.NewMocks(t).Expect(param.setup)
+
+			// When
+			test.DeepCopy(42, 5, 20)(t, param.DeepCopyParams)
+		})
 }

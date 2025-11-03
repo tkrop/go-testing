@@ -149,7 +149,7 @@ func importArgs(imports []*Import) string {
 	return builder.String()
 }
 
-func paramArgs(params []*Param) string {
+func paramArgs(params []*Params) string {
 	builder := strings.Builder{}
 	mindex := len(params) - 1
 	for index, param := range params {
@@ -165,7 +165,7 @@ func paramArgs(params []*Param) string {
 	return builder.String()
 }
 
-func resultArgs(params []*Param) string {
+func resultArgs(params []*Params) string {
 	builder := strings.Builder{}
 	if len(params) > 1 {
 		builder.WriteRune('(')
@@ -182,7 +182,7 @@ func resultArgs(params []*Param) string {
 	return builder.String()
 }
 
-func callArgs(params []*Param) string {
+func callArgs(params []*Params) string {
 	builder := strings.Builder{}
 	for index, param := range params {
 		if index > 0 {
@@ -198,7 +198,7 @@ func callArgs(params []*Param) string {
 	return builder.String()
 }
 
-func convertArgs(params []*Param) string {
+func convertArgs(params []*Params) string {
 	builder := strings.Builder{}
 	for index, param := range params {
 		istr := strconv.Itoa(index)

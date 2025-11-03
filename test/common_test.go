@@ -10,23 +10,23 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-// ParamParam is a test parameter type for the test runner to test evaluation
+// ParamParams is a test parameter type for the test runner to test evaluation
 // of default test parameter names from the test parameter set.
-type ParamParam struct {
+type ParamParams struct {
 	name   string
 	expect bool
 }
 
 // CheckName checks if the test name contains the expected name.
 // It is used to verify that the test name is correctly set in the test runner.
-func (p *ParamParam) CheckName(t test.Test) {
+func (p *ParamParams) CheckName(t test.Test) {
 	assert.Contains(t, t.Name(),
 		strings.ReplaceAll(p.name, " ", "-"))
 }
 
-// TestParam is a generic test parameter type for testing the test context as
+// TestParams is a generic test parameter type for testing the test context as
 // well as the test runner using the same parameter sets.
-type TestParam struct {
+type TestParams struct {
 	name     test.Name
 	setup    mock.SetupFunc
 	test     test.Func
@@ -35,8 +35,8 @@ type TestParam struct {
 }
 
 // Rename returns a new test parameter set with the given name.
-func (p *TestParam) Rename(name string) TestParam {
-	return TestParam{
+func (p *TestParams) Rename(name string) TestParams {
+	return TestParams{
 		name:     test.Name(name),
 		setup:    p.setup,
 		test:     p.test,
@@ -46,8 +46,8 @@ func (p *TestParam) Rename(name string) TestParam {
 }
 
 // Rename returns a new test parameter set with the given name.
-func (p *TestParam) Copy() TestParam {
-	return TestParam{
+func (p *TestParams) Copy() TestParams {
+	return TestParams{
 		name:     p.name,
 		setup:    p.setup,
 		test:     p.test,
@@ -58,14 +58,14 @@ func (p *TestParam) Copy() TestParam {
 
 // CheckName checks if the test name contains the expected name.
 // It is used to verify that the test name is correctly set in the test runner.
-func (p *TestParam) CheckName(t test.Test) {
+func (p *TestParams) CheckName(t test.Test) {
 	assert.Contains(t, t.Name(),
 		strings.ReplaceAll(string(p.name), " ", "-"))
 }
 
 // ExecTest is the generic function to execute a test with the given test
 // parameters.
-func (p *TestParam) ExecTest(t test.Test) {
+func (p *TestParams) ExecTest(t test.Test) {
 	// Given
 	if p.setup != nil {
 		mock.NewMocks(t).Expect(p.setup)
@@ -89,7 +89,7 @@ func (p *TestParam) ExecTest(t test.Test) {
 
 // TestParamMap is a map of test parameters for testing the test context as
 // well as the test runner.
-type TestParamMap map[string]TestParam
+type TestParamMap map[string]TestParams
 
 // FilterBy filters the test parameters by the given pattern to test the
 // filtering of the test runner.
@@ -105,10 +105,10 @@ func (m TestParamMap) FilterBy(pattern string) TestParamMap {
 }
 
 // GetSlice returns the test parameters as a slice of test parameters sets.
-func (m TestParamMap) GetSlice() []TestParam {
-	params := make([]TestParam, 0, len(m))
+func (m TestParamMap) GetSlice() []TestParams {
+	params := make([]TestParams, 0, len(m))
 	for name, param := range m {
-		params = append(params, TestParam{
+		params = append(params, TestParams{
 			name:   test.Name(name),
 			test:   param.test,
 			expect: param.expect,
