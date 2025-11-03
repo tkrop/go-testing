@@ -12,10 +12,10 @@ import (
 // TestParamRun is testing the test runner with single test cases.
 func TestParamRun(t *testing.T) {
 	finished := false
-	test.Param(t, TestParam{
+	test.Param(t, TestParams{
 		test:   func(t test.Test) { t.FailNow() },
 		expect: test.Failure,
-	}).Run(func(t test.Test, param TestParam) {
+	}).Run(func(t test.Test, param TestParams) {
 		defer func() { finished = true }()
 		param.CheckName(t)
 		param.ExecTest(t)
@@ -32,7 +32,7 @@ func TestParamRunSeq(t *testing.T) {
 	for name, param := range commonTestCases {
 		finished := false
 		test.Param(t, param.Rename(name)).
-			RunSeq(func(t test.Test, param TestParam) {
+			RunSeq(func(t test.Test, param TestParams) {
 				defer func() { finished = true }()
 				param.CheckName(t)
 				param.ExecTest(t)
@@ -51,7 +51,7 @@ func TestParamRunNamed(t *testing.T) {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
 		test.Param(t, param.Rename(name)).
-			Run(func(t test.Test, param TestParam) {
+			Run(func(t test.Test, param TestParams) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
 				param.CheckName(t)
@@ -72,7 +72,7 @@ func TestParamRunSeqNamed(t *testing.T) {
 		finished := false
 		tname := t.Name() + "/" + test.TestName(name, param)
 		test.Param(t, param.Rename(name)).
-			RunSeq(func(t test.Test, param TestParam) {
+			RunSeq(func(t test.Test, param TestParams) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
 				param.CheckName(t)
@@ -94,7 +94,7 @@ func TestParamRunFiltered(t *testing.T) {
 		tname := t.Name() + "/" + test.TestName(name, param)
 		test.Param(t, param.Rename(name)).
 			Filter(pattern, true).
-			Run(func(t test.Test, param TestParam) {
+			Run(func(t test.Test, param TestParams) {
 				defer func() { finished = true }()
 				assert.Equal(t, tname, t.Name())
 				assert.Contains(t, t.Name(), pattern)
@@ -115,7 +115,7 @@ func TestParamsRun(t *testing.T) {
 	count := atomic.Int32{}
 
 	test.Param(t, commonTestCases.GetSlice()...).
-		Run(func(t test.Test, param TestParam) {
+		Run(func(t test.Test, param TestParams) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -134,7 +134,7 @@ func TestParamsRunFiltered(t *testing.T) {
 
 	test.Param(t, commonTestCases.GetSlice()...).
 		Filter(pattern, true).
-		Run(func(t test.Test, param TestParam) {
+		Run(func(t test.Test, param TestParams) {
 			defer count.Add(1)
 			name := string(param.name)
 			assert.Contains(t, name, pattern)
@@ -152,7 +152,7 @@ func TestMapRun(t *testing.T) {
 	count := atomic.Int32{}
 
 	test.Map(t, commonTestCases).
-		Run(func(t test.Test, param TestParam) {
+		Run(func(t test.Test, param TestParams) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -171,7 +171,7 @@ func TestMapRunFiltered(t *testing.T) {
 
 	test.Map(t, commonTestCases).
 		Filter(pattern, true).
-		Run(func(t test.Test, param TestParam) {
+		Run(func(t test.Test, param TestParams) {
 			defer count.Add(1)
 			assert.Contains(t, t.Name(), pattern)
 			name := strings.ReplaceAll(t.Name()[19:], "-", " ")
@@ -190,7 +190,7 @@ func TestSliceRun(t *testing.T) {
 	count := atomic.Int32{}
 
 	test.Slice(t, commonTestCases.GetSlice()).
-		Run(func(t test.Test, param TestParam) {
+		Run(func(t test.Test, param TestParams) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -209,7 +209,7 @@ func TestSliceRunFiltered(t *testing.T) {
 
 	test.Slice(t, commonTestCases.GetSlice()).
 		Filter(pattern, true).
-		Run(func(t test.Test, param TestParam) {
+		Run(func(t test.Test, param TestParams) {
 			defer count.Add(1)
 			name := string(param.name)
 			assert.Contains(t, name, pattern)
@@ -232,8 +232,8 @@ func TestRunnerPanic(t *testing.T) {
 	}()
 	t.Setenv("TESTING", "before")
 
-	test.Any[ParamParam](t, []ParamParam{{expect: true}}).
-		Run(func(t test.Test, param ParamParam) {
+	test.Any[ParamParams](t, []ParamParams{{expect: true}}).
+		Run(func(t test.Test, param ParamParams) {
 			param.CheckName(t)
 		})
 }
@@ -243,25 +243,25 @@ func TestRunnerPanic(t *testing.T) {
 // simplified test pattern that only works on `test.Test` and not `testing.T“.
 func TestInvalidTypePanic(t *testing.T) {
 	defer func() {
-		assert.Equal(t, test.NewErrInvalidType(ParamParam{}), recover())
+		assert.Equal(t, test.NewErrInvalidType(ParamParams{}), recover())
 	}()
 
-	test.Any[TestParam](t, ParamParam{expect: false}).
-		Run(func(t test.Test, param TestParam) {
+	test.Any[TestParams](t, ParamParams{expect: false}).
+		Run(func(t test.Test, param TestParams) {
 			param.CheckName(t)
 		})
 }
 
 func TestNameCastFallback(t *testing.T) {
-	test.Param(t, ParamParam{name: "value"}).
-		Run(func(t test.Test, _ ParamParam) {
+	test.Param(t, ParamParams{name: "value"}).
+		Run(func(t test.Test, _ ParamParams) {
 			assert.Equal(t, t.Name(), "TestNameCastFallback")
 		})
 }
 
 func TestExpectCastFallback(t *testing.T) {
-	test.Param(t, ParamParam{expect: false}).
-		Run(func(t test.Test, param ParamParam) {
+	test.Param(t, ParamParams{expect: false}).
+		Run(func(t test.Test, param ParamParams) {
 			param.CheckName(t)
 		})
 }

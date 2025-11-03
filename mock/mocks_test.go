@@ -834,12 +834,12 @@ func TestFuncPanic(t *testing.T) {
 		})
 }
 
-type FailureParam struct {
+type FailureParams struct {
 	expect test.Expect
 	test   test.Func
 }
 
-var failureTestCases = map[string]FailureParam{
+var failureTestCases = map[string]FailureParams{
 	"success": {
 		test:   func(test.Test) {},
 		expect: test.Success,
@@ -868,7 +868,7 @@ var failureTestCases = map[string]FailureParam{
 
 func TestFailures(t *testing.T) {
 	test.Map(t, failureTestCases).
-		Run(func(t test.Test, param FailureParam) {
+		Run(func(t test.Test, param FailureParams) {
 			// Given
 			mocks := mock.NewMocks(t).Expect(CallA("a"))
 			defer func() {
@@ -888,11 +888,11 @@ func TestFailures(t *testing.T) {
 }
 
 // TODO: add more adequate testing for waiting.
-type WaitParam struct {
+type WaitParams struct {
 	expect test.Expect
 }
 
-var waitTestCases = map[string]WaitParam{
+var waitTestCases = map[string]WaitParams{
 	"simple wait": {
 		expect: test.Success,
 	},
@@ -900,7 +900,7 @@ var waitTestCases = map[string]WaitParam{
 
 func TestFuncWait(t *testing.T) {
 	test.Map(t, waitTestCases).
-		Run(func(t test.Test, _ WaitParam) {
+		Run(func(t test.Test, _ WaitParams) {
 			// Given
 			mocks := mock.NewMocks(t)
 

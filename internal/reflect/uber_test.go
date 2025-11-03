@@ -33,13 +33,13 @@ func (m MockStruct) String() string {
 	return "mock-string-" + m.value
 }
 
-// StringArgsParam represents unified test parameters for all StringArgs related functions.
-type StringArgsParam struct {
+// StringArgsParams represents unified test parameters for all StringArgs related functions.
+type StringArgsParams struct {
 	args   []any
 	expect []string
 }
 
-var stringArgsTestCases = map[string]StringArgsParam{
+var stringArgsTestCases = map[string]StringArgsParams{
 	// Testing single value conversion behavior.
 	"nil-value": {
 		args:   []any{nil},
@@ -149,7 +149,7 @@ var stringArgsTestCases = map[string]StringArgsParam{
 
 func TestStringArgs(t *testing.T) {
 	test.Map(t, stringArgsTestCases).
-		Run(func(t test.Test, param StringArgsParam) {
+		Run(func(t test.Test, param StringArgsParams) {
 			// When
 			result := reflect.StringArgs(param.args)
 

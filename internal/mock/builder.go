@@ -22,9 +22,9 @@ var (
 	)
 )
 
-// indexParam provides the parsed parameter type information.
-type indexParam struct {
-	param   *Param
+// indexParams provides the parsed parameter type information.
+type indexParams struct {
+	param   *Params
 	indexes [][]int
 }
 
@@ -42,7 +42,7 @@ type FileBuilder struct {
 
 	// Slices to coordinate build steps.
 	tpaths []string
-	params []*indexParam
+	params []*indexParams
 }
 
 // NewFileBuilder creates a new file builder.
@@ -110,11 +110,11 @@ func (b *FileBuilder) addImport(imprt *Import) {
 // creating imports with minised alias names. For speedup and simplification
 // the builder collects a list of parsed types with indexes to allow a quick
 // exchange of the qualifier with the calculated alias.
-func (b *FileBuilder) paramImports(params []*Param) *FileBuilder {
+func (b *FileBuilder) paramImports(params []*Params) *FileBuilder {
 	for _, param := range params {
 		indexes := qualifierRegexp.FindAllStringIndex(param.Type, -1)
 		if len(indexes) > 0 {
-			b.params = append(b.params, &indexParam{
+			b.params = append(b.params, &indexParams{
 				param: param, indexes: indexes,
 			})
 			for _, index := range indexes {

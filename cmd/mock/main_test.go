@@ -6,7 +6,7 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-var mainTestCases = map[string]test.MainParam{
+var mainTestCases = map[string]test.MainParams{
 	"no mocks": {
 		Args:     []string{"mock"},
 		Env:      []string{},
