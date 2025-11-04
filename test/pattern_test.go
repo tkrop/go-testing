@@ -519,6 +519,6 @@ func TestDeepCopy(t *testing.T) {
 			mock.NewMocks(t).Expect(param.setup)
 
 			// When
-			test.DeepCopy()(t, param.DeepCopyParams)
+			test.DeepCopy(t, param.DeepCopyParams)
 		})
 }

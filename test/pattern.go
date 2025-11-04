@@ -236,31 +236,28 @@ func DeepCopyTestCases(
 //		   &MyStruct{}, (*MyStruct)(nil), ...)
 //
 //	func TestDeepCopy(t *testing.T) {
-//		test.Map(t, deepCopyTestCases).
-//			Run(test.DeepCopy())
+//		test.Map(t, deepCopyTestCases).Run(test.DeepCopy)
 //	}
 //
 // ```
 // *Note:* the test cases can also be generated inside the `TestDeepCopy`
 // function.
-func DeepCopy() func(t Test, p DeepCopyParams) {
-	return func(t Test, p DeepCopyParams) {
-		// Given
-		value := p.Value
+func DeepCopy(t Test, p DeepCopyParams) {
+	// Given
+	value := p.Value
 
-		// When
-		result, err := deepCopy(value)
-		if errors.Is(err, errNoDeepCopyMethod) {
-			t.Fatalf("no deep copy method [%T]", value)
-		}
+	// When
+	result, err := deepCopy(value)
+	if errors.Is(err, errNoDeepCopyMethod) {
+		t.Fatalf("no deep copy method [%T]", value)
+	}
 
-		// Then
-		if !reflect.ValueOf(value).IsNil() {
-			assert.NotSame(t, value, result)
-			assert.Equal(t, value, result)
-		} else {
-			assert.Nil(t, result)
-		}
+	// Then
+	if !reflect.ValueOf(value).IsNil() {
+		assert.NotSame(t, value, result)
+		assert.Equal(t, value, result)
+	} else {
+		assert.Nil(t, result)
 	}
 }
 
