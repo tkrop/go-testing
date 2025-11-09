@@ -1,8 +1,9 @@
-package test
+package reflect
 
 import (
 	"reflect"
 	"slices"
+	"strings"
 	"unsafe"
 )
 
@@ -48,29 +49,6 @@ type Builder[T any] interface {
 	// Setter is a generic fluent interface that allows you to modify unexported
 	// fields of a (pointer) struct by field name.
 	Setter[T]
-}
-
-// Find returns the first value of a parameter field from the given list of
-// field names with a type matching the default value type. If the name list
-// is empty or contains a star (`*`), the first matching field in order of the
-// struct declaration is returned as fallback. If no matching field is found,
-// the default value is returned.
-//
-// The `param“ object can be a struct, a pointer to a struct, or an arbitrary
-// value matching the default value type. In the last case, the arbitrary value
-// is returned as is.
-func Find[P, T any](param P, deflt T, names ...string) T {
-	pt, dt := reflect.TypeOf(param), reflect.TypeOf(deflt)
-	switch {
-	case pt.Kind() == dt.Kind():
-		return reflect.ValueOf(param).Interface().(T)
-	case pt.Kind() == reflect.Struct:
-		return NewAccessor[P](param).Find(deflt, names...).(T)
-	case pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct:
-		return NewAccessor[P](param).Find(deflt, names...).(T)
-	default:
-		return deflt
-	}
 }
 
 // Builder is used for accessing and modifying unexported fields in a struct
@@ -288,4 +266,40 @@ func (*builder[T]) valueOf(field reflect.Value, value any) reflect.Value {
 		return reflect.Zero(field.Type())
 	}
 	return reflect.ValueOf(value)
+}
+
+// Find returns the first value of a struct field from the given list of field
+// names with a type matching the default value type. If the name list is empty
+// or contains a star (`*`), the first matching field in order of the struct
+// declaration is returned as fallback. If no matching field is found, the
+// default value is returned.
+//
+// The `param` object can be a struct, a pointer to a struct, or an arbitrary
+// value matching the default value type. In the last case, the arbitrary value
+// is returned as is.
+func Find[P, T any](param P, deflt T, names ...string) T {
+	pt, dt := reflect.TypeOf(param), reflect.TypeOf(deflt)
+	switch {
+	case pt.Kind() == dt.Kind():
+		return reflect.ValueOf(param).Interface().(T)
+	case pt.Kind() == reflect.Struct:
+		return NewAccessor[P](param).Find(deflt, names...).(T)
+	case pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct:
+		return NewAccessor[P](param).Find(deflt, names...).(T)
+	default:
+		return deflt
+	}
+}
+
+// Name returns the normalized test case name for the given default name and
+// parameter set. If the default name is empty, the test name is resolved from
+// the parameter set using the `name` field. The resolved value is normalized
+// before being returned. If no test name can be resolved `unknown` is returned.
+func Name[P any](name string, param P) string {
+	if name != "" {
+		return strings.ReplaceAll(name, " ", "-")
+	} else if name := Find(param, "unknown", "name", "Name"); name != "" {
+		return strings.ReplaceAll(name, " ", "-")
+	}
+	return "unknown"
 }

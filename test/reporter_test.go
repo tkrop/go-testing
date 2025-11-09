@@ -145,7 +145,7 @@ func TestCallMatcher(t *testing.T) {
 	test.Map(t, callMatcherTestCases).
 		Run(func(t test.Test, param MatcherParams) {
 			// Given - send mock calls to unchecked test context.
-			mocks := mock.NewMocks(test.New(t, test.Success))
+			mocks := mock.NewMocks(test.New(t, test.Success, false))
 			matcher := param.matcher(evalCall(param.base, mocks))
 
 			// When
