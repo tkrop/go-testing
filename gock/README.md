@@ -23,8 +23,8 @@ func TestUnit(t *testing.T) {
     client := &http.Client{}
     gock.InterceptClient(client)
 
-    gock.New("http://foo.com").Get("/bar").Times(1).
-        Reply(200).BodyString("result")
+    gock.New("http://foo.com").Get("/bar").
+        {Reply(status)|ReplyError(err)}.BodyString("result")
 
     // When
     ...
@@ -35,6 +35,10 @@ The controller is fully integrated in to the [`mock`](../mock)-framework, so
 that you can just request the controller via the [`gomock`][gomock] constructor
 `mock.Get(mocks, gock.NewGock)` (see
 [Example](#integration-with-mock-framework))
+
+**Note:** The standard cardinality of mock requests using [`gock`][gock] is
+`1`. So you can skip writing `Times(1)` and only use `Times(n)`, when you need
+to increase the request cardinality.
 
 
 ## Migration from Gock
@@ -51,8 +55,8 @@ func TestUnit(t *testing.T) {
 
     ...
 
-    gock.New("http://foo.com").Get("/bar").Times(1).
-        Reply(200).BodyString("result")
+    gock.New("http://foo.com").Get("/bar").
+        {Reply(status)|ReplyError(err)}.BodyString("result")
 
     // WHen
     ...
@@ -107,9 +111,9 @@ this controller framework. In this case you should use [`gock`][gock] directly.
 ## Integration with `mock`-framework
 
 The `Gock`-controller framework supports a simple integration with the
-[`mock`](../mock) framework for [gomock][gomock]: it simply provides constructor
-that accepts the `gomock`-controller. Using constructor, it is possible to
-create the usual setup methods similar as described in the
+[`mock`](../mock) framework for [gomock][gomock]: it simply provides
+constructor that accepts the `gomock`-controller. Using constructor, it is
+possible to create the usual setup methods similar as described in the
 [generic mock service call pattern](../mock#generic-mock-service-call-pattern).
 
 ```go
@@ -117,8 +121,8 @@ func GockCall(
     url, path string, input..., status int, output..., error,
 ) mock.SetupFunc {
     return func(mocks *Mocks) any {
-        mock.Get(mocks, gock.NewGock).New(url).Get(path).Times(1).
-            Reply(status)...
+        mock.Get(mocks, gock.NewGock).New(url).Get(path).
+            {Reply(status)|ReplyError(err)}...
         return nil
     }
 }

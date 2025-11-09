@@ -51,7 +51,7 @@ func NewValidator(ctrl *gomock.Controller) *Validator {
 	if t, ok := ctrl.T.(*Context); ok {
 		// We need to install a second isolated test environment to break the
 		// reporter cycle on the failure issued by the mock controller.
-		ctrl.T = New(t.t, t.expect)
+		ctrl.T = New(t.t, t.expect, t.parallel)
 		t.expect = Failure
 		t.Reporter(validator)
 	}
@@ -249,7 +249,7 @@ func MissingCalls(
 		// Creates a new mock controller and test environment to isolate the
 		// validator used for sub-call creation/registration from the validator
 		// used for execution.
-		mocks := mock.NewMocks(New(t, false))
+		mocks := mock.NewMocks(New(t, false, false))
 		calls := make([]func(*mock.Mocks) any, 0, len(setups))
 		for _, setup := range setups {
 			calls = append(calls,

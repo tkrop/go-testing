@@ -17,8 +17,8 @@ type ParamParams struct {
 	expect bool
 }
 
-// CheckName checks if the test name contains the expected name.
-// It is used to verify that the test name is correctly set in the test runner.
+// CheckName checks if the test name contains the expected name. It is used to
+// verify that the test name is correctly set in the test runner.
 func (p *ParamParams) CheckName(t test.Test) {
 	assert.Contains(t, t.Name(),
 		strings.ReplaceAll(p.name, " ", "-"))
@@ -27,7 +27,7 @@ func (p *ParamParams) CheckName(t test.Test) {
 // TestParams is a generic test parameter type for testing the test context as
 // well as the test runner using the same parameter sets.
 type TestParams struct {
-	name     test.Name
+	name     string
 	setup    mock.SetupFunc
 	test     test.Func
 	expect   test.Expect
@@ -37,7 +37,7 @@ type TestParams struct {
 // Rename returns a new test parameter set with the given name.
 func (p *TestParams) Rename(name string) TestParams {
 	return TestParams{
-		name:     test.Name(name),
+		name:     name,
 		setup:    p.setup,
 		test:     p.test,
 		expect:   p.expect,
@@ -60,7 +60,7 @@ func (p *TestParams) Copy() TestParams {
 // It is used to verify that the test name is correctly set in the test runner.
 func (p *TestParams) CheckName(t test.Test) {
 	assert.Contains(t, t.Name(),
-		strings.ReplaceAll(string(p.name), " ", "-"))
+		strings.ReplaceAll(p.name, " ", "-"))
 }
 
 // ExecTest is the generic function to execute a test with the given test
@@ -109,7 +109,7 @@ func (m TestParamMap) GetSlice() []TestParams {
 	params := make([]TestParams, 0, len(m))
 	for name, param := range m {
 		params = append(params, TestParams{
-			name:   test.Name(name),
+			name:   name,
 			test:   param.test,
 			expect: param.expect,
 		})

@@ -80,7 +80,7 @@ func Run(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, expect).Run(test, Parallel)
+		New(t, expect, Parallel).Run(test)
 	}
 }
 
@@ -91,7 +91,7 @@ func RunSeq(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, expect).Run(test, !Parallel)
+		New(t, expect, !Parallel).Run(test)
 	}
 }
 
@@ -102,7 +102,7 @@ func InRun(expect Expect, test Func) Func {
 	return func(t Test) {
 		t.Helper()
 
-		New(t, expect).Run(test, !Parallel)
+		New(t, expect, !Parallel).Run(test)
 	}
 }
 
@@ -119,27 +119,31 @@ type Context struct {
 	reporter Reporter
 	cleanups []func()
 	expect   Expect
+	parallel bool
 }
 
 // New creates a new minimal isolated test context based on the given test
 // context with the given expectation. The parent test context is used to
 // delegate methods calls to the parent context to propagate test results.
-func New(t Test, expect Expect) *Context {
+func New(t Test, expect Expect, parallel bool) *Context {
 	if tx, ok := t.(*Context); ok {
 		return &Context{
 			t: tx, wg: tx.wg,
-			expect:   expect,
 			deadline: tx.deadline,
+			expect:   expect,
+			parallel: parallel,
 		}
 	}
 
 	return &Context{
-		t: t, expect: expect,
+		t: t,
 		deadline: func(t Test) time.Time {
 			defer func() { _ = recover() }()
 			deadline, _ := t.Deadline()
 			return deadline
 		}(t),
+		expect:   expect,
+		parallel: parallel,
 	}
 }
 
@@ -471,10 +475,10 @@ func (t *Context) Panic(arg any) {
 // the failure state after the test function has finished. If the test result
 // is not according to expectation, a failure is created in the parent test
 // context.
-func (t *Context) Run(test Func, parallel bool) Test {
+func (t *Context) Run(test Func) Test {
 	t.t.Helper()
 
-	if parallel {
+	if t.parallel {
 		t.t.Parallel()
 	}
 
@@ -560,11 +564,11 @@ func (t *Context) finish() {
 	switch t.expect {
 	case Success:
 		if t.failed.Load() {
-			t.t.Errorf("Expected test to succeed but it failed: %s", t.t.Name())
+			t.t.Errorf("Expected test to succeed but it failed: %s", t.Name())
 		}
 	case Failure:
 		if !t.failed.Load() {
-			t.t.Errorf("Expected test to fail but it succeeded: %s", t.t.Name())
+			t.t.Errorf("Expected test to fail but it succeeded: %s", t.Name())
 		}
 	}
 }

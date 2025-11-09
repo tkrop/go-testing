@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/tkrop/go-testing/mock"
+	"github.com/tkrop/go-testing/reflect"
 	"github.com/tkrop/go-testing/test"
 )
 
@@ -22,8 +23,8 @@ const (
 
 func GetMatcherConfigAccessor(
 	mocks *mock.Mocks,
-) test.Builder[*mock.MatcherConfig] {
-	return test.NewAccessor(test.NewAccessor(mocks).
+) reflect.Builder[*mock.MatcherConfig] {
+	return reflect.NewAccessor(reflect.NewAccessor(mocks).
 		Get(nameMatcher).(*mock.MatcherConfig))
 }
 
