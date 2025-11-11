@@ -291,8 +291,8 @@ func (r *factory[P]) exec(
 		}
 	}
 
-	// Execute anonymous tests directly.
-	if name == "unknown" {
+	// Execute anonymous non-parallel tests directly.
+	if name == "" && !parallel {
 		r.wrap(param, call, parallel)(r.t)
 		return
 	}
