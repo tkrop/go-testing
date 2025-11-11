@@ -294,12 +294,13 @@ func Find[P, T any](param P, deflt T, names ...string) T {
 // Name returns the normalized test case name for the given default name and
 // parameter set. If the default name is empty, the test name is resolved from
 // the parameter set using the `name` field. The resolved value is normalized
-// before being returned. If no test name can be resolved `unknown` is returned.
+// before being returned. If no test name can be resolved an empty string is
+// returned.
 func Name[P any](name string, param P) string {
 	if name != "" {
 		return strings.ReplaceAll(name, " ", "-")
-	} else if name := Find(param, "unknown", "name", "Name"); name != "" {
+	} else if name := Find(param, "", "name", "Name"); name != "" {
 		return strings.ReplaceAll(name, " ", "-")
 	}
-	return "unknown"
+	return ""
 }

@@ -170,6 +170,7 @@ var (
 // commonTestCases is the generic map of test parameters for testing the test
 // context as well as the test runner.
 var commonTestCases = TestParamMap{
+	"": {},
 	"base nothing": {
 		test:   TestEmpty,
 		expect: test.Success,

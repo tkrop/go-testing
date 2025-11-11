@@ -1068,9 +1068,8 @@ type NameParams struct {
 var nameTestCases = map[string]NameParams{
 	// Empty names.
 	"empty name with primitive": {
-		name:   "",
-		param:  42,
-		expect: "unknown",
+		name:  "",
+		param: 42,
 	},
 	"empty name with string": {
 		name:   "",
@@ -1117,19 +1116,16 @@ var nameTestCases = map[string]NameParams{
 		expect: "test-case",
 	},
 	"empty name without name field": {
-		name:   "",
-		param:  struct{ value string }{value: "test"},
-		expect: "unknown",
+		name:  "",
+		param: struct{ value string }{value: "test"},
 	},
 	"empty name with empty name field": {
-		name:   "",
-		param:  struct{ name string }{name: ""},
-		expect: "unknown",
+		name:  "",
+		param: struct{ name string }{name: ""},
 	},
 	"empty name with nil pointer": {
-		name:   "",
-		param:  (*struct{ name string })(nil),
-		expect: "unknown",
+		name:  "",
+		param: (*struct{ name string })(nil),
 	},
 
 	// Special parameter-based cases.

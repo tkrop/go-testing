@@ -152,20 +152,6 @@ func TestInvalidTypePanic(t *testing.T) {
 		})
 }
 
-func TestNameCastFallback(t *testing.T) {
-	test.Param(t, ParamParams{name: "value"}).
-		Run(func(t test.Test, param ParamParams) {
-			param.CheckName(t)
-		})
-}
-
-func TestExpectCastFallback(t *testing.T) {
-	test.Param(t, ParamParams{expect: false}).
-		Run(func(t test.Test, param ParamParams) {
-			param.CheckName(t)
-		})
-}
-
 type (
 	Any          = struct{}
 	FactoryAny   = test.Factory[Any]
