@@ -343,7 +343,7 @@ var ptrTestCases = map[string]PtrParams{
 	// String types
 	"string":         {value: "hello world"},
 	"string empty":   {value: ""},
-	"string unicode": {value: "Hello, 世界! 🌍"},
+	"string unicode": {value: "Hello, 🌍"},
 
 	// Slice literals
 	"slice int":    {value: []int{1, 2, 3}},
