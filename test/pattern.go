@@ -35,6 +35,13 @@ func Cast[T any](arg any) T {
 	return val
 }
 
+// Ptr is a convenience function to obtain the pointer to the given value.
+// This is particularly useful to create pointers to literal values in test
+// setup code, e.g., `test.Ptr(42)` or `test.Ptr("value")`.
+func Ptr[T any](v T) *T {
+	return &v
+}
+
 // First is a convenience function to return the first argument and ignore all
 // others arguments. The method allows to write concise test setup code.
 func First[T any](arg T, _ ...any) T { return arg }
