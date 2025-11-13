@@ -557,10 +557,7 @@ var panicTestCases = map[string]PanicParams{
 func TestPanic(t *testing.T) {
 	test.Map(t, panicTestCases).Run(func(t test.Test, param PanicParams) {
 		// Given
-		defer func() {
-			err := recover()
-			assert.Equal(t, param.expectError, err)
-		}()
+		defer test.Recover(t, param.expectError)
 
 		// When
 		MockSetup(t, param.setup)

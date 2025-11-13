@@ -394,6 +394,56 @@ func TestPtr(t *testing.T) {
 	})
 }
 
+type RecoverParams struct {
+	setup  any
+	expect test.Expect
+	panic  any
+}
+
+var recoverTestCases = map[string]RecoverParams{
+	// Failure to panic.
+	"no panic with nil": {},
+	"no panic with string": {
+		setup: "no panic",
+	},
+	"no panic with error": {
+		setup: assert.AnError,
+	},
+	"no panic with pointer error": {
+		setup: &assert.AnError,
+	},
+
+	// Successful recovery.
+	"panic with string": {
+		panic:  "a panic occurred",
+		setup:  "a panic occurred",
+		expect: test.Success,
+	},
+	"panic with error": {
+		panic:  assert.AnError,
+		setup:  assert.AnError,
+		expect: test.Success,
+	},
+	"panic with same error pointer": {
+		panic:  &assert.AnError,
+		setup:  &assert.AnError,
+		expect: test.Success,
+	},
+}
+
+func TestRecover(t *testing.T) {
+	test.Map(t, recoverTestCases).
+		Run(func(t test.Test, param RecoverParams) {
+			// Given
+			defer test.Recover(t, param.setup)
+
+			// When
+			if param.panic != nil {
+				panic(param.panic)
+			}
+		})
+}
+
 // ctx returns the current time formatted as RFC3339Nano truncated to 26
 // characters to avoid excessive precision in test output.
 func ctx() string {
