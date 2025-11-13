@@ -11,6 +11,10 @@ import (
 
 // Reporter is a minimal interface for abstracting test report methods that are
 // needed to setup an isolated test environment for GoMock and Testify.
+//
+// `Reporter` is currently not implemented by `Test` and `testing.T`.
+//
+// TODO: consider dropping `Panic` to allow compatibility with `Test`.
 type Reporter interface {
 	// Error reports a failure messages when a test is supposed to continue.
 	Error(args ...any)

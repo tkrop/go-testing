@@ -46,6 +46,19 @@ func Ptr[T any](v T) *T {
 // others arguments. The method allows to write concise test setup code.
 func First[T any](arg T, _ ...any) T { return arg }
 
+// Recover is a convenience method to be used in deferred calls to verify that
+// a panic occurred with the expected panic response. The function creates a
+// test failure if no panic occurred or the panic response does not match the
+// expected value.
+func Recover(t Test, expect any) {
+	// revive:disable-next-line:defer // caller is expected to use defer.
+	if actual := recover(); actual != nil {
+		assert.Equal(t, expect, actual)
+	} else {
+		assert.Fail(t, "did not panic: %#v", expect)
+	}
+}
+
 // TODO: consider following convenience methods:
 //
 // // Check is a convenience method that returns the second argument and swallows

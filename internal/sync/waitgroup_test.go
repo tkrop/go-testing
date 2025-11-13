@@ -7,13 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tkrop/go-testing/internal/sync"
+	"github.com/tkrop/go-testing/test"
 )
 
 func TestWaitGroup(t *testing.T) {
 	t.Parallel()
 
 	// Given
-	defer func() { _ = recover() }()
+	defer test.Recover(t, "sync: negative WaitGroup counter")
 	wg := sync.NewWaitGroup()
 
 	// When
@@ -23,7 +24,7 @@ func TestWaitGroup(t *testing.T) {
 	wg.Done()
 
 	// Then
-	assert.Fail(t, "not recovered from panic")
+	assert.Fail(t, "did not panic")
 }
 
 func TestLenientWaitGroup(t *testing.T) {

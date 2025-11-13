@@ -188,44 +188,22 @@ source of the panic, you need to spawn a new unrecovered go-routine.
 hard to recreate. Do not try it.
 
 
-## Test result builder
-
-Setting up tests and comparing test results is most efficient, when you
-directly can set up and compare the actual objects. However, this is sometimes
-prevented by the objects not being open for construction and having private
-states.
-
-To cope with this challenge the `test`-package supports helpers to access, i.e.
-read and write, private fields of objects using reflection.
-
-* `test.NewBuilder[...]()` allows constructing a new object from scratch.
-* `test.NewGetter(...)` allows reading private fields of an object by name.
-* `test.NewSetter(...)` allows writing private fields by name, and finally
-* `test.NewAccessor(...)` allows reading and writing of private fields by name.
-
-The following example shows a real world example of how the private properties
-of a closed error can be set up using the `test.NewBuilder[...]()`.
-
-```go
-    err := test.NewBuilder[viper.ConfigFileNotFoundError]().
-        Set("locations", fmt.Sprintf("%s", "...path...")).
-        Set("name", "test").Build()
-```
-
-Similar we can set up input objects with private properties to minimize the
-dependencies in the test setup, however, using this features exposes the test
-to internal changes.
-
-
 ## Out-of-the-box test patterns
 
-Currently, the package supports only one _out-of-the-box_ test pattern to test
-the `main`-methods of commands.
+Currently, the package supports two _out-of-the-box_ test patterns:
 
-The pattern executes the `main` method in a separate process to protect the
-test execution against `os.Exit` calls while allowing to capture and check the
-exit code against the expectation. The following example demonstrates how to
-use the pattern to test a `main` method:
+1. `test.Main(func())` - allows to test main methods by calling the main
+   method with arguments in a well controlled test environment.
+2. `test.Recover(Test,any)` - allows to check the panic result in simple test
+   scenarios where `test.Panic(any)` is not applicable.
+
+
+### Main method tests pattern
+
+The `test.Main(func())` pattern executes the `main` method in a separate test
+process to protect the test execution against `os.Exit` calls while allowing to
+capture and check the exit code against the expectation. The following example
+demonstrates how to use the pattern to test a `main` method:
 
 ```go
 mainTestCases := map[string]test.MainParams{
@@ -252,5 +230,31 @@ e.g. as follows:
 **Note:** the general approach can be used to test any code calling `os.Exit`,
 however, it is focused on testing the `main` methods with and without parsing
 command line arguments.
+
+**Note:** In certain situations, `test.Main(func())` currently fails to obtain
+the coverage metrics for the test execution, since `go test` is using the
+standard output to collect results. We are investigating how we can separate
+these in the test execution from expected test output.
+
+
+## Convenience functions
+
+The test package contains a number of convenience functions to simplify the
+test setup and apply certain test patterns. Currently, the following functions
+currently supported:
+
+* `test.Must[T](T, error) T` - a convenience method for fluent test case setup
+  that converts an error into a panic.
+* `test.Cast[T](T) T` - a convenience method for fluent test case setup that
+  converts an casting error into a panic compliant with linting requirements.
+* `test.Ptr[T](T) *T` - a convenience method for fluent test case setup that
+  converts a literal value into a pointer.
+* `test.First[T](T, ...any)` - a convenience method for fluent test case setup
+  that extracts the first value of a response ignoring the others.
+
+Please also have a look at the convenience functions provided by the
+[reflect](../reflect) package, that allows you to fluently access non-exported
+fields for setting up and checking.
+
 
 [gomock]: <https://go.uber.org/mock>

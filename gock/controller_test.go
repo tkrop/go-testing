@@ -75,11 +75,7 @@ func TestController(t *testing.T) {
 
 func TestPanic(t *testing.T) {
 	// Given
-	defer func() {
-		if err := recover(); err == nil {
-			assert.Fail(t, "did not panic")
-		}
-	}()
+	defer test.Recover(t, "gock not supported by test setup")
 
 	// When
 	gock.NewGock(gomock.NewController(struct{ gomock.TestReporter }{}))
