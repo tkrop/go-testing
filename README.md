@@ -47,14 +47,14 @@
 
 ## Introduction
 
-Goal of the `testing` framework is to provide simple and efficient tools to for
+Goal of the `testing` framework is to provide simple common patterns for
 writing effective unit, component, and integration tests in [`go`][go].
 
-To accomplish this, the `testing` framework provides a couple of extensions for
-[`go`][go]'s [`testing`][testing] package that support a simple setup of
-strongly isolated and parallel running unit test using [`gomock`][gomock] and/or
-[`gock`][gock] that work under various failure scenarios, e.g. panics, and even
-in the presence of spawned [`go`-routines][go-routines].
+To accomplish this, the `testing` framework provides a couple of extensions
+for [`go`][go]'s [`testing`][testing] package that support a simple setup of
+strongly isolated and parallel running unit tests using [`gomock`][gomock]
+and/or [`gock`][gock] that work under various failure scenarios and in the
+presence of spawned [`go`-routines][go-routines].
 
 [go-routines]: <https://go.dev/tour/concurrency>
 

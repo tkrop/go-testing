@@ -309,7 +309,8 @@ func (r *factory[P]) wrap(
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, reflect.Find(param, Success, "expect", "*"), parallel).
+		New(t, parallel).
+			Expect(reflect.Find(param, Success, "expect", "*")).
 			Timeout(reflect.Find(param, r.timeout, "timeout")).
 			StopEarly(reflect.Find(param, r.early, "early")).
 			Run(func(t Test) {

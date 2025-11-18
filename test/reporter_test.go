@@ -145,7 +145,7 @@ func TestCallMatcher(t *testing.T) {
 	test.Map(t, callMatcherTestCases).
 		Run(func(t test.Test, param MatcherParams) {
 			// Given - send mock calls to unchecked test context.
-			mocks := mock.NewMocks(test.New(t, test.Success, false))
+			mocks := mock.NewMocks(test.New(t, false).Expect(test.Success))
 			matcher := param.matcher(evalCall(param.base, mocks))
 
 			// When
@@ -161,52 +161,106 @@ type ReporterParams struct {
 	setup  mock.SetupFunc
 	misses func(test.Test, *mock.Mocks) mock.SetupFunc
 	call   test.Func
+	expect test.Expect
 }
 
 var reporterTestCases = map[string]ReporterParams{
+	"log called": {
+		setup: test.Log("log message"),
+		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
+			t.Log("log message")
+		},
+		expect: test.Success,
+	},
+	"logf called": {
+		setup: test.Logf("%s", "log message"),
+		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
+			t.Logf("%s", "log message")
+		},
+		expect: test.Success,
+	},
 	"error called": {
 		setup: test.Error("fail"),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Error("fail")
 		},
 	},
 	"errorf called": {
 		setup: test.Errorf("%s", "fail"),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Errorf("%s", "fail")
 		},
 	},
 	"fatal called": {
 		setup: test.Fatal("fail"),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Fatal("fail")
 		},
 	},
 	"fatalf called": {
 		setup: test.Fatalf("%s", "fail"),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Fatalf("%s", "fail")
 		},
 	},
 	"fail called": {
 		setup: test.Fail(),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Fail()
 		},
 	},
 	"failnow called": {
 		setup: test.FailNow(),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.FailNow()
 		},
 	},
 	"panic called": {
 		setup: test.Panic("fail"),
-		call: func(test.Test) {
+		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			panic("fail")
 		},
 	},
 
+	"log undeclared": {
+		misses: test.UnexpectedCall(test.NewValidator,
+			"Log", CallerLog, "log"),
+		call: func(t test.Test) {
+			t.Log("log")
+		},
+	},
+	"log undeclared twice": {
+		misses: test.UnexpectedCall(test.NewValidator,
+			"Log", CallerLog, "log"),
+		call: func(t test.Test) {
+			t.Log("log")
+			t.Log("log")
+		},
+	},
+	"logf undeclared": {
+		misses: test.UnexpectedCall(test.NewValidator,
+			"Logf", CallerLogf, "%s", "log"),
+		call: func(t test.Test) {
+			t.Logf("%s", "log")
+		},
+	},
+	"logf undeclared twice": {
+		misses: test.UnexpectedCall(test.NewValidator,
+			"Logf", CallerLogf, "%s", "log"),
+		call: func(t test.Test) {
+			t.Logf("%s", "log")
+			t.Logf("%s", "log")
+		},
+	},
 	"error undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Error", CallerError, "fail"),
@@ -248,7 +302,7 @@ var reporterTestCases = map[string]ReporterParams{
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Fatal", CallerFatal, "fail"),
 		call: func(t test.Test) {
-			//revive:disable-next-line:unreachable-code // needed for testing
+			//revive:disable-next-line:unreachable-code // needed for testing.
 			t.Fatal("fail")
 			t.Fatal("fail")
 		},
@@ -267,6 +321,22 @@ var reporterTestCases = map[string]ReporterParams{
 			//revive:disable-next-line:unreachable-code // needed for testing
 			t.Fatalf("%s", "fail")
 			t.Fatalf("%s", "fail")
+		},
+	},
+	"fail undeclared": {
+		misses: test.UnexpectedCall(test.NewValidator,
+			"Fail", CallerFail),
+		call: func(t test.Test) {
+			t.Fail()
+		},
+	},
+	"fail undeclared twice": {
+		misses: test.UnexpectedCall(test.NewValidator,
+			"Fail", CallerFail),
+		call: func(t test.Test) {
+			//revive:disable-next-line:unreachable-code // needed for testing
+			t.Fail()
+			t.Fail()
 		},
 	},
 	"failnow undeclared": {
@@ -301,6 +371,7 @@ var reporterTestCases = map[string]ReporterParams{
 		misses: test.ConsumedCall(test.NewValidator,
 			"Error", CallerTestError, CallerReporterError, "fail"),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Error("fail")
 			t.Error("fail")
 		},
@@ -310,6 +381,7 @@ var reporterTestCases = map[string]ReporterParams{
 		misses: test.ConsumedCall(test.NewValidator,
 			"Errorf", CallerTestErrorf, CallerReporterErrorf, "%s", "fail"),
 		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Errorf("%s", "fail")
 			t.Errorf("%s", "fail")
 		},
@@ -317,7 +389,8 @@ var reporterTestCases = map[string]ReporterParams{
 	"fatal consumed": {
 		setup: test.Fatal("fail"),
 		call: func(t test.Test) {
-			//revive:disable-next-line:unreachable-code // needed for testing
+			test.Cast[*test.Context](t).Expect(test.Success)
+			//revive:disable-next-line:unreachable-code // needed for testing.
 			t.Fatal("fail")
 			t.Fatal("fail")
 		},
@@ -325,24 +398,36 @@ var reporterTestCases = map[string]ReporterParams{
 	"fatalf consumed": {
 		setup: test.Fatalf("%s", "fail"),
 		call: func(t test.Test) {
-			//revive:disable-next-line:unreachable-code // needed for testing
+			test.Cast[*test.Context](t).Expect(test.Success)
+			//revive:disable-next-line:unreachable-code // needed for testing.
 			t.Fatalf("%s", "fail")
 			t.Fatalf("%s", "fail")
+		},
+	},
+	"fail consumed": {
+		setup: test.Fail(),
+		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
+			//revive:disable-next-line:unreachable-code // needed for testing.
+			t.Fail()
+			t.Fail()
 		},
 	},
 	"failnow consumed": {
 		setup: test.FailNow(),
 		call: func(t test.Test) {
-			//revive:disable-next-line:unreachable-code // needed for testing
+			test.Cast[*test.Context](t).Expect(test.Success)
+			//revive:disable-next-line:unreachable-code // needed for testing.
 			t.FailNow()
 			t.FailNow()
 		},
 	},
 	"panic consumed": {
 		setup: test.Panic("fail"),
-		call: func(test.Test) {
+		call: func(t test.Test) {
+			test.Cast[*test.Context](t).Expect(test.Success)
 			panic("fail")
-			//nolint:govet // needed for testing
+			//nolint:govet // needed for testing.
 			panic("fail")
 		},
 	},
@@ -380,7 +465,7 @@ var reporterTestCases = map[string]ReporterParams{
 		setup:  mock.Chain(test.Errorf("%s", "fail"), test.Fail()),
 		misses: test.MissingCalls(test.Fail()),
 		call: func(t test.Test) {
-			t.Errorf("%s", "fail")
+			t.Fail()
 		},
 	},
 	"failnow missing": {
