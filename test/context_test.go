@@ -75,8 +75,8 @@ func TestContext(t *testing.T) {
 			mock.NewMocks(t).Expect(param.setup)
 
 			// When
-			test.New(t, test.Success, !test.Parallel).
-				Run(param.test)
+			test.New(t, !test.Parallel).
+				Expect(test.Success).Run(param.test)
 		}))
 	}
 }
@@ -129,8 +129,8 @@ func TestCleanup(t *testing.T) {
 			t.Cleanup(func() { wg.Wait() })
 
 			// When
-			test.New(t, test.Success, test.Parallel).
-				Run(param.test)
+			test.New(t, test.Parallel).
+				Expect(test.Success).Run(param.test)
 
 			// Then
 			defer wg.Done()
@@ -208,11 +208,11 @@ func TestContextParallel(t *testing.T) {
 			}
 
 			// When
-			test.New(t, test.Success, param.parallel).
-				Run(func(t test.Test) {
-					mock.NewMocks(t).Expect(param.setup)
-					param.during(t)
-				})
+			test.New(t, param.parallel).
+				Expect(test.Success).Run(func(t test.Test) {
+				mock.NewMocks(t).Expect(param.setup)
+				param.during(t)
+			})
 		}))
 	}
 }
@@ -273,7 +273,7 @@ func TestDeadline(t *testing.T) {
 		Run(func(t test.Test, param DeadlineParams) {
 			mock.NewMocks(t).Expect(param.expect)
 
-			test.New(t, !param.failure, !test.Parallel).
+			test.New(t, !test.Parallel).Expect(!param.failure).
 				Timeout(param.time).StopEarly(param.early).
 				Run(func(t test.Test) {
 					// When

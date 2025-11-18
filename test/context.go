@@ -16,6 +16,8 @@ import (
 // Test is a minimal interface for abstracting test methods that are needed to
 // setup an isolated test environment for GoMock and Testify.
 type Test interface { //nolint:interfacebloat // Minimal interface.
+	// Embeds the basic test reporter interface.
+	Reporter
 	// Name provides the test name.
 	Name() string
 	// Helper declares a test helper function.
@@ -38,33 +40,13 @@ type Test interface { //nolint:interfacebloat // Minimal interface.
 	SkipNow()
 	// Skipped reports whether the test has been skipped.
 	Skipped() bool
-	// Log provides a logging function for the test.
-	Log(args ...any)
-	// Logf provides a logging function for the test.
-	Logf(format string, args ...any)
-	// Error handles a failure messages when a test is supposed to continue.
-	Error(args ...any)
-	// Errorf handles a failure messages when a test is supposed to continue.
-	Errorf(format string, args ...any)
-	// Fatal handles a fatal failure message that immediate aborts of the test
-	// execution.
-	Fatal(args ...any)
-	// Fatalf handles a fatal failure message that immediate aborts of the test
-	// execution.
-	Fatalf(format string, args ...any)
-	// Fail handles a failure message that immediate aborts of the test
-	// execution.
-	Fail()
-	// FailNow handles fatal failure notifications without log output that
-	// aborts test execution immediately.
-	FailNow()
 	// Failed reports whether the test has failed.
 	Failed() bool
 	// Cleanup is a function called to setup test cleanup after execution.
 	Cleanup(cleanup func())
 }
 
-// Cleanuper defines an interface to add a custom mehtod that is called after
+// Cleanuper defines an interface to add a custom method that is called after
 // the test execution to cleanup the test environment.
 type Cleanuper interface {
 	Cleanup(cleanup func())
@@ -80,7 +62,7 @@ func Run(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, expect, Parallel).Run(test)
+		New(t, Parallel).Expect(expect).Run(test)
 	}
 }
 
@@ -91,7 +73,7 @@ func RunSeq(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, expect, !Parallel).Run(test)
+		New(t, !Parallel).Expect(expect).Run(test)
 	}
 }
 
@@ -102,7 +84,7 @@ func InRun(expect Expect, test Func) Func {
 	return func(t Test) {
 		t.Helper()
 
-		New(t, expect, !Parallel).Run(test)
+		New(t, !Parallel).Expect(expect).Run(test)
 	}
 }
 
@@ -123,14 +105,14 @@ type Context struct {
 }
 
 // New creates a new minimal isolated test context based on the given test
-// context with the given expectation. The parent test context is used to
-// delegate methods calls to the parent context to propagate test results.
-func New(t Test, expect Expect, parallel bool) *Context {
+// context with. The parent test context is used to delegate methods calls
+// to the parent context to propagate test results.
+func New(t Test, parallel bool) *Context {
 	if tx, ok := t.(*Context); ok {
 		return &Context{
 			t: tx, wg: tx.wg,
 			deadline: tx.deadline,
-			expect:   expect,
+			expect:   true,
 			parallel: parallel,
 		}
 	}
@@ -142,9 +124,21 @@ func New(t Test, expect Expect, parallel bool) *Context {
 			deadline, _ := t.Deadline()
 			return deadline
 		}(t),
-		expect:   expect,
+		expect:   true,
 		parallel: parallel,
 	}
+}
+
+// Expect sets up a new test outcome.
+func (t *Context) Expect(expect Expect) *Context {
+	t.t.Helper()
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	t.expect = expect
+
+	return t
 }
 
 // Timeout sets up an individual timeout for the test. This does not affect the
@@ -325,6 +319,9 @@ func (t *Context) Log(args ...any) {
 	t.t.Helper()
 
 	t.t.Log(args...)
+	if t.reporter != nil {
+		t.reporter.Log(args...)
+	}
 }
 
 // Logf delegates request to the parent context. It provides a logging function
@@ -333,6 +330,9 @@ func (t *Context) Logf(format string, args ...any) {
 	t.t.Helper()
 
 	t.t.Logf(format, args...)
+	if t.reporter != nil {
+		t.reporter.Logf(format, args...)
+	}
 }
 
 // Error handles failure messages where the test is supposed to continue. On
@@ -466,7 +466,9 @@ func (t *Context) Panic(arg any) {
 		stack := regexPanic.Split(string(debug.Stack()), -1)
 		t.t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[1])
 	} else if t.reporter != nil {
-		t.reporter.Panic(arg)
+		if reporter, ok := t.reporter.(Panicer); ok {
+			reporter.Panic(arg)
+		}
 	}
 	runtime.Goexit()
 }

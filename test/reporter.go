@@ -11,11 +11,11 @@ import (
 
 // Reporter is a minimal interface for abstracting test report methods that are
 // needed to setup an isolated test environment for GoMock and Testify.
-//
-// `Reporter` is currently not implemented by `Test` and `testing.T`.
-//
-// TODO: consider dropping `Panic` to allow compatibility with `Test`.
 type Reporter interface {
+	// Log provides a logging function for the test.
+	Log(args ...any)
+	// Logf provides a logging function for the test.
+	Logf(format string, args ...any)
 	// Error reports a failure messages when a test is supposed to continue.
 	Error(args ...any)
 	// Errorf reports a failure messages when a test is supposed to continue.
@@ -32,6 +32,12 @@ type Reporter interface {
 	// FailNow reports fatal failure notifications without log output that
 	// aborts test execution immediately.
 	FailNow()
+}
+
+// Panicer is a test reporter that supports in addition panic reporting.
+type Panicer interface {
+	// Embeds the basic test reporter interface.
+	Reporter
 	// Panic reports a panic.
 	Panic(arg any)
 }
@@ -55,8 +61,8 @@ func NewValidator(ctrl *gomock.Controller) *Validator {
 	if t, ok := ctrl.T.(*Context); ok {
 		// We need to install a second isolated test environment to break the
 		// reporter cycle on the failure issued by the mock controller.
-		ctrl.T = New(t.t, t.expect, t.parallel)
-		t.expect = Failure
+		ctrl.T = New(t.t, t.parallel).Expect(t.expect)
+		t.expect = false
 		t.Reporter(validator)
 	}
 	return validator
@@ -65,6 +71,49 @@ func NewValidator(ctrl *gomock.Controller) *Validator {
 // EXPECT implements the usual `gomock.EXPECT` call to request the recorder.
 func (v *Validator) EXPECT() *Recorder {
 	return v.recorder
+}
+
+// Log receive expected method call to `Log`.
+func (v *Validator) Log(args ...any) {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Log", args...)
+}
+
+// Log indicate an expected method call to `Log`.
+func (r *Recorder) Log(args ...any) *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Log",
+		reflect.TypeOf((*Validator)(nil).Log), args...)
+}
+
+// Log creates a validation method call setup for `Log`.
+func Log(args ...any) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Log(args...).Do(mocks.Do(Reporter.Log))
+	}
+}
+
+// Logf receive expected method call to `Logf`.
+func (v *Validator) Logf(format string, args ...any) {
+	v.ctrl.T.Helper()
+	v.ctrl.Call(v, "Logf", append([]any{format}, args...)...)
+}
+
+// Logf creates a validation method call setup for `Logf`.
+func Logf(format string, args ...any) mock.SetupFunc {
+	return func(mocks *mock.Mocks) any {
+		return mock.Get(mocks, NewValidator).EXPECT().
+			Logf(format, args...).Do(mocks.Do(Reporter.Logf))
+	}
+}
+
+// Logf indicate an expected method call to `Logf`.
+func (r *Recorder) Logf(format string, args ...any) *gomock.Call {
+	r.validator.ctrl.T.Helper()
+	return r.validator.ctrl.RecordCallWithMethodType(r.validator, "Logf",
+		reflect.TypeOf((*Validator)(nil).Logf),
+		append([]any{format}, args...)...)
 }
 
 // Error receive expected method call to `Error`.
@@ -214,7 +263,7 @@ func (r *Recorder) Panic(arg any) *gomock.Call {
 func Panic(arg any) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
 		return mock.Get(mocks, NewValidator).EXPECT().
-			Panic(EqError(arg)).Do(mocks.Do(Reporter.Panic))
+			Panic(EqError(arg)).Do(mocks.Do(Panicer.Panic))
 	}
 }
 
@@ -253,7 +302,7 @@ func MissingCalls(
 		// Creates a new mock controller and test environment to isolate the
 		// validator used for sub-call creation/registration from the validator
 		// used for execution.
-		mocks := mock.NewMocks(New(t, false, false))
+		mocks := mock.NewMocks(New(t, false).Expect(Failure))
 		calls := make([]func(*mock.Mocks) any, 0, len(setups))
 		for _, setup := range setups {
 			calls = append(calls,

@@ -324,9 +324,20 @@ var (
 		Results:  []*Params{},
 		Variadic: true,
 	}, {
-		Name:    "Panic",
-		Params:  []*Params{{Name: "arg", Type: "any"}},
-		Results: []*Params{},
+		Name: "Log",
+		Params: []*Params{
+			{Name: "args", Type: "[]any"},
+		},
+		Results:  []*Params{},
+		Variadic: true,
+	}, {
+		Name: "Logf",
+		Params: []*Params{
+			{Name: "format", Type: "string"},
+			{Name: "args", Type: "[]any"},
+		},
+		Results:  []*Params{},
+		Variadic: true,
 	}}
 
 	methodsGoMockTestReporter = []*Method{{
