@@ -297,6 +297,8 @@ func (r *factory[P]) exec(
 		return
 	}
 
+	// TODO: Think about how https://pkg.go.dev/testing/synctes can be utilized
+	// here to better coordinate parallel tests.
 	r.t.Run(name, r.wrap(param, call, parallel))
 }
 
