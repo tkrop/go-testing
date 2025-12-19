@@ -518,15 +518,54 @@ func TestMainUnexpected(t *testing.T) {
 	test.Param(t, test.MainParams{}).RunSeq(test.Main(main))
 }
 
-type deepCopy struct {
+type (
+	noCopySlice   []int
+	deepCopySlice []int
+)
+
+func (d deepCopySlice) DeepCopy() deepCopySlice {
+	if d == nil {
+		return nil
+	}
+
+	copied := make(deepCopySlice, len(d))
+	copy(copied, d)
+
+	return copied
+}
+
+type (
+	noCopyMap   map[string]int
+	deepCopyMap map[string]int
+)
+
+func (d deepCopyMap) DeepCopy() deepCopyMap {
+	if d == nil {
+		return nil
+	}
+
+	copied := make(deepCopyMap)
+	for k, v := range d {
+		copied[k] = v
+	}
+
+	return copied
+}
+
+type noCopyStruct struct {
 	Value int
 }
 
-func (d *deepCopy) DeepCopy() *deepCopy {
-	if d != nil {
-		return &deepCopy{Value: d.Value}
+type deepCopyStruct struct {
+	Value int
+}
+
+func (d *deepCopyStruct) DeepCopy() *deepCopyStruct {
+	if d == nil {
+		return nil
 	}
-	return nil
+
+	return &deepCopyStruct{Value: d.Value}
 }
 
 type deepCopyObject struct {
@@ -534,14 +573,11 @@ type deepCopyObject struct {
 }
 
 func (d *deepCopyObject) DeepCopyObject() *deepCopyObject {
-	if d != nil {
-		return &deepCopyObject{Value: d.Value}
+	if d == nil {
+		return nil
 	}
-	return nil
-}
 
-type noCopyMethod struct {
-	Value int
+	return &deepCopyObject{Value: d.Value}
 }
 
 // DeepCopyCasesParams defines parameters for testing DeepCopyTestCases.
@@ -552,35 +588,71 @@ type DeepCopyCasesParams struct {
 
 var deepCopyTestCasesTestCases = map[string]DeepCopyCasesParams{
 	"struct types": {
-		args: []any{&deepCopy{}, &deepCopyObject{}, &noCopyMethod{}},
+		args: []any{
+			&noCopySlice{},
+			&deepCopySlice{},
+			&noCopyMap{},
+			&deepCopyMap{},
+			&noCopyStruct{},
+			&deepCopyStruct{},
+			&deepCopyObject{},
+		},
 		expect: map[string]test.DeepCopyParams{
-			"deep copy nil": {
-				Value: (*deepCopy)(nil),
+			"no-copy-slice-nil": {
+				Value: (*noCopySlice)(nil),
 			},
-			"deep copy value": {
-				Value: &deepCopy{Value: 6},
+			"no-copy-slice-value": {
+				Value: &noCopySlice{8, 9, 1},
 			},
-			"deep copy object nil": {
+			"deep-copy-slice-nil": {
+				Value: (*deepCopySlice)(nil),
+			},
+			"deep-copy-slice-value": {
+				Value: &deepCopySlice{6, 8},
+			},
+			"no-copy-map-nil": {
+				Value: (*noCopyMap)(nil),
+			},
+			"no-copy-map-value": {
+				Value: &noCopyMap{
+					"6jif9":    5,
+					"g21qrot5": 10,
+					"hbl":      6,
+				},
+			},
+			"deep-copy-map-nil": {
+				Value: (*deepCopyMap)(nil),
+			},
+			"deep-copy-map-value": {
+				Value: &deepCopyMap{"5srwst": 3},
+			},
+			"no-copy-struct-nil": {
+				Value: (*noCopyStruct)(nil),
+			},
+			"no-copy-struct-value": {
+				Value: &noCopyStruct{Value: 8},
+			},
+			"deep-copy-struct-nil": {
+				Value: (*deepCopyStruct)(nil),
+			},
+			"deep-copy-struct-value": {
+				Value: &deepCopyStruct{Value: 6},
+			},
+			"deep-copy-object-nil": {
 				Value: (*deepCopyObject)(nil),
 			},
-			"deep copy object value": {
+			"deep-copy-object-value": {
 				Value: &deepCopyObject{Value: 8},
-			},
-			"no copy method nil": {
-				Value: (*noCopyMethod)(nil),
-			},
-			"no copy method value": {
-				Value: &noCopyMethod{Value: 9},
 			},
 		},
 	},
 	"anonymous struct type": {
 		args: []any{&struct{ Value int }{}},
 		expect: map[string]test.DeepCopyParams{
-			"struct {  value int } nil": {
+			"struct { value int } nil": {
 				Value: (*struct{ Value int })(nil),
 			},
-			"struct {  value int } value": {
+			"struct { value int } value": {
 				Value: &struct{ Value int }{Value: 6},
 			},
 		},
@@ -604,47 +676,67 @@ type DeepCopyParams struct {
 }
 
 var deepCopyTestCases = map[string]DeepCopyParams{
-	"deep copy nil": {
+	"deep-copy-nil": {
 		DeepCopyParams: test.DeepCopyParams{
-			Value: (*deepCopy)(nil),
+			Value: (*deepCopyStruct)(nil),
 		},
 	},
-	"deep-copy value": {
+	"deep-copy-value": {
 		DeepCopyParams: test.DeepCopyParams{
-			Value: &deepCopy{Value: 2},
+			Value: &deepCopyStruct{Value: 2},
 		},
 	},
-	"deep copy object nil": {
+	"deep-copy-object-nil": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: (*deepCopyObject)(nil),
 		},
 	},
-	"deep copy object value": {
+	"deep-copy-object-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: &deepCopyObject{Value: 4},
 		},
 	},
-	"no copy method nil": {
+	"deep-copy-slice-nil": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: deepCopySlice(nil),
+		},
+	},
+	"deep-copy-slice-value": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: deepCopySlice{1, 2, 3},
+		},
+	},
+	"deep-copy-map-nil": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: deepCopyMap(nil),
+		},
+	},
+	"deep-copy-map-value": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: deepCopyMap{"key": 42},
+		},
+	},
+	"no-copy-method-nil": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: nil,
 		},
 		setup: test.Fatalf("no deep copy method [%T]", nil),
 	},
-	"no copy method value": {
+	"no-copy-method-value": {
 		DeepCopyParams: test.DeepCopyParams{
-			Value: &noCopyMethod{Value: 6},
+			Value: &noCopyStruct{Value: 6},
 		},
 		setup: test.Fatalf("no deep copy method [%T]",
-			&noCopyMethod{Value: 6}),
+			&noCopyStruct{Value: 6}),
 	},
-	"anonymous struct nil": {
+	"anonymous-struct-nil": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: (*struct{ Value int })(nil),
 		},
 		setup: test.Fatalf("no deep copy method [%T]",
 			(*struct{ Value int })(nil)),
 	},
-	"anonymous struct value": {
+	"anonymous-struct-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: &struct{ Value int }{Value: 8},
 		},
