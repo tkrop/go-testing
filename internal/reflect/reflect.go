@@ -26,6 +26,8 @@ var (
 	TypeOf = reflect.TypeOf
 	// ValueOf alias for `reflect.ValueOf`.
 	ValueOf = reflect.ValueOf
+	// New alias for `reflect.New`.
+	New = reflect.New
 	// Zero alias for `reflect.Zero`.
 	Zero = reflect.Zero
 	// Ptr alias for `reflect.Ptr`.
