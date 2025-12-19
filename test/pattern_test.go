@@ -892,9 +892,9 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 			Value: (*structDeepCopy)(nil),
 		},
 	},
-	"struct-deep-copy-value": {
+	"struct-deep-copy-value*": {
 		DeepCopyParams: test.DeepCopyParams{
-			Value: &structDeepCopy{Value: 3},
+			Value: &structDeepCopy{Value: 4},
 		},
 	},
 	"struct-deep-copy-object-nil": {
@@ -902,9 +902,9 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 			Value: (*structDeepCopyObject)(nil),
 		},
 	},
-	"struct-deep-copy-object-value": {
+	"struct-deep-copy-object-value*": {
 		DeepCopyParams: test.DeepCopyParams{
-			Value: &structDeepCopyObject{Value: 4},
+			Value: &structDeepCopyObject{Value: 6},
 		},
 	},
 	"slice-deep-copy-nil": {
@@ -915,9 +915,18 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	"slice-deep-copy-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: sliceDeepCopy{
-				structDeepCopy{Value: 5},
-				structDeepCopy{Value: 6},
 				structDeepCopy{Value: 7},
+				structDeepCopy{Value: 8},
+				structDeepCopy{Value: 9},
+			},
+		},
+	},
+	"slice-deep-copy-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &sliceDeepCopy{
+				structDeepCopy{Value: 10},
+				structDeepCopy{Value: 11},
+				structDeepCopy{Value: 12},
 			},
 		},
 	},
@@ -929,9 +938,18 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	"slice-deep-copy-object-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: sliceDeepCopyObject{
-				structDeepCopyObject{Value: 8},
-				structDeepCopyObject{Value: 9},
-				structDeepCopyObject{Value: 10},
+				structDeepCopyObject{Value: 13},
+				structDeepCopyObject{Value: 14},
+				structDeepCopyObject{Value: 15},
+			},
+		},
+	},
+	"slice-deep-copy-object-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &sliceDeepCopyObject{
+				structDeepCopyObject{Value: 16},
+				structDeepCopyObject{Value: 17},
+				structDeepCopyObject{Value: 18},
 			},
 		},
 	},
@@ -943,9 +961,18 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	"slice-ptr-deep-copy-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: slicePtrDeepCopy{
-				&structDeepCopy{Value: 11},
-				&structDeepCopy{Value: 12},
-				&structDeepCopy{Value: 13},
+				&structDeepCopy{Value: 19},
+				&structDeepCopy{Value: 20},
+				&structDeepCopy{Value: 21},
+			},
+		},
+	},
+	"slice-ptr-deep-copy-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &slicePtrDeepCopy{
+				&structDeepCopy{Value: 22},
+				&structDeepCopy{Value: 23},
+				&structDeepCopy{Value: 24},
 			},
 		},
 	},
@@ -957,9 +984,18 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	"slice-ptr-deep-copy-object-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: slicePtrDeepCopyObject{
-				&structDeepCopyObject{Value: 14},
-				&structDeepCopyObject{Value: 15},
-				&structDeepCopyObject{Value: 16},
+				&structDeepCopyObject{Value: 25},
+				&structDeepCopyObject{Value: 26},
+				&structDeepCopyObject{Value: 27},
+			},
+		},
+	},
+	"slice-ptr-deep-copy-object-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &slicePtrDeepCopyObject{
+				&structDeepCopyObject{Value: 28},
+				&structDeepCopyObject{Value: 29},
+				&structDeepCopyObject{Value: 30},
 			},
 		},
 	},
@@ -971,7 +1007,14 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	"map-deep-copy-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: mapDeepCopy{
-				"key": structDeepCopy{Value: 17},
+				"key": structDeepCopy{Value: 31},
+			},
+		},
+	},
+	"map-deep-copy-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &mapDeepCopy{
+				"key": structDeepCopy{Value: 32},
 			},
 		},
 	},
@@ -982,8 +1025,15 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	},
 	"map-deep-copy-object-value": {
 		DeepCopyParams: test.DeepCopyParams{
-			Value: mapDeepCopyObject{
-				"key": structDeepCopyObject{Value: 19},
+			Value: &mapDeepCopyObject{
+				"key": structDeepCopyObject{Value: 33},
+			},
+		},
+	},
+	"map-deep-copy-object-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &mapDeepCopyObject{
+				"key": structDeepCopyObject{Value: 34},
 			},
 		},
 	},
@@ -995,7 +1045,14 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	"map-ptr-deep-copy-value": {
 		DeepCopyParams: test.DeepCopyParams{
 			Value: mapPtrDeepCopy{
-				"key": &structDeepCopy{Value: 18},
+				"key": &structDeepCopy{Value: 35},
+			},
+		},
+	},
+	"map-ptr-deep-copy-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &mapPtrDeepCopy{
+				"key": &structDeepCopy{Value: 36},
 			},
 		},
 	},
@@ -1006,8 +1063,15 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 	},
 	"map-ptr-deep-copy-object-value": {
 		DeepCopyParams: test.DeepCopyParams{
-			Value: mapPtrDeepCopyObject{
-				"key": &structDeepCopyObject{Value: 20},
+			Value: &mapPtrDeepCopyObject{
+				"key": &structDeepCopyObject{Value: 37},
+			},
+		},
+	},
+	"map-ptr-deep-copy-object-value*": {
+		DeepCopyParams: test.DeepCopyParams{
+			Value: &mapPtrDeepCopyObject{
+				"key": &structDeepCopyObject{Value: 38},
 			},
 		},
 	},

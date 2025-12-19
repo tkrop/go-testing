@@ -280,15 +280,26 @@ func DeepCopy(t Test, p DeepCopyParams) {
 
 	// Then
 	rv := reflect.ValueOf(value)
-	if !rv.IsNil() {
-		// Only check NotSame for pointer types
-		if rv.Kind() == reflect.Ptr {
-			assert.NotSame(t, value, result)
-		}
-		assert.Equal(t, value, result)
-	} else {
+	if rv.IsNil() {
 		assert.Nil(t, result)
+
+		return // Different pointer types cannot be equal.
 	}
+
+	// Wrap result in pointer if original value is pointer.
+	if rv.Kind() == reflect.Ptr {
+		// Create a new pointer to the result value.
+		rvr := reflect.ValueOf(result)
+		if rvr.Kind() != reflect.Ptr {
+			presult := reflect.New(rvr.Type())
+			presult.Elem().Set(rvr)
+			result = presult.Interface()
+		}
+
+		// Only check not Same for two pointer types.
+		assert.NotSame(t, value, result)
+	}
+	assert.Equal(t, value, result)
 }
 
 // deepCopy performs a deep copy of the given value using the either the
