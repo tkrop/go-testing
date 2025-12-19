@@ -295,8 +295,23 @@ func DeepCopy(t Test, p DeepCopyParams) {
 // `DeepCopyObject` or the `DeepCopy` method - in this order.
 func deepCopy(value any) (any, error) {
 	rv := reflect.ValueOf(value)
-	if !rv.IsValid() /* || rv.IsNil() */ {
+	if !rv.IsValid() {
 		return nil, errNoDeepCopyMethod
+	}
+
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		elem := rv.Type().Elem()
+		zeroValue := reflect.Zero(elem)
+
+		if method, ok := elem.MethodByName("DeepCopyObject"); ok {
+			return zeroValue.Method(method.Index).
+				Call(nil)[0].Interface(), nil
+		}
+
+		if method, ok := elem.MethodByName("DeepCopy"); ok {
+			return zeroValue.Method(method.Index).
+				Call(nil)[0].Interface(), nil
+		}
 	}
 
 	method := rv.MethodByName("DeepCopyObject")

@@ -84,27 +84,27 @@ func (r *random) newPrimitive(kind reflect.Kind) any {
 	case reflect.Bool:
 		return r.rand.Intn(r.length) != 0
 	case reflect.Int:
-		return r.rand.Intn(r.length) + 1
+		return r.rand.Intn(2<<r.length) + 1
 	case reflect.Int8:
-		return int8(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return int8(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Int16:
-		return int16(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return int16(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Int32:
-		return int32(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return int32(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Int64:
-		return int64(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return int64(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Uint:
-		return uint(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return uint(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Uint8:
-		return uint8(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return uint8(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Uint16:
-		return uint16(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return uint16(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Uint32:
-		return uint32(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return uint32(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Uint64:
-		return uint64(r.rand.Intn(r.length) + 1) // #nosec G115 -- intentional use.
+		return uint64(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Uintptr:
-		return uintptr(r.rand.Intn(r.length) + 1)
+		return uintptr(r.rand.Intn(2<<r.length) + 1)
 	case reflect.Float32:
 		return float32(r.rand.Float64())
 	case reflect.Float64:
