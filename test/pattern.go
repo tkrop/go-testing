@@ -182,7 +182,7 @@ type DeepCopyParams struct {
 
 // typeToTestName converts a reflect.Type into a human readable test case name.
 // The name is derived from the base (non-pointer) type's CamelCase identifier
-// converted to a space separated lower-case string. For unnamed types the
+// converted to a hyphen-separated lower-case string. For unnamed types the
 // string representation of the type is used as a fallback.
 func typeToTestName(typ reflect.Type) string {
 	raw := typ.Name()
@@ -191,14 +191,20 @@ func typeToTestName(typ reflect.Type) string {
 	}
 	runes := []rune(raw)
 
+	last := byte('-')
 	var b strings.Builder
 	for i, r := range runes {
 		if i > 0 && unicode.IsUpper(r) && (unicode.IsLower(runes[i-1]) ||
-			(i+1 < len(runes) && unicode.IsLower(runes[i+1]))) {
-			b.WriteByte(' ')
+			(i+1 < len(runes) && unicode.IsLower(runes[i+1]))) &&
+			(unicode.IsLetter(runes[i-1]) || unicode.IsDigit(runes[i-1])) {
+			b.WriteByte('-')
 		}
 		b.WriteRune(unicode.ToLower(r))
+		if r == ' ' {
+			last = byte(' ')
+		}
 	}
+	b.WriteByte(last)
 	return b.String()
 }
 
@@ -226,10 +232,10 @@ func DeepCopyTestCases(
 		ptrType := reflect.PointerTo(base)
 		nilPtr := reflect.Zero(ptrType).Interface()
 
-		cases[name+" nil"] = DeepCopyParams{
+		cases[name+"nil"] = DeepCopyParams{
 			Value: nilPtr,
 		}
-		cases[name+" value"] = DeepCopyParams{
+		cases[name+"value"] = DeepCopyParams{
 			Value: random.Random(nilPtr),
 		}
 	}
@@ -273,8 +279,12 @@ func DeepCopy(t Test, p DeepCopyParams) {
 	}
 
 	// Then
-	if !reflect.ValueOf(value).IsNil() {
-		assert.NotSame(t, value, result)
+	rv := reflect.ValueOf(value)
+	if !rv.IsNil() {
+		// Only check NotSame for pointer types
+		if rv.Kind() == reflect.Ptr {
+			assert.NotSame(t, value, result)
+		}
 		assert.Equal(t, value, result)
 	} else {
 		assert.Nil(t, result)
