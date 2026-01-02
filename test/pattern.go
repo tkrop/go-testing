@@ -14,6 +14,13 @@ import (
 	"github.com/tkrop/go-testing/internal/reflect"
 )
 
+// Ptr is a convenience function to obtain the pointer to the given value.
+// This is particularly useful to create pointers to literal values in test
+// setup code, e.g., `test.Ptr(42)` or `test.Ptr("value")`.
+func Ptr[T any](v T) *T {
+	return &v
+}
+
 // Must is a convenience method returning the value of the first argument and
 // that panics on any error in the second argument using the provided error.
 // The method allows to write concise test setup code.
@@ -33,13 +40,6 @@ func Cast[T any](arg any) T {
 		panic(fmt.Sprintf("cast failed [%T]: %v", val, arg))
 	}
 	return val
-}
-
-// Ptr is a convenience function to obtain the pointer to the given value.
-// This is particularly useful to create pointers to literal values in test
-// setup code, e.g., `test.Ptr(42)` or `test.Ptr("value")`.
-func Ptr[T any](v T) *T {
-	return &v
 }
 
 // First is a convenience function to return the first argument and ignore all

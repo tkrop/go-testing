@@ -21,232 +21,6 @@ const (
 	nameMatcher  = "matcher"
 )
 
-func GetMatcherConfigAccessor(
-	mocks *mock.Mocks,
-) reflect.Builder[*mock.MatcherConfig] {
-	return reflect.NewAccessor(reflect.NewAccessor(mocks).
-		Get(nameMatcher).(*mock.MatcherConfig))
-}
-
-type ConfigParams struct {
-	config mock.ConfigFunc
-	access func(mocks *mock.Mocks) any
-	expect any
-}
-
-var configTestCases = map[string]ConfigParams{
-	// Diff config options.
-	"diff context": {
-		config: mock.Context(7),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).Context
-		},
-		expect: 7,
-	},
-	"diff from-file": {
-		config: mock.FromFile("expect"),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).FromFile
-		},
-		expect: "expect",
-	},
-	"diff from-date": {
-		config: mock.FromDate("2025-10-27"),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).FromDate
-		},
-		expect: "2025-10-27",
-	},
-	"diff to-file": {
-		config: mock.ToFile("actual.txt"),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).ToFile
-		},
-		expect: "actual.txt",
-	},
-	"diff to-date": {
-		config: mock.ToDate("2025-10-28"),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).ToDate
-		},
-		expect: "2025-10-28",
-	},
-
-	// Spew config options.
-	"spew indent": {
-		config: mock.Indent("\t"),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).Indent
-		},
-		expect: "\t",
-	},
-	"spew max-depth": {
-		config: mock.MaxDepth(5),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).MaxDepth
-		},
-		expect: 5,
-	},
-	"spew disable-methods": {
-		config: mock.DisableMethods(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisableMethods
-		},
-		expect: false,
-	},
-	"spew disable-pointer-methods": {
-		config: mock.DisablePointerMethods(true),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisablePointerMethods
-		},
-		expect: true,
-	},
-	"spew disable-pointer-addresses": {
-		config: mock.DisablePointerAddresses(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisablePointerAddresses
-		},
-		expect: false,
-	},
-	"spew disable-capacities": {
-		config: mock.DisableCapacities(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisableCapacities
-		},
-		expect: false,
-	},
-	"spew continue-on-method": {
-		config: mock.ContinueOnMethod(true),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).ContinueOnMethod
-		},
-		expect: true,
-	},
-	"spew sort-keys": {
-		config: mock.SortKeys(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).SortKeys
-		},
-		expect: false,
-	},
-	"spew spew-keys": {
-		config: mock.SpewKeys(true),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).SpewKeys
-		},
-		expect: true,
-	},
-
-	// Spew config options.
-	"spew-time indent": {
-		config: mock.Indent("\t"),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).Indent
-		},
-		expect: "\t",
-	},
-	"spew-time max-depth": {
-		config: mock.MaxDepth(5),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).MaxDepth
-		},
-		expect: 5,
-	},
-	"spew-time disable-methods": {
-		config: mock.DisableMethods(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisableMethods
-		},
-		expect: true, // exception: default is true for spewtime.
-	},
-	"spew-time disable-pointer-methods": {
-		config: mock.DisablePointerMethods(true),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisablePointerMethods
-		},
-		expect: true,
-	},
-	"spew-time disable-pointer-addresses": {
-		config: mock.DisablePointerAddresses(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisablePointerAddresses
-		},
-		expect: false,
-	},
-	"spew-time disable-capacities": {
-		config: mock.DisableCapacities(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisableCapacities
-		},
-		expect: false,
-	},
-	"spew-time continue-on-method": {
-		config: mock.ContinueOnMethod(true),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).ContinueOnMethod
-		},
-		expect: true,
-	},
-	"spew-time sort-keys": {
-		config: mock.SortKeys(false),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).SortKeys
-		},
-		expect: false,
-	},
-	"spew-time spew-keys": {
-		config: mock.SpewKeys(true),
-		access: func(mocks *mock.Mocks) any {
-			return GetMatcherConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).SpewKeys
-		},
-		expect: true,
-	},
-}
-
-func TestMatcherConfig(t *testing.T) {
-	test.Map(t, configTestCases).
-		Run(func(t test.Test, param ConfigParams) {
-			// Given
-			mocks := mock.NewMocks(t)
-			require.NotEqual(t, param.expect, param.access(mocks))
-
-			// When
-			mocks.Config(param.config)
-
-			// Then
-			assert.Equal(t, param.expect, param.access(mocks))
-		})
-}
-
-type EqualDiffParams struct {
-	want any
-	got  any
-	diff string
-}
-
 // diff creates the complete expected diff output in unified diff format. It
 // takes a hunk header (e.g., "-1 +1" or "-1,3 +1,3") and the diff content, and
 // constructs the full diff with standard headers and trailing space+newline.
@@ -254,7 +28,22 @@ func diff(hunk, content string) string {
 	return "--- Want\n+++ Got\n@@ -" + hunk + " @@\n" + content
 }
 
-var equalDiffTestCases = map[string]EqualDiffParams{
+// GetDiffConfigAccessor returns a builder to access the matcher config of
+// the given mocks.
+func GetDiffConfigAccessor(
+	mocks *mock.Mocks,
+) reflect.Builder[*mock.DiffConfig] {
+	return reflect.NewAccessor(reflect.NewAccessor(mocks).
+		Get(nameMatcher).(*mock.DiffConfig))
+}
+
+type DiffParams struct {
+	want any
+	got  any
+	diff string
+}
+
+var diffTestCases = map[string]DiffParams{
 	// Nil cases.
 	"nil want": {
 		want: nil,
@@ -453,18 +242,230 @@ var equalDiffTestCases = map[string]EqualDiffParams{
 	},
 }
 
-func TestEqualDiff(t *testing.T) {
-	test.Map(t, equalDiffTestCases).
-		Run(func(t test.Test, param EqualDiffParams) {
+func TestDiff(t *testing.T) {
+	test.Map(t, diffTestCases).
+		Run(func(t test.Test, param DiffParams) {
 			// Given
-			mocks := mock.NewMocks(t)
-			matcher := mocks.Equal(param.want)
+			config := mock.NewDiffConfig()
 
 			// When
-			diff := matcher.Diff(param.want, param.got)
+			diff := config.Diff(param.want, param.got)
 
 			// Then
 			assert.Equal(t, param.diff, diff)
+		})
+}
+
+type ConfigParams struct {
+	config mock.ConfigFunc
+	access func(mocks *mock.Mocks) any
+	expect any
+}
+
+var configTestCases = map[string]ConfigParams{
+	// Diff config options.
+	"diff context": {
+		config: mock.Context(7),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameDlib).(*difflib.UnifiedDiff).Context
+		},
+		expect: 7,
+	},
+	"diff from-file": {
+		config: mock.FromFile("expect"),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameDlib).(*difflib.UnifiedDiff).FromFile
+		},
+		expect: "expect",
+	},
+	"diff from-date": {
+		config: mock.FromDate("2025-10-27"),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameDlib).(*difflib.UnifiedDiff).FromDate
+		},
+		expect: "2025-10-27",
+	},
+	"diff to-file": {
+		config: mock.ToFile("actual.txt"),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameDlib).(*difflib.UnifiedDiff).ToFile
+		},
+		expect: "actual.txt",
+	},
+	"diff to-date": {
+		config: mock.ToDate("2025-10-28"),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameDlib).(*difflib.UnifiedDiff).ToDate
+		},
+		expect: "2025-10-28",
+	},
+
+	// Spew config options.
+	"spew indent": {
+		config: mock.Indent("\t"),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).Indent
+		},
+		expect: "\t",
+	},
+	"spew max-depth": {
+		config: mock.MaxDepth(5),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).MaxDepth
+		},
+		expect: 5,
+	},
+	"spew disable-methods": {
+		config: mock.DisableMethods(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).DisableMethods
+		},
+		expect: false,
+	},
+	"spew disable-pointer-methods": {
+		config: mock.DisablePointerMethods(true),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).DisablePointerMethods
+		},
+		expect: true,
+	},
+	"spew disable-pointer-addresses": {
+		config: mock.DisablePointerAddresses(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).DisablePointerAddresses
+		},
+		expect: false,
+	},
+	"spew disable-capacities": {
+		config: mock.DisableCapacities(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).DisableCapacities
+		},
+		expect: false,
+	},
+	"spew continue-on-method": {
+		config: mock.ContinueOnMethod(true),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).ContinueOnMethod
+		},
+		expect: true,
+	},
+	"spew sort-keys": {
+		config: mock.SortKeys(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).SortKeys
+		},
+		expect: false,
+	},
+	"spew spew-keys": {
+		config: mock.SpewKeys(true),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpew).(*spew.ConfigState).SpewKeys
+		},
+		expect: true,
+	},
+
+	// Spew config options.
+	"spew-time indent": {
+		config: mock.Indent("\t"),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).Indent
+		},
+		expect: "\t",
+	},
+	"spew-time max-depth": {
+		config: mock.MaxDepth(5),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).MaxDepth
+		},
+		expect: 5,
+	},
+	"spew-time disable-methods": {
+		config: mock.DisableMethods(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).DisableMethods
+		},
+		expect: true, // exception: default is true for spewtime.
+	},
+	"spew-time disable-pointer-methods": {
+		config: mock.DisablePointerMethods(true),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).DisablePointerMethods
+		},
+		expect: true,
+	},
+	"spew-time disable-pointer-addresses": {
+		config: mock.DisablePointerAddresses(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).DisablePointerAddresses
+		},
+		expect: false,
+	},
+	"spew-time disable-capacities": {
+		config: mock.DisableCapacities(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).DisableCapacities
+		},
+		expect: false,
+	},
+	"spew-time continue-on-method": {
+		config: mock.ContinueOnMethod(true),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).ContinueOnMethod
+		},
+		expect: true,
+	},
+	"spew-time sort-keys": {
+		config: mock.SortKeys(false),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).SortKeys
+		},
+		expect: false,
+	},
+	"spew-time spew-keys": {
+		config: mock.SpewKeys(true),
+		access: func(mocks *mock.Mocks) any {
+			return GetDiffConfigAccessor(mocks).
+				Get(nameSpewTime).(*spew.ConfigState).SpewKeys
+		},
+		expect: true,
+	},
+}
+
+func TestMatcherConfig(t *testing.T) {
+	test.Map(t, configTestCases).
+		Run(func(t test.Test, param ConfigParams) {
+			// Given
+			mocks := mock.NewMocks(t)
+			require.NotEqual(t, param.expect, param.access(mocks))
+
+			// When
+			mocks.Config(param.config)
+
+			// Then
+			assert.Equal(t, param.expect, param.access(mocks))
 		})
 }
 
