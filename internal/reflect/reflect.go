@@ -12,12 +12,66 @@ type (
 	Value = reflect.Value
 	// Type alias for `reflect.Type`.
 	Type = reflect.Type
+	// Kind alias for `reflect.Kind`.
+	Kind = reflect.Kind
 )
 
 // Aliases for constant values.
 const (
+	// Invalid alias for `reflect.Invalid`.
+	Invalid = reflect.Invalid
+	// Bool alias for `reflect.Bool`.
+	Bool = reflect.Bool
+	// Int alias for `reflect.Int`.
+	Int = reflect.Int
+	// Int8 alias for `reflect.Int8`.
+	Int8 = reflect.Int8
+	// Int16 alias for `reflect.Int16`.
+	Int16 = reflect.Int16
+	// Int32 alias for `reflect.Int32`.
+	Int32 = reflect.Int32
+	// Int64 alias for `reflect.Int64`.
+	Int64 = reflect.Int64
+	// Uint alias for `reflect.Uint`.
+	Uint = reflect.Uint
+	// Uint8 alias for `reflect.Uint8`.
+	Uint8 = reflect.Uint8
+	// Uint16 alias for `reflect.Uint16`.
+	Uint16 = reflect.Uint16
+	// Uint32 alias for `reflect.Uint32`.
+	Uint32 = reflect.Uint32
+	// Uint64 alias for `reflect.Uint64`.
+	Uint64 = reflect.Uint64
+	// Uintptr alias for `reflect.Uintptr`.
+	Uintptr = reflect.Uintptr
+	// Float32 alias for `reflect.Float32`.
+	Float32 = reflect.Float32
+	// Float64 alias for `reflect.Float64`.
+	Float64 = reflect.Float64
+	// Complex64 alias for `reflect.Complex64`.
+	Complex64 = reflect.Complex64
+	// Complex128 alias for `reflect.Complex128`.
+	Complex128 = reflect.Complex128
+	// Array alias for `reflect.Array`.
+	Array = reflect.Array
+	// Chan alias for `reflect.Chan`.
+	Chan = reflect.Chan
 	// Func alias for `reflect.Func`.
 	Func = reflect.Func
+	// Interface alias for `reflect.Interface`.
+	Interface = reflect.Interface
+	// Map alias for `reflect.Map`.
+	Map = reflect.Map
+	// Pointer alias for `reflect.Pointer`.
+	Pointer = reflect.Pointer
+	// Slice alias for `reflect.Slice`.
+	Slice = reflect.Slice
+	// String alias for `reflect.String`.
+	String = reflect.String
+	// Struct alias for `reflect.Struct`.
+	Struct = reflect.Struct
+	// UnsafePointer alias for `reflect.UnsafePointer`.
+	UnsafePointer = reflect.UnsafePointer
 )
 
 // Aliases for function values.

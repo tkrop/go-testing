@@ -30,6 +30,97 @@ type (
 
 var testFunc TestFunc = func(a *any) any { return a }
 
+type PtrParams struct {
+	value any
+}
+
+var ptrTestCases = map[string]PtrParams{
+	// Primitive types
+	"bool true":  {value: true},
+	"bool false": {value: false},
+
+	// Integer types
+	"int":          {value: 42},
+	"int zero":     {value: 0},
+	"int negative": {value: -123},
+	"int8":         {value: int8(127)},
+	"int16":        {value: int16(32767)},
+	"int32":        {value: int32(2147483647)},
+	"int64":        {value: int64(9223372036854775807)},
+
+	// Unsigned integer types
+	"uint":   {value: uint(42)},
+	"uint8":  {value: uint8(255)},
+	"uint16": {value: uint16(65535)},
+	"uint32": {value: uint32(4294967295)},
+	"uint64": {value: uint64(18446744073709551615)},
+	"byte":   {value: byte(255)},
+	"rune":   {value: rune('A')},
+
+	// Floating point types
+	"float32":          {value: float32(3.14)},
+	"float32 zero":     {value: float32(0.0)},
+	"float64":          {value: 3.141592653589793},
+	"float64 negative": {value: -2.718281828},
+
+	// Complex types
+	"complex64":  {value: complex64(1 + 2i)},
+	"complex128": {value: complex(3.0, 4.0)},
+
+	// String types
+	"string":         {value: "hello world"},
+	"string empty":   {value: ""},
+	"string unicode": {value: "Hello, 🌍"},
+
+	// Slice literals
+	"slice int":    {value: []int{1, 2, 3}},
+	"slice string": {value: []string{"a", "b", "c"}},
+	"slice empty":  {value: []int{}},
+	"slice nil":    {value: []int(nil)},
+
+	// Map literals
+	"map string int": {value: map[string]int{"one": 1, "two": 2}},
+	"map empty":      {value: map[string]int{}},
+	"map nil":        {value: map[string]int(nil)},
+
+	// Struct literals
+	"struct":           {value: TestStruct{name: "test", id: 42}},
+	"struct zero":      {value: TestStruct{}},
+	"struct anonymous": {value: struct{ X int }{X: 10}},
+
+	// Named types
+	"named slice": {value: TestSlice{"x", "y", "z"}},
+	"named map":   {value: TestMap{"foo": 1, "bar": 2}},
+
+	// Pointer types
+	"pointer to int":    {value: test.Ptr(42)},
+	"pointer to string": {value: test.Ptr("value")},
+	"pointer to struct": {value: &TestStruct{name: "ptr", id: 99}},
+
+	// Array literals
+	"array int":    {value: [3]int{1, 2, 3}},
+	"array string": {value: [2]string{"hello", "world"}},
+
+	// Interface types
+	"interface any": {value: any("interface value")},
+}
+
+func TestPtr(t *testing.T) {
+	test.Map(t, ptrTestCases).Run(func(t test.Test, param PtrParams) {
+		// When
+		result := test.Ptr(param.value)
+
+		// Then
+		assert.Equal(t, &param.value, result)
+
+		rvalue := reflect.ValueOf(result)
+		assert.Equal(t, reflect.Ptr, rvalue.Kind())
+
+		value := rvalue.Elem().Interface()
+		assert.Equal(t, param.value, value)
+	})
+}
+
 type MustParams struct {
 	setup  mock.SetupFunc
 	arg    any
@@ -300,97 +391,6 @@ func TestCast(t *testing.T) {
 		} else {
 			assert.Equal(t, param.expect, result)
 		}
-	})
-}
-
-type PtrParams struct {
-	value any
-}
-
-var ptrTestCases = map[string]PtrParams{
-	// Primitive types
-	"bool true":  {value: true},
-	"bool false": {value: false},
-
-	// Integer types
-	"int":          {value: 42},
-	"int zero":     {value: 0},
-	"int negative": {value: -123},
-	"int8":         {value: int8(127)},
-	"int16":        {value: int16(32767)},
-	"int32":        {value: int32(2147483647)},
-	"int64":        {value: int64(9223372036854775807)},
-
-	// Unsigned integer types
-	"uint":   {value: uint(42)},
-	"uint8":  {value: uint8(255)},
-	"uint16": {value: uint16(65535)},
-	"uint32": {value: uint32(4294967295)},
-	"uint64": {value: uint64(18446744073709551615)},
-	"byte":   {value: byte(255)},
-	"rune":   {value: rune('A')},
-
-	// Floating point types
-	"float32":          {value: float32(3.14)},
-	"float32 zero":     {value: float32(0.0)},
-	"float64":          {value: 3.141592653589793},
-	"float64 negative": {value: -2.718281828},
-
-	// Complex types
-	"complex64":  {value: complex64(1 + 2i)},
-	"complex128": {value: complex(3.0, 4.0)},
-
-	// String types
-	"string":         {value: "hello world"},
-	"string empty":   {value: ""},
-	"string unicode": {value: "Hello, 🌍"},
-
-	// Slice literals
-	"slice int":    {value: []int{1, 2, 3}},
-	"slice string": {value: []string{"a", "b", "c"}},
-	"slice empty":  {value: []int{}},
-	"slice nil":    {value: []int(nil)},
-
-	// Map literals
-	"map string int": {value: map[string]int{"one": 1, "two": 2}},
-	"map empty":      {value: map[string]int{}},
-	"map nil":        {value: map[string]int(nil)},
-
-	// Struct literals
-	"struct":           {value: TestStruct{name: "test", id: 42}},
-	"struct zero":      {value: TestStruct{}},
-	"struct anonymous": {value: struct{ X int }{X: 10}},
-
-	// Named types
-	"named slice": {value: TestSlice{"x", "y", "z"}},
-	"named map":   {value: TestMap{"foo": 1, "bar": 2}},
-
-	// Pointer types
-	"pointer to int":    {value: test.Ptr(42)},
-	"pointer to string": {value: test.Ptr("value")},
-	"pointer to struct": {value: &TestStruct{name: "ptr", id: 99}},
-
-	// Array literals
-	"array int":    {value: [3]int{1, 2, 3}},
-	"array string": {value: [2]string{"hello", "world"}},
-
-	// Interface types
-	"interface any": {value: any("interface value")},
-}
-
-func TestPtr(t *testing.T) {
-	test.Map(t, ptrTestCases).Run(func(t test.Test, param PtrParams) {
-		// When
-		result := test.Ptr(param.value)
-
-		// Then
-		assert.Equal(t, &param.value, result)
-
-		rvalue := reflect.ValueOf(result)
-		assert.Equal(t, reflect.Ptr, rvalue.Kind())
-
-		value := rvalue.Elem().Interface()
-		assert.Equal(t, param.value, value)
 	})
 }
 
