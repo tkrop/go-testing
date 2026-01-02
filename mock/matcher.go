@@ -26,7 +26,7 @@ const (
 // a diff. The default, 3, means no context lines.
 func Context(context int) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.Context(context)
+		mocks.diff.Context(context)
 	}
 }
 
@@ -34,7 +34,7 @@ func Context(context int) ConfigFunc {
 // `Want`.
 func FromFile(file string) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.FromFile(file)
+		mocks.diff.FromFile(file)
 	}
 }
 
@@ -42,7 +42,7 @@ func FromFile(file string) ConfigFunc {
 // empty.
 func FromDate(date string) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.FromDate(date)
+		mocks.diff.FromDate(date)
 	}
 }
 
@@ -50,7 +50,7 @@ func FromDate(date string) ConfigFunc {
 // `Got`.
 func ToFile(file string) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.ToFile(file)
+		mocks.diff.ToFile(file)
 	}
 }
 
@@ -58,7 +58,7 @@ func ToFile(file string) ConfigFunc {
 // empty.
 func ToDate(date string) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.ToDate(date)
+		mocks.diff.ToDate(date)
 	}
 }
 
@@ -68,7 +68,7 @@ func ToDate(date string) ConfigFunc {
 // with `\t` or perhaps two spaces with `  `.
 func Indent(indent string) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.Indent(indent)
+		mocks.diff.Indent(indent)
 	}
 }
 
@@ -78,7 +78,7 @@ func Indent(indent string) ConfigFunc {
 // specifically want to limit deeply nested structures.
 func MaxDepth(maxDepth int) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.MaxDepth(maxDepth)
+		mocks.diff.MaxDepth(maxDepth)
 	}
 }
 
@@ -87,7 +87,7 @@ func MaxDepth(maxDepth int) ConfigFunc {
 // methods will not be invoked.
 func DisableMethods(disable bool) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.DisableMethods(disable)
+		mocks.diff.DisableMethods(disable)
 	}
 }
 
@@ -104,7 +104,7 @@ func DisableMethods(disable bool) ConfigFunc {
 // or with the "safe" build tag specified.
 func DisablePointerMethods(disable bool) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.DisablePointerMethods(disable)
+		mocks.diff.DisablePointerMethods(disable)
 	}
 }
 
@@ -112,7 +112,7 @@ func DisablePointerMethods(disable bool) ConfigFunc {
 // addresses. This is useful when diffing data structures in tests.
 func DisablePointerAddresses(disable bool) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.DisablePointerAddresses(disable)
+		mocks.diff.DisablePointerAddresses(disable)
 	}
 }
 
@@ -121,7 +121,7 @@ func DisablePointerAddresses(disable bool) ConfigFunc {
 // structures in tests.
 func DisableCapacities(disable bool) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.DisableCapacities(disable)
+		mocks.diff.DisableCapacities(disable)
 	}
 }
 
@@ -135,7 +135,7 @@ func DisableCapacities(disable bool) ConfigFunc {
 // via the DisableMethods or DisablePointerMethods options.
 func ContinueOnMethod(enable bool) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.ContinueOnMethod(enable)
+		mocks.diff.ContinueOnMethod(enable)
 	}
 }
 
@@ -147,7 +147,7 @@ func ContinueOnMethod(enable bool) ConfigFunc {
 // guarantees display stability.
 func SortKeys(sort bool) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.SortKeys(sort)
+		mocks.diff.SortKeys(sort)
 	}
 }
 
@@ -156,7 +156,7 @@ func SortKeys(sort bool) ConfigFunc {
 // sorted (see `SortKeys`).
 func SpewKeys(spew bool) ConfigFunc {
 	return func(mocks *Mocks) {
-		mocks.matcher.SpewKeys(spew)
+		mocks.diff.SpewKeys(spew)
 	}
 }
 
@@ -382,7 +382,7 @@ type Equal struct {
 // is a mismatch in the expected and actual values.
 func (mocks *Mocks) Equal(want any) *Equal {
 	return &Equal{
-		config: mocks.matcher,
+		config: mocks.diff,
 		want:   want,
 		diff:   "",
 	}

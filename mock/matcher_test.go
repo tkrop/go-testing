@@ -15,10 +15,10 @@ import (
 )
 
 const (
+	nameDiff     = "diff"
 	nameDlib     = "dlib"
 	nameSpew     = "spew"
 	nameSpewTime = "spewTime"
-	nameMatcher  = "matcher"
 )
 
 // diff creates the complete expected diff output in unified diff format. It
@@ -34,7 +34,7 @@ func GetDiffConfigAccessor(
 	mocks *mock.Mocks,
 ) reflect.Builder[*mock.DiffConfig] {
 	return reflect.NewAccessor(reflect.NewAccessor(mocks).
-		Get(nameMatcher).(*mock.DiffConfig))
+		Get(nameDiff).(*mock.DiffConfig))
 }
 
 type DiffParams struct {
@@ -454,7 +454,7 @@ var configTestCases = map[string]ConfigParams{
 	},
 }
 
-func TestMatcherConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	test.Map(t, configTestCases).
 		Run(func(t test.Test, param ConfigParams) {
 			// Given
