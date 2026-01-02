@@ -83,19 +83,19 @@ type Mocks struct {
 	// A map of mock key value pairs.
 	args map[any]any
 
-	// Internal matcher settings.
-	matcher *DiffConfig
+	// Internal diff settings.
+	diff *DiffConfig
 }
 
 // NewMocks creates a new mock handler using given test reporter, e.g.
 // [*testing.T], or [test.Test].
 func NewMocks(t gomock.TestReporter, fncalls ...ConfigFunc) *Mocks {
 	return (&Mocks{
-		Ctrl:    gomock.NewController(t),
-		wg:      sync.NewLenientWaitGroup(),
-		mocks:   map[reflect.Value]any{},
-		args:    map[any]any{},
-		matcher: NewDiffConfig(),
+		Ctrl:  gomock.NewController(t),
+		wg:    sync.NewLenientWaitGroup(),
+		mocks: map[reflect.Value]any{},
+		args:  map[any]any{},
+		diff:  NewDiffConfig(),
 	}).Config(fncalls...).syncWith(t)
 }
 
