@@ -52,10 +52,11 @@ writing effective unit, component, and integration tests in [`go`][go].
 
 To accomplish this, the `testing` framework provides a couple of extensions
 for [`go`][go]'s [`testing`][testing] package that support a simple setup of
-strongly isolated and parallel running unit tests using [`gomock`][gomock]
+*strongly isolated* and *parallel running* unit tests using [`gomock`][gomock]
 and/or [`gock`][gock] that work under various failure scenarios and in the
 presence of spawned [`go`-routines][go-routines].
 
+[go]: <https://go.dev/>
 [go-routines]: <https://go.dev/tour/concurrency>
 
 
@@ -124,19 +125,20 @@ way. For variations have a closer look at the [test](test) package.
 
 ### Why parameterized test?
 
-Parameterized test are an effective way to set up a systematic set of test
-cases covering a system under test in a black box mode. With the right tools
-and concepts — as provided by this `testing` framework, parameterized test
-allow to cover all success and failure paths of a system under test.
+Parameterized (table-driven) test are an effective way to set up a systematic
+set of test cases covering a system under test in a black or white box mode.
+With the right tools and concepts — such as supported by this test framework —,
+parameterized test allow to cover all success and failure paths of a system
+under test.
 
 
 ### Why parallel tests?
 
-Running tests in parallel make the feedback loop on failures faster, help to
-detect failures from concurrent access and race conditions using `go test
--race`, that else only appear randomly in production, and foster a design with
-clear responsibilities. This side-effects compensate for the small additional
-effort needed to write parallel tests.
+Running tests in parallel makes the feedback loop on failures faster and helps
+to detect failures from concurrent access. By using `go test -race` we can
+easily uncover race conditions, that else only appear randomly in production,
+and foster a design with clear responsibilities. This side-effects compensate
+for the small additional effort needed to write parallel tests.
 
 
 ### Why isolation of tests?
@@ -195,24 +197,25 @@ Please see the documentation of the sub-packages for more details.
 ## Requirements for parallel isolated tests
 
 Running tests in parallel makes test not only faster, but also helps to detect
-race conditions that else randomly appear in production, when running tests
-with `go test -race`.
+race conditions that else randomly appear in production, by running tests using
+`go test -race`.
 
 **Note:** there are some general requirements for running test in parallel:
 
 1. Tests *must not modify* environment variables dynamically — utilize test
-   specific configuration instead.
+   friendly configuration concepts instead.
 2. Tests *must not require* reserved service ports and open listeners — setup
    services to acquire dynamic ports instead.
-3. Tests *must not share* files, folder and pipelines, e.g. `stdin`, `stdout`,
-   or `stderr` — implement logic by using wrappers that can be redirected and
-   mocked.
+3. Tests *must not share* any files, folders, and pipelines, e.g. `stdin`,
+  `stdout`, or `stderr` — implement logic by using wrappers that can be easily
+   redirected and mocked.
 4. Tests *must not share* database schemas or tables, that are updated during
-   execution of parallel tests — implement test to set up test specific database
-   schemas.
+   execution of parallel tests — implement test to set up test specific
+   database schemas.
 5. Tests *must not share* process resources, that are update during execution
    of parallel tests. Many frameworks make use of common global resources that
-   make them unsuitable for parallel tests.
+   make them unsuitable for parallel tests — use frameworks that do not suffer
+   by these flaws.
 
 Examples for such shared resources in common frameworks are:
 
