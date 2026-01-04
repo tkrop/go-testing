@@ -65,13 +65,13 @@ func CallC(input any) mock.SetupFunc {
 // Generic source directory for caller path evaluation.
 var SourceDir = test.Must(os.Getwd())
 
-type MockParams struct {
+type mockParams struct {
 	setup  mock.SetupFunc
 	misses func(test.Test, *mock.Mocks) mock.SetupFunc
 	call   func(test.Test, *mock.Mocks)
 }
 
-var mockTestCAses = map[string]MockParams{
+var mockTestCases = map[string]mockParams{
 	"single mock with single call": {
 		setup: mock.Setup(
 			CallA("ok"),
@@ -143,8 +143,8 @@ var mockTestCAses = map[string]MockParams{
 }
 
 func TestMocks(t *testing.T) {
-	test.Map(t, mockTestCAses).
-		Run(func(t test.Test, param MockParams) {
+	test.Map(t, mockTestCases).
+		Run(func(t test.Test, param mockParams) {
 			// Given
 			mocks := mock.NewMocks(t)
 
@@ -187,6 +187,105 @@ func TestMockArgs(t *testing.T) {
 	// Than
 	assert.Equal(t, mocks.GetArg("a"), "b")
 	assert.Equal(t, mocks.GetArg("b"), "b")
+}
+
+type getMockTest int
+
+const (
+	getMockTestAny getMockTest = iota
+	getMockTestFunc
+	getMockTestMock
+)
+
+type getMockParams struct {
+	expect any
+	test   getMockTest
+}
+
+var getMockTestCases = map[string]getMockParams{
+	"nil": {
+		expect: nil,
+	},
+	"bool": {
+		expect: true,
+	},
+	"int": {
+		expect: 42,
+	},
+	"string": {
+		expect: "test",
+	},
+
+	"slice": {
+		expect: []string{"a", "b"},
+	},
+	"map": {
+		expect: map[string]int{"a": 1},
+	},
+	"struct-empty": {
+		expect: struct{}{},
+	},
+	"struct": {
+		expect: struct{ Field string }{Field: "value"},
+	},
+
+	"pointer-primitive": {
+		expect: test.Ptr(42),
+	},
+	"pointer-struct": {
+		expect: &struct{ Field string }{Field: "value"},
+	},
+	"channel": {
+		expect: make(chan int),
+	},
+
+	"function": {
+		expect: func() {},
+		test:   getMockTestFunc,
+	},
+	"function-wrong-input": {
+		expect: func(string) int { return 0 },
+		test:   getMockTestFunc,
+	},
+	"function-no-output": {
+		expect: func(*gomock.Controller) {},
+		test:   getMockTestFunc,
+	},
+	"function-more-outputs": {
+		expect: func(*gomock.Controller) (int, error) {
+			return 0, nil
+		},
+		test: getMockTestFunc,
+	},
+	"function-constructor": {
+		expect: NewMockIFace,
+		test:   getMockTestMock,
+	},
+}
+
+func TestGetMock(t *testing.T) {
+	test.Map(t, getMockTestCases).
+		Run(func(t test.Test, param getMockParams) {
+			// Given
+			mocks := mock.NewMocks(t)
+
+			// When
+			result := mocks.GetMock(param.expect)
+
+			// Then
+			switch param.test {
+			case getMockTestAny:
+				assert.Equal(t, param.expect, result)
+			case getMockTestFunc:
+				assert.Equal(t,
+					reflect.ValueOf(param.expect).Pointer(),
+					reflect.ValueOf(result).Pointer())
+			case getMockTestMock:
+				assert.Equal(t,
+					mocks.Get(reflect.ValueOf(param.expect)),
+					result)
+			}
+		})
 }
 
 func MockSetup(t gomock.TestReporter, setup mock.SetupFunc) *mock.Mocks {
@@ -567,13 +666,13 @@ func TestPanic(t *testing.T) {
 	})
 }
 
-type GetSubSliceParams struct {
+type getSubSliceParams struct {
 	slice       []any
 	from, to    int
 	expectSlice any
 }
 
-var getSubSliceTestCases = map[string]GetSubSliceParams{
+var getSubSliceTestCases = map[string]getSubSliceParams{
 	"first": {
 		slice: []any{"a", "b", "c", "d", "e"},
 		from:  0, to: 0,
@@ -618,7 +717,7 @@ var getSubSliceTestCases = map[string]GetSubSliceParams{
 
 func TestGetSubSlice(t *testing.T) {
 	test.Map(t, getSubSliceTestCases).
-		Run(func(t test.Test, param GetSubSliceParams) {
+		Run(func(t test.Test, param getSubSliceParams) {
 			// When
 			slice := mock.GetSubSlice(param.from, param.to, param.slice)
 
@@ -627,14 +726,14 @@ func TestGetSubSlice(t *testing.T) {
 		})
 }
 
-type FuncParams struct {
+type funcParams struct {
 	setup  mock.SetupFunc
 	call   any
 	result []any
 	expect []any
 }
 
-var funcTestCases = map[string]FuncParams{
+var funcTestCases = map[string]funcParams{
 	"in-0-out-0": {
 		call: func(any) {},
 	},
@@ -683,7 +782,7 @@ var funcTestCases = map[string]FuncParams{
 	},
 }
 
-var funcDoNoReturnTestCases = map[string]FuncParams{
+var funcDoNoReturnTestCases = map[string]funcParams{
 	"in-0-no-out-1": {
 		call:   func(any) string { return "okay" },
 		result: []any{},
@@ -712,7 +811,7 @@ var funcDoNoReturnTestCases = map[string]FuncParams{
 
 func TestFuncDo(t *testing.T) {
 	test.Map(t, funcTestCases, funcDoNoReturnTestCases).
-		Run(func(t test.Test, param FuncParams) {
+		Run(func(t test.Test, param funcParams) {
 			// Given
 			mocks := MockSetup(t, param.setup)
 			ctype := reflect.TypeOf(param.call)
@@ -739,7 +838,7 @@ func TestFuncDo(t *testing.T) {
 		})
 }
 
-var funcReturnNoneTestCases = map[string]FuncParams{
+var funcReturnNoneTestCases = map[string]funcParams{
 	"in-0-no-out-1": {
 		setup:  test.Panic("not enough arguments"),
 		call:   func(any) string { return "okay" },
@@ -772,7 +871,7 @@ var funcReturnNoneTestCases = map[string]FuncParams{
 
 func TestFuncReturn(t *testing.T) {
 	test.Map(t, funcTestCases, funcReturnNoneTestCases).
-		Run(func(t test.Test, param FuncParams) {
+		Run(func(t test.Test, param funcParams) {
 			// Given
 			mocks := MockSetup(t, param.setup)
 			ctype := reflect.TypeOf(param.call)
@@ -801,7 +900,7 @@ func TestFuncReturn(t *testing.T) {
 
 func TestFuncPanic(t *testing.T) {
 	test.Map(t, funcTestCases, funcDoNoReturnTestCases).
-		Run(func(t test.Test, param FuncParams) {
+		Run(func(t test.Test, param funcParams) {
 			// Given
 			mocks := MockSetup(t, param.setup)
 			ctype := reflect.TypeOf(param.call)
@@ -831,12 +930,12 @@ func TestFuncPanic(t *testing.T) {
 		})
 }
 
-type FailureParams struct {
+type failureParams struct {
 	expect test.Expect
 	test   test.Func
 }
 
-var failureTestCases = map[string]FailureParams{
+var failureTestCases = map[string]failureParams{
 	"success": {
 		test:   func(test.Test) {},
 		expect: test.Success,
@@ -865,7 +964,7 @@ var failureTestCases = map[string]FailureParams{
 
 func TestFailures(t *testing.T) {
 	test.Map(t, failureTestCases).
-		Run(func(t test.Test, param FailureParams) {
+		Run(func(t test.Test, param failureParams) {
 			// Given
 			mocks := mock.NewMocks(t).Expect(CallA("a"))
 			defer func() {
