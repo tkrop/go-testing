@@ -89,18 +89,18 @@ type CleanupParams struct {
 
 // cleanupTestCases is a map of test parameters for testing the Cleanup method.
 var cleanupTestCases = map[string]CleanupParams{
-	"nil cleanup": {
+	"nil-cleanup": {
 		test: func(t test.Test) {
 			t.Cleanup(nil)
 		},
 	},
-	"single cleanup": {
+	"single-cleanup": {
 		test: func(t test.Test) {
 			t.Cleanup(func() { t.(*test.Context).Done() })
 		},
 		wait: 1,
 	},
-	"multiple cleanups": {
+	"multiple-cleanups": {
 		test: func(t test.Test) {
 			t.Cleanup(func() { t.(*test.Context).Done() })
 			t.Cleanup(func() { t.(*test.Context).Done() })
@@ -108,7 +108,7 @@ var cleanupTestCases = map[string]CleanupParams{
 		},
 		wait: 3,
 	},
-	"cleanup with nil mixed": {
+	"cleanup-with-nil-mixed": {
 		test: func(t test.Test) {
 			t.Cleanup(nil)
 			t.Cleanup(func() { t.(*test.Context).Done() })
@@ -150,14 +150,14 @@ type ParallelParams struct {
 // parallelTestCases is a map of test parameters for testing the test context
 // in conflicting parallel cases resulting in a panics.
 var parallelTestCases = map[string]ParallelParams{
-	"setenv in run without parallel": {
+	"setenv-in-run-without-parallel": {
 		during: func(t test.Test) {
 			t.Setenv("TESTING", "during")
 			assert.Equal(t, "during", os.Getenv("TESTING"))
 		},
 	},
 
-	"setenv in run with parallel": {
+	"setenv-in-run-with-parallel": {
 		setup: test.Panic("testing: test using t.Setenv or t.Chdir" +
 			" can not use t.Parallel"),
 		parallel: true,
@@ -167,7 +167,7 @@ var parallelTestCases = map[string]ParallelParams{
 		},
 	},
 
-	"setenv before run without parallel": {
+	"setenv-before-run-without-parallel": {
 		before: func(t test.Test) {
 			t.Setenv("TESTING", "before")
 			assert.Equal(t, "before", os.Getenv("TESTING"))
@@ -178,7 +178,7 @@ var parallelTestCases = map[string]ParallelParams{
 		},
 	},
 
-	"setenv before run with parallel": {
+	"setenv-before-run-with-parallel": {
 		setup: test.Panic("testing: test using t.Setenv or t.Chdir" +
 			" can not use t.Parallel"),
 		parallel: true,
@@ -188,7 +188,7 @@ var parallelTestCases = map[string]ParallelParams{
 		},
 	},
 
-	"swallow multiple parallel calls": {
+	"swallow-multiple-parallel-calls": {
 		during: func(t test.Test) {
 			t.Parallel()
 			t.Parallel()

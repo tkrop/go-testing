@@ -55,7 +55,7 @@ type NewFilesParams struct {
 }
 
 var newFilesTestCases = map[string]NewFilesParams{
-	"target once": {
+	"target-once": {
 		mocks: []*Mock{{Target: targetDefault}},
 		expectFiles: []*File{{
 			Target: targetDefault,
@@ -63,7 +63,7 @@ var newFilesTestCases = map[string]NewFilesParams{
 		}},
 	},
 
-	"target twice": {
+	"target-twice": {
 		mocks: []*Mock{
 			{Target: targetDefault}, {Target: targetDefault},
 		},
@@ -75,7 +75,7 @@ var newFilesTestCases = map[string]NewFilesParams{
 		}},
 	},
 
-	"target other name (ignored)": {
+	"target-other-name-(ignored)": {
 		mocks: []*Mock{
 			{Target: targetDefault}, {Target: targetOtherName},
 		},
@@ -87,7 +87,7 @@ var newFilesTestCases = map[string]NewFilesParams{
 		}},
 	},
 
-	"target other package": {
+	"target-other-package": {
 		mocks: []*Mock{
 			{Target: targetDefault}, {Target: targetOtherPkg},
 		},
@@ -100,7 +100,7 @@ var newFilesTestCases = map[string]NewFilesParams{
 		}},
 	},
 
-	"target other file": {
+	"target-other-file": {
 		mocks: []*Mock{
 			{Target: targetDefault}, {Target: targetOtherFile},
 		},
@@ -113,7 +113,7 @@ var newFilesTestCases = map[string]NewFilesParams{
 		}},
 	},
 
-	"target other path": {
+	"target-other-path": {
 		mocks: []*Mock{
 			{Target: targetDefault}, {Target: targetOtherPath},
 		},
@@ -168,7 +168,7 @@ type FileParams struct {
 }
 
 var fileTestCases = map[string]FileParams{
-	"file stdout": {
+	"file-stdout": {
 		file: fileStdout,
 		mocks: []*Mock{{
 			Source: sourceIFaceAny,
@@ -177,7 +177,7 @@ var fileTestCases = map[string]FileParams{
 		expectName: os.Stdout.Name(),
 	},
 
-	"file custom": {
+	"file-custom": {
 		file: fileCustom,
 		mocks: []*Mock{{
 			Source: sourceIFaceAny,
@@ -186,7 +186,7 @@ var fileTestCases = map[string]FileParams{
 		expectName: filepath.Join(testDirModels, fileMock),
 	},
 
-	"file error": {
+	"file-error": {
 		file: fileStdout,
 		mocks: []*Mock{{
 			Source: sourceIFaceAny,
@@ -197,7 +197,7 @@ var fileTestCases = map[string]FileParams{
 		expectWrite: NewErrFileWriting(fileStdout, assert.AnError),
 	},
 
-	"no such directory": {
+	"no-such-directory": {
 		file: fileNoTarget,
 		mocks: []*Mock{{
 			Source: sourceIFaceAny,

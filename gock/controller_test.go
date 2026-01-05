@@ -18,23 +18,23 @@ type ControllerParams struct {
 }
 
 var controllerTestCases = map[string]ControllerParams{
-	"match with bar": {
+	"match-with-bar": {
 		url:         "http://foo.com/bar",
 		expectMatch: test.Success,
 	},
-	"match with baz": {
+	"match-with-baz": {
 		url:         "http://foo.com/baz",
 		expectMatch: test.Success,
 	},
-	"missing host": {
+	"missing-host": {
 		url:         "http://bar.com/baz",
 		expectError: gock.ErrCannotMatch,
 	},
-	"missing path": {
+	"missing-path": {
 		url:         "http://foo.com/foo",
 		expectError: gock.ErrCannotMatch,
 	},
-	"missing schema": {
+	"missing-schema": {
 		url:         "https://foo.com/bar",
 		expectError: assert.AnError,
 	},

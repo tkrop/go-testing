@@ -27,35 +27,35 @@ type MatcherParams struct {
 }
 
 var errorMatcherTestCases = map[string]MatcherParams{
-	"success string-string": {
+	"success-string-string": {
 		matcher:       test.EqError,
 		base:          anErrorString,
 		match:         anErrorString,
 		expectMatches: true,
 		expectString:  anErrorMessage + "(string)",
 	},
-	"success string-error": {
+	"success-string-error": {
 		matcher:       test.EqError,
 		base:          anErrorString,
 		match:         assert.AnError,
 		expectMatches: true,
 		expectString:  anErrorMessage + "(string)",
 	},
-	"success error-string": {
+	"success-error-string": {
 		matcher:       test.EqError,
 		base:          assert.AnError,
 		match:         anErrorString,
 		expectMatches: true,
 		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"success error-error": {
+	"success-error-error": {
 		matcher:       test.EqError,
 		base:          assert.AnError,
 		match:         assert.AnError,
 		expectMatches: true,
 		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"success other-other": {
+	"success-other-other": {
 		matcher:       test.EqError,
 		base:          1,
 		match:         1,
@@ -63,35 +63,35 @@ var errorMatcherTestCases = map[string]MatcherParams{
 		expectString:  "is equal to 1 (int)",
 	},
 
-	"failure string-string": {
+	"failure-string-string": {
 		matcher:       test.EqError,
 		base:          assert.AnError,
 		match:         errOther,
 		expectMatches: false,
 		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"failure string-error": {
+	"failure-string-error": {
 		matcher:       test.EqError,
 		base:          anErrorString,
 		match:         errOther,
 		expectMatches: false,
 		expectString:  anErrorMessage + "(string)",
 	},
-	"failure error-string": {
+	"failure-error-string": {
 		matcher:       test.EqError,
 		base:          assert.AnError,
 		match:         otherError,
 		expectMatches: false,
 		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"failure error-error": {
+	"failure-error-error": {
 		matcher:       test.EqError,
 		base:          assert.AnError,
 		match:         errOther,
 		expectMatches: false,
 		expectString:  anErrorMessage + "(*errors.errorString)",
 	},
-	"failure other-other": {
+	"failure-other-other": {
 		matcher:       test.EqError,
 		base:          1,
 		match:         false,
@@ -165,7 +165,7 @@ type ReporterParams struct {
 }
 
 var reporterTestCases = map[string]ReporterParams{
-	"log called": {
+	"log-called": {
 		setup: test.Log("log message"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -173,7 +173,7 @@ var reporterTestCases = map[string]ReporterParams{
 		},
 		expect: test.Success,
 	},
-	"logf called": {
+	"logf-called": {
 		setup: test.Logf("%s", "log message"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -181,49 +181,49 @@ var reporterTestCases = map[string]ReporterParams{
 		},
 		expect: test.Success,
 	},
-	"error called": {
+	"error-called": {
 		setup: test.Error("fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Error("fail")
 		},
 	},
-	"errorf called": {
+	"errorf-called": {
 		setup: test.Errorf("%s", "fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Errorf("%s", "fail")
 		},
 	},
-	"fatal called": {
+	"fatal-called": {
 		setup: test.Fatal("fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Fatal("fail")
 		},
 	},
-	"fatalf called": {
+	"fatalf-called": {
 		setup: test.Fatalf("%s", "fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Fatalf("%s", "fail")
 		},
 	},
-	"fail called": {
+	"fail-called": {
 		setup: test.Fail(),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
 			t.Fail()
 		},
 	},
-	"failnow called": {
+	"failnow-called": {
 		setup: test.FailNow(),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
 			t.FailNow()
 		},
 	},
-	"panic called": {
+	"panic-called": {
 		setup: test.Panic("fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -231,14 +231,14 @@ var reporterTestCases = map[string]ReporterParams{
 		},
 	},
 
-	"log undeclared": {
+	"log-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Log", CallerLog, "log"),
 		call: func(t test.Test) {
 			t.Log("log")
 		},
 	},
-	"log undeclared twice": {
+	"log-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Log", CallerLog, "log"),
 		call: func(t test.Test) {
@@ -246,14 +246,14 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Log("log")
 		},
 	},
-	"logf undeclared": {
+	"logf-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Logf", CallerLogf, "%s", "log"),
 		call: func(t test.Test) {
 			t.Logf("%s", "log")
 		},
 	},
-	"logf undeclared twice": {
+	"logf-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Logf", CallerLogf, "%s", "log"),
 		call: func(t test.Test) {
@@ -261,14 +261,14 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Logf("%s", "log")
 		},
 	},
-	"error undeclared": {
+	"error-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Error", CallerError, "fail"),
 		call: func(t test.Test) {
 			t.Error("fail")
 		},
 	},
-	"error undeclared twice": {
+	"error-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Error", CallerError, "fail"),
 		call: func(t test.Test) {
@@ -276,14 +276,14 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Error("fail")
 		},
 	},
-	"errorf undeclared": {
+	"errorf-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Errorf", CallerErrorf, "%s", "fail"),
 		call: func(t test.Test) {
 			t.Errorf("%s", "fail")
 		},
 	},
-	"errorf undeclared twice": {
+	"errorf-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Errorf", CallerErrorf, "%s", "fail"),
 		call: func(t test.Test) {
@@ -291,14 +291,14 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Errorf("%s", "fail")
 		},
 	},
-	"fatal undeclared": {
+	"fatal-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Fatal", CallerFatal, "fail"),
 		call: func(t test.Test) {
 			t.Fatal("fail")
 		},
 	},
-	"fatal undeclared twice": {
+	"fatal-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Fatal", CallerFatal, "fail"),
 		call: func(t test.Test) {
@@ -307,14 +307,14 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Fatal("fail")
 		},
 	},
-	"fatalf undeclared": {
+	"fatalf-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Fatalf", CallerFatalf, "%s", "fail"),
 		call: func(t test.Test) {
 			t.Fatalf("%s", "fail")
 		},
 	},
-	"fatalf undeclared twice": {
+	"fatalf-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Fatalf", CallerFatalf, "%s", "fail"),
 		call: func(t test.Test) {
@@ -323,14 +323,14 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Fatalf("%s", "fail")
 		},
 	},
-	"fail undeclared": {
+	"fail-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Fail", CallerFail),
 		call: func(t test.Test) {
 			t.Fail()
 		},
 	},
-	"fail undeclared twice": {
+	"fail-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Fail", CallerFail),
 		call: func(t test.Test) {
@@ -339,14 +339,14 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Fail()
 		},
 	},
-	"failnow undeclared": {
+	"failnow-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"FailNow", CallerFailNow),
 		call: func(t test.Test) {
 			t.FailNow()
 		},
 	},
-	"failnow undeclared twice": {
+	"failnow-undeclared-twice": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"FailNow", CallerFailNow),
 		call: func(t test.Test) {
@@ -355,7 +355,7 @@ var reporterTestCases = map[string]ReporterParams{
 			t.FailNow()
 		},
 	},
-	"panic undeclared": {
+	"panic-undeclared": {
 		misses: test.UnexpectedCall(test.NewValidator,
 			"Panic", CallerPanic, "fail"),
 		call: func(test.Test) {
@@ -366,7 +366,7 @@ var reporterTestCases = map[string]ReporterParams{
 	// Only `Error`and `Errorf` can be consumed more than once, since `Fatal`,
 	// `Fatalf`, `FailNow`, and panic will stop execution immediately. The
 	// second call is effectively unreachable.
-	"error consumed": {
+	"error-consumed": {
 		setup: test.Error("fail"),
 		misses: test.ConsumedCall(test.NewValidator,
 			"Error", CallerTestError, CallerReporterError, "fail"),
@@ -376,7 +376,7 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Error("fail")
 		},
 	},
-	"errorf consumed": {
+	"errorf-consumed": {
 		setup: test.Errorf("%s", "fail"),
 		misses: test.ConsumedCall(test.NewValidator,
 			"Errorf", CallerTestErrorf, CallerReporterErrorf, "%s", "fail"),
@@ -386,7 +386,7 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Errorf("%s", "fail")
 		},
 	},
-	"fatal consumed": {
+	"fatal-consumed": {
 		setup: test.Fatal("fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -395,7 +395,7 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Fatal("fail")
 		},
 	},
-	"fatalf consumed": {
+	"fatalf-consumed": {
 		setup: test.Fatalf("%s", "fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -404,7 +404,7 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Fatalf("%s", "fail")
 		},
 	},
-	"fail consumed": {
+	"fail-consumed": {
 		setup: test.Fail(),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -413,7 +413,7 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Fail()
 		},
 	},
-	"failnow consumed": {
+	"failnow-consumed": {
 		setup: test.FailNow(),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -422,7 +422,7 @@ var reporterTestCases = map[string]ReporterParams{
 			t.FailNow()
 		},
 	},
-	"panic consumed": {
+	"panic-consumed": {
 		setup: test.Panic("fail"),
 		call: func(t test.Test) {
 			test.Cast[*test.Context](t).Expect(test.Success)
@@ -435,14 +435,14 @@ var reporterTestCases = map[string]ReporterParams{
 	// The mock setup is automatically creating a [test.Validator] requiring
 	// a the test environment to expect a failure to get called. To satisfy
 	// this, we need to create at least one failure.
-	"errorf missing": {
+	"errorf-missing": {
 		setup:  mock.Chain(test.Errorf("%s", "fail"), test.Errorf("%s", "fail")),
 		misses: test.MissingCalls(test.Errorf("%s", "fail")),
 		call: func(t test.Test) {
 			t.Errorf("%s", "fail")
 		},
 	},
-	"errorf missing two calls": {
+	"errorf-missing-two-calls": {
 		setup: mock.Chain(
 			test.Errorf("%s", "fail"), test.Errorf("%s", "fail"),
 			test.Errorf("%s", "fail-x"),
@@ -454,28 +454,28 @@ var reporterTestCases = map[string]ReporterParams{
 			t.Errorf("%s", "fail")
 		},
 	},
-	"fatalf missing": {
+	"fatalf-missing": {
 		setup:  mock.Chain(test.Errorf("%s", "fail"), test.Fatalf("%s", "fail")),
 		misses: test.MissingCalls(test.Fatalf("%s", "fail")),
 		call: func(t test.Test) {
 			t.Errorf("%s", "fail")
 		},
 	},
-	"fail missing": {
+	"fail-missing": {
 		setup:  mock.Chain(test.Errorf("%s", "fail"), test.Fail()),
 		misses: test.MissingCalls(test.Fail()),
 		call: func(t test.Test) {
 			t.Fail()
 		},
 	},
-	"failnow missing": {
+	"failnow-missing": {
 		setup:  mock.Chain(test.Errorf("%s", "fail"), test.FailNow()),
 		misses: test.MissingCalls(test.FailNow()),
 		call: func(t test.Test) {
 			t.Errorf("%s", "fail")
 		},
 	},
-	"panic missing": {
+	"panic-missing": {
 		setup:  mock.Chain(test.Errorf("%s", "fail"), test.Panic("fail")),
 		misses: test.MissingCalls(test.Panic("fail")),
 		call: func(t test.Test) {

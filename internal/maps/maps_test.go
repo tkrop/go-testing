@@ -15,15 +15,15 @@ type CopyParams struct {
 }
 
 var copyTestCases = map[string]CopyParams{
-	"empty map": {
+	"empty-map": {
 		input:  map[string]int{},
 		expect: map[string]int{},
 	},
-	"single key-value pair": {
+	"single-key-value-pair": {
 		input:  map[string]int{"a": 1},
 		expect: map[string]int{"a": 1},
 	},
-	"multiple key-value pairs": {
+	"multiple-key-value-pairs": {
 		input:  map[string]int{"a": 1, "b": 2, "c": 3},
 		expect: map[string]int{"a": 1, "b": 2, "c": 3},
 	},
@@ -47,22 +47,22 @@ type AddParams struct {
 }
 
 var addTestCases = map[string]AddParams{
-	"no sources": {
+	"no-sources": {
 		target:  map[string]int{"a": 1},
 		sources: []map[string]int{},
 		expect:  map[string]int{"a": 1},
 	},
-	"single source": {
+	"single-source": {
 		target:  map[string]int{"a": 1},
 		sources: []map[string]int{{"b": 2}},
 		expect:  map[string]int{"a": 1, "b": 2},
 	},
-	"multiple sources with no conflicts": {
+	"multiple-sources-with-no-conflicts": {
 		target:  map[string]int{"a": 1},
 		sources: []map[string]int{{"b": 2}, {"c": 3}},
 		expect:  map[string]int{"a": 1, "b": 2, "c": 3},
 	},
-	"multiple sources with conflicts": {
+	"multiple-sources-with-conflicts": {
 		target:  map[string]int{"a": 1},
 		sources: []map[string]int{{"a": 2}, {"a": 3, "b": 4}},
 		expect:  map[string]int{"a": 3, "b": 4},

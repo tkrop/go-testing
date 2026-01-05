@@ -126,14 +126,14 @@ type RandomParams struct {
 }
 
 var randomTestCases = map[string]RandomParams{
-	"nil value": {
+	"nil-value": {
 		value:  nil,
 		expect: test.Success,
 		check: func(t test.Test, value any) {
 			assert.Nil(t, value)
 		},
 	},
-	"nil pointer": {
+	"nil-pointer": {
 		value:  (*Simple)(nil),
 		expect: test.Success,
 		check:  check,
@@ -223,32 +223,32 @@ var randomTestCases = map[string]RandomParams{
 		expect: test.Success,
 		check:  check,
 	},
-	"slice int": {
+	"slice-int": {
 		value:  []int{},
 		expect: test.Success,
 		check:  check,
 	},
-	"slice string": {
+	"slice-string": {
 		value:  []string{},
 		expect: test.Success,
 		check:  check,
 	},
-	"map string-int": {
+	"map-string-int": {
 		value:  map[string]int{},
 		expect: test.Success,
 		check:  check,
 	},
-	"struct value": {
+	"struct-value": {
 		value:  Simple{},
 		expect: test.Success,
 		check:  check,
 	},
-	"struct simple": {
+	"struct-simple": {
 		value:  &Simple{},
 		expect: test.Success,
 		check:  check,
 	},
-	"struct complex": {
+	"struct-complex": {
 		value: &struct {
 			Ints  []int
 			Names []string
@@ -257,17 +257,17 @@ var randomTestCases = map[string]RandomParams{
 		expect: test.Success,
 		check:  check,
 	},
-	"struct nested": {
+	"struct-nested": {
 		value:  &Complex{},
 		expect: test.Success,
 		check:  check,
 	},
-	"type channel": {
+	"type-channel": {
 		value:  make(chan int),
 		expect: test.Success,
 		check:  check,
 	},
-	"type func": {
+	"type-func": {
 		value:  func() {},
 		expect: test.Success,
 		check:  check,

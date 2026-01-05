@@ -198,21 +198,21 @@ type MatchParams struct {
 }
 
 var matchTestCases = map[string]MatchParams{
-	"match with bar": {
+	"match-with-bar": {
 		url:         "http://foo.com/bar",
 		expectMatch: true,
 	},
-	"match with baz": {
+	"match-with-baz": {
 		url:         "http://foo.com/baz",
 		expectMatch: true,
 	},
-	"missing host": {
+	"missing-host": {
 		url: "http://bar.com/baz",
 	},
-	"missing path": {
+	"missing-path": {
 		url: "http://foo.com/foo",
 	},
-	"missing schema": {
+	"missing-schema": {
 		url:         "https://foo.com/bar",
 		expectError: assert.AnError,
 	},

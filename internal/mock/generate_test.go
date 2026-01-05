@@ -41,7 +41,7 @@ var generateTestCases = map[string]GenerateParams{
 		expectFile: expectIFace,
 	},
 
-	"failure parsing": {
+	"failure-parsing": {
 		file: filepath.Join(testDirGenerate, MockFileDefault),
 		args: []string{pathUnknown},
 		expectStderr: NewErrArgFailure(3, ".",
@@ -54,7 +54,7 @@ var generateTestCases = map[string]GenerateParams{
 		expectCode: 1,
 	},
 
-	"failure opening": {
+	"failure-opening": {
 		file: fileFailure,
 		args: []string{pathTest},
 		expectStderr: NewErrFileOpening(fileFailure, &fs.PathError{
