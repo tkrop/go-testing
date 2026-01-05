@@ -26,14 +26,14 @@ type TemplateParams struct {
 }
 
 var templateTestCases = map[string]TemplateParams{
-	"iface no methods": {
+	"iface-no-methods": {
 		mocks: []*Mock{{
 			Source: sourceIFaceAny,
 			Target: targetMockTestIFace.With(&Type{File: "-"}),
 		}},
 		expect: expectIFaceStub,
 	},
-	"iface with methods": {
+	"iface-with-methods": {
 		mocks: []*Mock{{
 			Source:  sourceIFaceAny,
 			Target:  targetMockTestIFace.With(&Type{File: "-"}),

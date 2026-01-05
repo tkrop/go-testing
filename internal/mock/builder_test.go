@@ -31,20 +31,20 @@ type FileBuilderParams struct {
 }
 
 var fileBuilderTestCases = map[string]FileBuilderParams{
-	"import double": {
+	"import-double": {
 		setup: test.Panic(NewErrAliasConflict(
 			importMockTest, pathTest)),
 		target:  targetMockIFace,
 		imports: []*Import{importMockTest, importMockTest},
 	},
 
-	"import illegal": {
+	"import-illegal": {
 		setup:   test.Panic(NewErrIllegalImport(importIllegal)),
 		target:  targetMockIFace,
 		imports: []*Import{importIllegal},
 	},
 
-	"no imports": {
+	"no-imports": {
 		target: targetMockIFace,
 		mocks: []*Mock{{
 			Methods: methodsLoadIFace,
@@ -60,7 +60,7 @@ var fileBuilderTestCases = map[string]FileBuilderParams{
 		},
 	},
 
-	"others imported": {
+	"others-imported": {
 		target: targetMockIFace,
 		imports: []*Import{
 			ImportReflect, ImportGomock, ImportMock,
@@ -80,7 +80,7 @@ var fileBuilderTestCases = map[string]FileBuilderParams{
 		},
 	},
 
-	"pre imported": {
+	"pre-imported": {
 		target: targetMockIFace,
 		imports: []*Import{
 			ImportReflect, importTest, importMock, importMockTest,
@@ -99,7 +99,7 @@ var fileBuilderTestCases = map[string]FileBuilderParams{
 		},
 	},
 
-	"alias imported": {
+	"alias-imported": {
 		target:  targetMockIFace,
 		imports: []*Import{importAlias(pkgTest)},
 		mocks: []*Mock{{
@@ -118,7 +118,7 @@ var fileBuilderTestCases = map[string]FileBuilderParams{
 		},
 	},
 
-	"package imported": {
+	"package-imported": {
 		target: targetMockIFace,
 		imports: []*Import{
 			importAlias(pkgTest),
@@ -143,7 +143,7 @@ var fileBuilderTestCases = map[string]FileBuilderParams{
 		},
 	},
 
-	"internal imported": {
+	"internal-imported": {
 		target: targetMockIFace,
 		imports: []*Import{
 			importAlias(pkgTest),
@@ -168,7 +168,7 @@ var fileBuilderTestCases = map[string]FileBuilderParams{
 		},
 	},
 
-	"organization imported": {
+	"organization-imported": {
 		target: targetMockIFace,
 		imports: []*Import{
 			importAlias(pkgTest),
@@ -197,7 +197,7 @@ var fileBuilderTestCases = map[string]FileBuilderParams{
 		},
 	},
 
-	"import conflict": {
+	"import-conflict": {
 		setup: test.Panic(NewErrAliasConflict(&Import{
 			Alias: aliasGitHub, Path: pathTest,
 		}, pathTest)),

@@ -45,55 +45,55 @@ type DiffParams struct {
 
 var diffTestCases = map[string]DiffParams{
 	// Nil cases.
-	"nil want": {
+	"nil-want": {
 		want: nil,
 		got:  "something",
 	},
-	"nil got": {
+	"nil-got": {
 		want: "something",
 		got:  nil,
 	},
-	"both nil": {
+	"both-nil": {
 		want: nil,
 		got:  nil,
 	},
 
 	// Different type cases.
-	"different types string vs int": {
+	"different-types-string-vs-int": {
 		want: "hello",
 		got:  42,
 	},
-	"different types struct vs map": {
+	"different-types-struct-vs-map": {
 		want: struct{ A int }{1},
 		got:  map[string]int{"a": 1},
 	},
 
 	// Unsupported type cases.
-	"int type": {
+	"int-type": {
 		want: 42,
 		got:  43,
 	},
-	"float type": {
+	"float-type": {
 		want: 3.14,
 		got:  2.71,
 	},
-	"bool type": {
+	"bool-type": {
 		want: true,
 		got:  false,
 	},
 
 	// String type cases.
-	"string equal": {
+	"string-equal": {
 		want: "hello",
 		got:  "hello",
 	},
-	"string different": {
+	"string-different": {
 		want: "hello",
 		got:  "world",
 		diff: diff("1 +1",
 			"-hello\n"+"+world\n"),
 	},
-	"string multiline": {
+	"string-multiline": {
 		want: "line1\nline2\nline3",
 		got:  "line1\nmodified\nline3",
 		diff: diff("1,3 +1,3",
@@ -104,11 +104,11 @@ var diffTestCases = map[string]DiffParams{
 	},
 
 	// Struct type cases.
-	"struct equal": {
+	"struct-equal": {
 		want: struct{ A int }{1},
 		got:  struct{ A int }{1},
 	},
-	"struct different": {
+	"struct-different": {
 		want: struct{ A int }{1},
 		got:  struct{ A int }{2},
 		diff: diff("1,4 +1,4",
@@ -117,7 +117,7 @@ var diffTestCases = map[string]DiffParams{
 				"+  A: (int) 2\n"+
 				" }\n \n"),
 	},
-	"struct complex": {
+	"struct-complex": {
 		want: struct {
 			Name string
 			Age  int
@@ -136,11 +136,11 @@ var diffTestCases = map[string]DiffParams{
 	},
 
 	// Map type cases.
-	"map equal": {
+	"map-equal": {
 		want: map[string]int{"a": 1},
 		got:  map[string]int{"a": 1},
 	},
-	"map different values": {
+	"map-different-values": {
 		want: map[string]int{"a": 1, "b": 2},
 		got:  map[string]int{"a": 1, "b": 3},
 		diff: diff("1,5 +1,5",
@@ -150,7 +150,7 @@ var diffTestCases = map[string]DiffParams{
 				"+  (string) (len=1) \"b\": (int) 3\n"+
 				" }\n \n"),
 	},
-	"map different keys": {
+	"map-different-keys": {
 		want: map[string]int{"a": 1},
 		got:  map[string]int{"b": 1},
 		diff: diff("1,4 +1,4",
@@ -161,11 +161,11 @@ var diffTestCases = map[string]DiffParams{
 	},
 
 	// Slice type cases.
-	"slice equal": {
+	"slice-equal": {
 		want: []int{1, 2, 3},
 		got:  []int{1, 2, 3},
 	},
-	"slice different": {
+	"slice-different": {
 		want: []int{1, 2, 3},
 		got:  []int{1, 4, 3},
 		diff: diff("1,6 +1,6",
@@ -176,7 +176,7 @@ var diffTestCases = map[string]DiffParams{
 				"   (int) 3\n"+
 				" }\n \n"),
 	},
-	"slice different length": {
+	"slice-different-length": {
 		want: []int{1, 2, 3},
 		got:  []int{1, 2},
 		diff: diff("1,6 +1,5",
@@ -188,7 +188,7 @@ var diffTestCases = map[string]DiffParams{
 				"+  (int) 2\n"+
 				" }\n \n"),
 	},
-	"slice of strings": {
+	"slice-of-strings": {
 		want: []string{"a", "b", "c"},
 		got:  []string{"a", "x", "c"},
 		diff: diff("1,6 +1,6",
@@ -201,11 +201,11 @@ var diffTestCases = map[string]DiffParams{
 	},
 
 	// Array type cases.
-	"array equal": {
+	"array-equal": {
 		want: [3]int{1, 2, 3},
 		got:  [3]int{1, 2, 3},
 	},
-	"array different": {
+	"array-different": {
 		want: [3]int{1, 2, 3},
 		got:  [3]int{1, 4, 3},
 		diff: diff("1,6 +1,6",
@@ -218,7 +218,7 @@ var diffTestCases = map[string]DiffParams{
 	},
 
 	// Pointer to supported type cases.
-	"pointer to struct": {
+	"pointer-to-struct": {
 		want: &struct{ A int }{1},
 		got:  &struct{ A int }{2},
 		diff: diff("1,4 +1,4",
@@ -229,11 +229,11 @@ var diffTestCases = map[string]DiffParams{
 	},
 
 	// Time type cases.
-	"time equal": {
+	"time-equal": {
 		want: time.Date(2025, 10, 27, 12, 0, 0, 0, time.UTC),
 		got:  time.Date(2025, 10, 27, 12, 0, 0, 0, time.UTC),
 	},
-	"time different": {
+	"time-different": {
 		want: time.Date(2025, 10, 27, 12, 0, 0, 0, time.UTC),
 		got:  time.Date(2025, 10, 28, 12, 0, 0, 0, time.UTC),
 		diff: diff("1,2 +1,2",
@@ -264,7 +264,7 @@ type ConfigParams struct {
 
 var configTestCases = map[string]ConfigParams{
 	// Diff config options.
-	"diff context": {
+	"diff-context": {
 		config: mock.Context(7),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -272,7 +272,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: 7,
 	},
-	"diff from-file": {
+	"diff-from-file": {
 		config: mock.FromFile("expect"),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -280,7 +280,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: "expect",
 	},
-	"diff from-date": {
+	"diff-from-date": {
 		config: mock.FromDate("2025-10-27"),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -288,7 +288,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: "2025-10-27",
 	},
-	"diff to-file": {
+	"diff-to-file": {
 		config: mock.ToFile("actual.txt"),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -296,7 +296,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: "actual.txt",
 	},
-	"diff to-date": {
+	"diff-to-date": {
 		config: mock.ToDate("2025-10-28"),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -306,7 +306,7 @@ var configTestCases = map[string]ConfigParams{
 	},
 
 	// Spew config options.
-	"spew indent": {
+	"spew-indent": {
 		config: mock.Indent("\t"),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -314,7 +314,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: "\t",
 	},
-	"spew max-depth": {
+	"spew-max-depth": {
 		config: mock.MaxDepth(5),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -322,7 +322,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: 5,
 	},
-	"spew disable-methods": {
+	"spew-disable-methods": {
 		config: mock.DisableMethods(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -330,7 +330,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: false,
 	},
-	"spew disable-pointer-methods": {
+	"spew-disable-pointer-methods": {
 		config: mock.DisablePointerMethods(true),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -338,7 +338,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: true,
 	},
-	"spew disable-pointer-addresses": {
+	"spew-disable-pointer-addresses": {
 		config: mock.DisablePointerAddresses(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -346,7 +346,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: false,
 	},
-	"spew disable-capacities": {
+	"spew-disable-capacities": {
 		config: mock.DisableCapacities(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -354,7 +354,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: false,
 	},
-	"spew continue-on-method": {
+	"spew-continue-on-method": {
 		config: mock.ContinueOnMethod(true),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -362,7 +362,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: true,
 	},
-	"spew sort-keys": {
+	"spew-sort-keys": {
 		config: mock.SortKeys(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -370,7 +370,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: false,
 	},
-	"spew spew-keys": {
+	"spew-spew-keys": {
 		config: mock.SpewKeys(true),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -380,7 +380,7 @@ var configTestCases = map[string]ConfigParams{
 	},
 
 	// Spew config options.
-	"spew-time indent": {
+	"spew-time-indent": {
 		config: mock.Indent("\t"),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -388,7 +388,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: "\t",
 	},
-	"spew-time max-depth": {
+	"spew-time-max-depth": {
 		config: mock.MaxDepth(5),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -396,7 +396,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: 5,
 	},
-	"spew-time disable-methods": {
+	"spew-time-disable-methods": {
 		config: mock.DisableMethods(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -404,7 +404,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: true, // exception: default is true for spewtime.
 	},
-	"spew-time disable-pointer-methods": {
+	"spew-time-disable-pointer-methods": {
 		config: mock.DisablePointerMethods(true),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -412,7 +412,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: true,
 	},
-	"spew-time disable-pointer-addresses": {
+	"spew-time-disable-pointer-addresses": {
 		config: mock.DisablePointerAddresses(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -420,7 +420,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: false,
 	},
-	"spew-time disable-capacities": {
+	"spew-time-disable-capacities": {
 		config: mock.DisableCapacities(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -428,7 +428,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: false,
 	},
-	"spew-time continue-on-method": {
+	"spew-time-continue-on-method": {
 		config: mock.ContinueOnMethod(true),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -436,7 +436,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: true,
 	},
-	"spew-time sort-keys": {
+	"spew-time-sort-keys": {
 		config: mock.SortKeys(false),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -444,7 +444,7 @@ var configTestCases = map[string]ConfigParams{
 		},
 		expect: false,
 	},
-	"spew-time spew-keys": {
+	"spew-time-spew-keys": {
 		config: mock.SpewKeys(true),
 		access: func(mocks *mock.Mocks) any {
 			return GetDiffConfigAccessor(mocks).
@@ -476,42 +476,42 @@ type EqualMatchesParams struct {
 }
 
 var equalMatchesTestCases = map[string]EqualMatchesParams{
-	"equal primitives": {
+	"equal-primitives": {
 		want:   42,
 		got:    42,
 		expect: true,
 	},
-	"different primitives": {
+	"different-primitives": {
 		want:   42,
 		got:    43,
 		expect: false,
 	},
-	"equal strings": {
+	"equal-strings": {
 		want:   "hello",
 		got:    "hello",
 		expect: true,
 	},
-	"different strings": {
+	"different-strings": {
 		want:   "hello",
 		got:    "world",
 		expect: false,
 	},
-	"equal structs": {
+	"equal-structs": {
 		want:   struct{ A int }{1},
 		got:    struct{ A int }{1},
 		expect: true,
 	},
-	"different structs": {
+	"different-structs": {
 		want:   struct{ A int }{1},
 		got:    struct{ A int }{2},
 		expect: false,
 	},
-	"equal slices": {
+	"equal-slices": {
 		want:   []int{1, 2, 3},
 		got:    []int{1, 2, 3},
 		expect: true,
 	},
-	"different slices": {
+	"different-slices": {
 		want:   []int{1, 2, 3},
 		got:    []int{1, 4, 3},
 		expect: false,
@@ -587,18 +587,18 @@ type EqualStringParams struct {
 }
 
 var equalStringTestCases = map[string]EqualStringParams{
-	"without diff": {
+	"without-diff": {
 		want:   "hello",
 		got:    nil, // Don't call Matches, so no diff
 		expect: "string(\"hello\")",
 	},
-	"with diff": {
+	"with-diff": {
 		want: "hello",
 		got:  "world",
 		expect: "string(\"hello\")\nDiff (-want, +got):\n" +
 			diff("1 +1", "-hello\n+world\n"),
 	},
-	"with long value": {
+	"with-long-value": {
 		want: longValue,
 		got:  nil, // Don't call Matches, so no diff.
 		expect: "string(\"" +

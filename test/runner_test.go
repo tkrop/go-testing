@@ -28,7 +28,7 @@ func TestParamsRun(t *testing.T) {
 // TestParamsRunFiltered is testing the test runner with parameterized tests
 // while applying a filter.
 func TestParamsRunFiltered(t *testing.T) {
-	pattern, count := "inrun failure", atomic.Int32{}
+	pattern, count := "inrun-failure", atomic.Int32{}
 	expect := commonTestCases.FilterBy(pattern)
 	assert.NotEmpty(t, expect)
 
@@ -103,7 +103,7 @@ func TestSliceRun(t *testing.T) {
 // TestSliceRunFiltered is testing the test runner with slices while applying
 // a filter.
 func TestSliceRunFiltered(t *testing.T) {
-	pattern, count := "inrun success", atomic.Int32{}
+	pattern, count := "inrun-success", atomic.Int32{}
 	expect := commonTestCases.FilterBy(pattern)
 	assert.NotEmpty(t, expect)
 
@@ -160,7 +160,7 @@ type (
 
 var filterCases = map[string]filterParams{
 	// Test filter by name variants
-	"include single match": {
+	"include-single-match": {
 		cases: map[string]Any{
 			"alpha-test": {},
 			"beta-test":  {},
@@ -174,7 +174,7 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"exclude single match": {
+	"exclude-single-match": {
 		cases: map[string]Any{
 			"alpha-test": {},
 			"beta-test":  {},
@@ -189,7 +189,7 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"include space normalized": {
+	"include-space-normalized": {
 		cases: map[string]Any{
 			"alpha-test":      {},
 			"beta-test":       {},
@@ -204,7 +204,7 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"exclude space normalized": {
+	"exclude-space-normalized": {
 		cases: map[string]Any{
 			"alpha-test":      {},
 			"beta-test":       {},
@@ -218,7 +218,7 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"include no matches": {
+	"include-no-matches": {
 		cases: map[string]Any{
 			"alpha-test": {},
 			"beta-test":  {},
@@ -229,7 +229,7 @@ var filterCases = map[string]filterParams{
 		expect: map[string]bool{},
 	},
 
-	"exclude all matches": {
+	"exclude-all-matches": {
 		cases: map[string]Any{
 			"alpha-test": {},
 			"beta-test":  {},
@@ -242,10 +242,10 @@ var filterCases = map[string]filterParams{
 	},
 
 	// Test with pattern/os/arch combined
-	"pattern filter include": {
+	"pattern-filter-include": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
+			"alpha-test": {},
+			"beta-test":  {},
 			"gamma":      {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
@@ -256,10 +256,10 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"pattern filter exclude with spaces": {
+	"pattern-filter-exclude-with-spaces": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
+			"alpha-test": {},
+			"beta-test":  {},
 			"gamma":      {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
@@ -273,9 +273,9 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"os filter current os": {
+	"os-filter-current-os": {
 		cases: map[string]Any{
-			"test case": {},
+			"test-case": {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
 			return f.Filter(test.OS[Any](runtime.GOOS))
@@ -285,9 +285,9 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"os filter different os": {
+	"os-filter-different-os": {
 		cases: map[string]Any{
-			"test case": {},
+			"test-case": {},
 		},
 		apply: func(f test.Factory[Any]) test.Factory[Any] {
 			other := "linux"
@@ -299,9 +299,9 @@ var filterCases = map[string]filterParams{
 		expect: map[string]bool{},
 	},
 
-	"arch filter current arch": {
+	"arch-filter-current-arch": {
 		cases: map[string]Any{
-			"test case": {},
+			"test-case": {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
 			return f.Filter(test.Arch[Any](runtime.GOARCH))
@@ -311,9 +311,9 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"arch filter different arch": {
+	"arch-filter-different-arch": {
 		cases: map[string]Any{
-			"test case": {},
+			"test-case": {},
 		},
 		apply: func(f test.Factory[Any]) test.Factory[Any] {
 			other := "amd64"
@@ -325,11 +325,11 @@ var filterCases = map[string]filterParams{
 		expect: map[string]bool{},
 	},
 
-	"multiple filters combined": {
+	"multiple-filters-combined": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
-			"gamma test": {},
+			"alpha-test": {},
+			"beta-test":  {},
+			"gamma-test": {},
 		},
 		apply: func(f test.Factory[Any]) test.Factory[Any] {
 			return f.
@@ -347,10 +347,10 @@ var filterCases = map[string]filterParams{
 	},
 
 	// Tests with and/or combined
-	"and filter all match": {
+	"and-filter-all-match": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
+			"alpha-test": {},
+			"beta-test":  {},
 			"gamma":      {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
@@ -366,10 +366,10 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"and filter no match": {
+	"and-filter-no-match": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
+			"alpha-test": {},
+			"beta-test":  {},
 			"gamma":      {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
@@ -383,10 +383,10 @@ var filterCases = map[string]filterParams{
 		expect: map[string]bool{},
 	},
 
-	"or filter single match": {
+	"or-filter-single-match": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
+			"alpha-test": {},
+			"beta-test":  {},
 			"gamma":      {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
@@ -405,11 +405,11 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"or filter multiple match": {
+	"or-filter-multiple-match": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
-			"gamma test": {},
+			"alpha-test": {},
+			"beta-test":  {},
+			"gamma-test": {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
 			return f.Filter(test.Or(
@@ -427,10 +427,10 @@ var filterCases = map[string]filterParams{
 		},
 	},
 
-	"or filter no match": {
+	"or-filter-no-match": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
+			"alpha-test": {},
+			"beta-test":  {},
 		},
 		apply: func(f FactoryAny) FactoryAny {
 			return f.Filter(test.Or(
@@ -445,11 +445,11 @@ var filterCases = map[string]filterParams{
 		expect: map[string]bool{},
 	},
 
-	"and or combined": {
+	"and-or-combined": {
 		cases: map[string]Any{
-			"alpha test": {},
-			"beta test":  {},
-			"gamma test": {},
+			"alpha-test": {},
+			"beta-test":  {},
+			"gamma-test": {},
 			"delta":      {},
 		},
 		apply: func(f FactoryAny) FactoryAny {

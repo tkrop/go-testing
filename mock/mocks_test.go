@@ -72,7 +72,7 @@ type mockParams struct {
 }
 
 var mockTestCases = map[string]mockParams{
-	"single mock with single call": {
+	"single-mock-with-single-call": {
 		setup: mock.Setup(
 			CallA("ok"),
 		),
@@ -80,7 +80,7 @@ var mockTestCases = map[string]mockParams{
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
 	},
-	"single mock with two calls": {
+	"single-mock-with-two-calls": {
 		setup: mock.Setup(
 			CallA("ok"), CallA("okay"),
 		),
@@ -89,7 +89,7 @@ var mockTestCases = map[string]mockParams{
 			mock.Get(mocks, NewMockIFace).CallA("okay")
 		},
 	},
-	"single mock with missing calls": {
+	"single-mock-with-missing-calls": {
 		setup: mock.Setup(
 			CallA("ok"), CallA("okay"),
 		),
@@ -98,14 +98,14 @@ var mockTestCases = map[string]mockParams{
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
 	},
-	"single mock with unexpected call": {
+	"single-mock-with-unexpected-call": {
 		misses: test.UnexpectedCall(NewMockIFace,
 			"CallA", path.Join(SourceDir, "mocks_test.go:105"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
 			mock.Get(mocks, NewMockIFace).CallA("ok")
 		},
 	},
-	"single mock with more than expected calls": {
+	"single-mock-with-more-than-expected-calls": {
 		setup: mock.Setup(
 			CallA("ok"),
 		),
@@ -118,7 +118,7 @@ var mockTestCases = map[string]mockParams{
 		},
 	},
 
-	"single mock with many calls": {
+	"single-mock-with-many-calls": {
 		setup: mock.Setup(
 			CallA("okay"),
 			CallB("okay", "okay"),
@@ -128,7 +128,7 @@ var mockTestCases = map[string]mockParams{
 			mock.Get(mocks, NewMockIFace).CallB("okay")
 		},
 	},
-	"multiple mocks with many calls": {
+	"multiple-mocks-with-many-calls": {
 		setup: mock.Setup(
 			CallA("okay"),
 			CallB("okay", "okay"),
@@ -989,7 +989,7 @@ type WaitParams struct {
 }
 
 var waitTestCases = map[string]WaitParams{
-	"simple wait": {
+	"simple-wait": {
 		expect: test.Success,
 	},
 }

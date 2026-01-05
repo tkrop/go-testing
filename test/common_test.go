@@ -171,175 +171,175 @@ var (
 // context as well as the test runner.
 var commonTestCases = TestParamMap{
 	"": {},
-	"base nothing": {
+	"base-nothing": {
 		test:   TestEmpty,
 		expect: test.Success,
 	},
-	"base skip": {
+	"base-skip": {
 		test:   TestSkip,
 		expect: test.Success,
 	},
-	"base skipf": {
+	"base-skipf": {
 		test:   TestSkipf,
 		expect: test.Success,
 	},
-	"base skipnow": {
+	"base-skipnow": {
 		test:   TestSkipNow,
 		expect: test.Success,
 	},
-	"base log": {
+	"base-log": {
 		test:   TestLog,
 		expect: test.Success,
 	},
-	"base logf": {
+	"base-logf": {
 		test:   TestLogf,
 		expect: test.Success,
 	},
-	"base error": {
+	"base-error": {
 		test:   TestError,
 		expect: test.Failure,
 	},
-	"base errorf": {
+	"base-errorf": {
 		test:   TestErrorf,
 		expect: test.Failure,
 	},
-	"base fatal": {
+	"base-fatal": {
 		test:     TestFatal,
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"base fatalf": {
+	"base-fatalf": {
 		test:     TestFatalf,
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"base fail": {
+	"base-fail": {
 		test:     TestFail,
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"base failnow": {
+	"base-failnow": {
 		test:     TestFailNow,
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"base panic": {
+	"base-panic": {
 		test:     TestPanic,
 		expect:   test.Failure,
 		consumed: true,
 	},
 
-	"inrun success": {
+	"inrun-success": {
 		test:   test.InRun(test.Success, TestEmpty),
 		expect: test.Success,
 	},
-	"inrun success with skip": {
+	"inrun-success-with-skip": {
 		test:   test.InRun(test.Success, TestSkip),
 		expect: test.Success,
 	},
-	"inrun success with skipf": {
+	"inrun-success-with-skipf": {
 		test:   test.InRun(test.Success, TestSkipf),
 		expect: test.Success,
 	},
-	"inrun success with skipnow": {
+	"inrun-success-with-skipnow": {
 		test:   test.InRun(test.Success, TestSkipNow),
 		expect: test.Success,
 	},
-	"inrun success with log": {
+	"inrun-success-with-log": {
 		test:   test.InRun(test.Success, TestLog),
 		expect: test.Success,
 	},
-	"inrun success with logf": {
+	"inrun-success-with-logf": {
 		test:   test.InRun(test.Success, TestLogf),
 		expect: test.Success,
 	},
-	"inrun success with error": {
+	"inrun-success-with-error": {
 		test:   test.InRun(test.Success, TestError),
 		expect: test.Failure,
 	},
-	"inrun success with errorf": {
+	"inrun-success-with-errorf": {
 		test:   test.InRun(test.Success, TestErrorf),
 		expect: test.Failure,
 	},
-	"inrun success with fatal": {
+	"inrun-success-with-fatal": {
 		test:     test.InRun(test.Success, TestFatal),
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"inrun success with fatalf": {
+	"inrun-success-with-fatalf": {
 		test:     test.InRun(test.Success, TestFatalf),
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"inrun success with fail": {
+	"inrun-success-with-fail": {
 		test:     test.InRun(test.Success, TestFail),
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"inrun success with failnow": {
+	"inrun-success-with-failnow": {
 		test:     test.InRun(test.Success, TestFailNow),
 		expect:   test.Failure,
 		consumed: true,
 	},
-	"inrun success with panic": {
+	"inrun-success-with-panic": {
 		test:     test.InRun(test.Success, TestPanic),
 		expect:   test.Failure,
 		consumed: true,
 	},
 
-	"inrun failure": {
+	"inrun-failure": {
 		test:   test.InRun(test.Failure, TestEmpty),
 		expect: test.Failure,
 	},
-	"inrun failure with skip": {
+	"inrun-failure-with-skip": {
 		test:   test.InRun(test.Failure, TestSkip),
 		expect: test.Failure,
 	},
-	"inrun failure with skipf": {
+	"inrun-failure-with-skipf": {
 		test:   test.InRun(test.Failure, TestSkipf),
 		expect: test.Failure,
 	},
-	"inrun failure with skipnow": {
+	"inrun-failure-with-skipnow": {
 		test:   test.InRun(test.Failure, TestSkipNow),
 		expect: test.Failure,
 	},
-	"inrun failure with log": {
+	"inrun-failure-with-log": {
 		test:   test.InRun(test.Failure, TestLog),
 		expect: test.Failure,
 	},
-	"inrun failure with logf": {
+	"inrun-failure-with-logf": {
 		test:   test.InRun(test.Failure, TestLogf),
 		expect: test.Failure,
 	},
-	"inrun failure with error": {
+	"inrun-failure-with-error": {
 		test:   test.InRun(test.Failure, TestError),
 		expect: test.Success,
 	},
-	"inrun failure with errorf": {
+	"inrun-failure-with-errorf": {
 		test:   test.InRun(test.Failure, TestErrorf),
 		expect: test.Success,
 	},
-	"inrun failure with fatal": {
+	"inrun-failure-with-fatal": {
 		test:     test.InRun(test.Failure, TestFatal),
 		expect:   test.Success,
 		consumed: true,
 	},
-	"inrun failure with fatalf": {
+	"inrun-failure-with-fatalf": {
 		test:     test.InRun(test.Failure, TestFatalf),
 		expect:   test.Success,
 		consumed: true,
 	},
-	"inrun failure with fail": {
+	"inrun-failure-with-fail": {
 		test:     test.InRun(test.Failure, TestFail),
 		expect:   test.Success,
 		consumed: true,
 	},
-	"inrun failure with failnow": {
+	"inrun-failure-with-failnow": {
 		test:     test.InRun(test.Failure, TestFailNow),
 		expect:   test.Success,
 		consumed: true,
 	},
-	"inrun failure with panic": {
+	"inrun-failure-with-panic": {
 		test:     test.InRun(test.Failure, TestPanic),
 		expect:   test.Success,
 		consumed: true,

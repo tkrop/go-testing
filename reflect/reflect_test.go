@@ -35,7 +35,7 @@ type BuilderStructParams struct {
 }
 
 var builderStructTestCases = map[string]BuilderStructParams{
-	"struct get init": {
+	"struct-get-init": {
 		target: structInit,
 		check: func(t test.Test, b reflect.Builder[Struct]) {
 			assert.Equal(t, "init", b.Get("s"))
@@ -50,7 +50,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		},
 	},
 
-	"struct get invalid": {
+	"struct-get-invalid": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Get("invalid")
@@ -58,7 +58,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"struct set invalid": {
+	"struct-set-invalid": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("invalid", "set final")
@@ -66,7 +66,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"struct set compatible": {
+	"struct-set-compatible": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", string([]byte("set final"))).
@@ -80,7 +80,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		},
 	},
 
-	"struct set non-compatible": {
+	"struct-set-non-compatible": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", []byte("set final"))
@@ -88,7 +88,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		expect: test.Panic("value must be compatible [[]uint8 => string]"),
 	},
 
-	"struct set": {
+	"struct-set": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -102,7 +102,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		},
 	},
 
-	"struct set nil": {
+	"struct-set-nil": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", "set any").Set("a", "set any").
@@ -116,7 +116,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		},
 	},
 
-	"struct reset no pointer": {
+	"struct-reset-no-pointer": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -126,7 +126,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 			"[reflect_test.Struct => *reflect_test.Struct]"),
 	},
 
-	"struct reset pointer": {
+	"struct-reset-pointer": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -140,7 +140,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		},
 	},
 
-	"struct reset any nil": {
+	"struct-reset-any-nil": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -154,7 +154,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		},
 	},
 
-	"struct reset struct nil": {
+	"struct-reset-struct-nil": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -168,7 +168,7 @@ var builderStructTestCases = map[string]BuilderStructParams{
 		},
 	},
 
-	"struct reset any invalid": {
+	"struct-reset-any-invalid": {
 		target: structInit,
 		setup: func(b reflect.Builder[Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -205,7 +205,7 @@ type BuilderPtrStructParams struct {
 
 var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 	// Test cases for nil interface pointer.
-	"nil any get": {
+	"nil-any-get": {
 		target: nil,
 		check: func(t test.Test, b reflect.Builder[*Struct]) {
 			assert.Equal(t, "", b.Get("s"))
@@ -220,7 +220,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil any get invalid": {
+	"nil-any-get-invalid": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Get("invalid")
@@ -228,7 +228,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"nil any set invalid": {
+	"nil-any-set-invalid": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("invalid", "set final")
@@ -236,7 +236,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"nil any set": {
+	"nil-any-set": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -250,7 +250,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil any set compatible": {
+	"nil-any-set-compatible": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", string([]byte("set final"))).
@@ -264,7 +264,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil any set non-compatible": {
+	"nil-any-set-non-compatible": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", []byte("set final"))
@@ -272,7 +272,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("value must be compatible [[]uint8 => string]"),
 	},
 
-	"nil any reset": {
+	"nil-any-reset": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -286,7 +286,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil any reset nil": {
+	"nil-any-reset-nil": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("", (*Struct)(nil))
@@ -297,7 +297,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil any reset invalid": {
+	"nil-any-reset-invalid": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -307,7 +307,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 			"[struct {} => *reflect_test.Struct]"),
 	},
 
-	"nil any reset nil invalid": {
+	"nil-any-reset-nil-invalid": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("", (*Struct)(nil))
@@ -317,7 +317,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 	},
 
 	// Test cases for nil struct pointer.
-	"nil struct get": {
+	"nil-struct-get": {
 		target: new(Struct),
 		check: func(t test.Test, b reflect.Builder[*Struct]) {
 			assert.Equal(t, "", b.Get("s"))
@@ -332,7 +332,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil struct get invalid": {
+	"nil-struct-get-invalid": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Get("invalid")
@@ -340,7 +340,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"nil struct set invalid": {
+	"nil-struct-set-invalid": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("invalid", "set final")
@@ -348,7 +348,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"nil struct set": {
+	"nil-struct-set": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -362,7 +362,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil struct set compatible": {
+	"nil-struct-set-compatible": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", string([]byte("set final"))).
@@ -376,7 +376,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil struct set non-compatible": {
+	"nil-struct-set-non-compatible": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", []byte("set final"))
@@ -384,7 +384,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("value must be compatible [[]uint8 => string]"),
 	},
 
-	"nil struct reset": {
+	"nil-struct-reset": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -398,7 +398,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"nil struct reset invalid": {
+	"nil-struct-reset-invalid": {
 		target: nil,
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -409,7 +409,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 	},
 
 	// Test cases for struct pointer instance.
-	"ptr get": {
+	"ptr-get": {
 		target: NewPtrStruct("init", "init"),
 		check: func(t test.Test, b reflect.Builder[*Struct]) {
 			assert.Equal(t, "init", b.Get("s"))
@@ -424,7 +424,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"ptr get invalid": {
+	"ptr-get-invalid": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Get("invalid")
@@ -432,7 +432,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"ptr set": {
+	"ptr-set": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -446,7 +446,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"ptr set compatible": {
+	"ptr-set-compatible": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", string([]byte("set final"))).
@@ -460,7 +460,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"ptr set non-compatible": {
+	"ptr-set-non-compatible": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", []byte("set final"))
@@ -468,7 +468,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		expect: test.Panic("value must be compatible [[]uint8 => string]"),
 	},
 
-	"ptr reset": {
+	"ptr-reset": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -482,7 +482,7 @@ var builderPtrStructTestCases = map[string]BuilderPtrStructParams{
 		},
 	},
 
-	"ptr reset invalid": {
+	"ptr-reset-invalid": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[*Struct]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -519,13 +519,13 @@ type BuilderAnyParams struct {
 
 var builderAnyTestCases = map[string]BuilderAnyParams{
 	// Test cases for invalid types.
-	"invalid type nil": {
+	"invalid-type-nil": {
 		target: nil,
 		check: func(t test.Test, b reflect.Builder[any]) {
 			assert.Nil(t, b)
 		},
 	},
-	"invalid type int": {
+	"invalid-type-int": {
 		target: 1,
 		check: func(t test.Test, b reflect.Builder[any]) {
 			assert.Nil(t, b)
@@ -533,7 +533,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 	},
 
 	// Test cases for struct instance.
-	"struct get init": {
+	"struct-get-init": {
 		target: structInit,
 		check: func(t test.Test, b reflect.Builder[any]) {
 			assert.Equal(t, "init", b.Get("s"))
@@ -548,7 +548,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"struct get invalid": {
+	"struct-get-invalid": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Get("invalid")
@@ -556,7 +556,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"struct set invalid": {
+	"struct-set-invalid": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("invalid", "set final")
@@ -564,7 +564,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"struct set": {
+	"struct-set": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -578,7 +578,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"struct set compatible": {
+	"struct-set-compatible": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", string([]byte("set final"))).
@@ -592,7 +592,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"struct set non-compatible": {
+	"struct-set-non-compatible": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", []byte("set final"))
@@ -600,7 +600,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("value must be compatible [[]uint8 => string]"),
 	},
 
-	"struct reset pointer": {
+	"struct-reset-pointer": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -614,7 +614,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"struct reset no pointer": {
+	"struct-reset-no-pointer": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -624,7 +624,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 			"[reflect_test.Struct => *reflect_test.Struct]"),
 	},
 
-	"struct reset invalid": {
+	"struct-reset-invalid": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -635,7 +635,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 	},
 
 	// Test cases for struct pointer instance.
-	"ptr get": {
+	"ptr-get": {
 		target: NewPtrStruct("init", "init"),
 		check: func(t test.Test, b reflect.Builder[any]) {
 			assert.Equal(t, "init", b.Get("s"))
@@ -650,7 +650,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"ptr get invalid": {
+	"ptr-get-invalid": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[any]) {
 			b.Get("invalid")
@@ -658,7 +658,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"ptr set invalid": {
+	"ptr-set-invalid": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("invalid", "set final")
@@ -666,7 +666,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"ptr set": {
+	"ptr-set": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -680,7 +680,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"ptr set compatible": {
+	"ptr-set-compatible": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", string([]byte("set final"))).
@@ -694,7 +694,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"ptr set non-compatible": {
+	"ptr-set-non-compatible": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", []byte("set final"))
@@ -702,7 +702,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("value must be compatible [[]uint8 => string]"),
 	},
 
-	"ptr reset": {
+	"ptr-reset": {
 		target: NewPtrStruct("init", "init"),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -717,7 +717,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 	},
 
 	// Test cases for nil struct pointer instance.
-	"nil get": {
+	"nil-get": {
 		target: new(Struct),
 		check: func(t test.Test, b reflect.Builder[any]) {
 			assert.Equal(t, "", b.Get("s"))
@@ -732,7 +732,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"nil get invalid": {
+	"nil-get-invalid": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[any]) {
 			b.Get("invalid")
@@ -740,7 +740,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"nil set invalid": {
+	"nil-set-invalid": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("invalid", "set final")
@@ -748,7 +748,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("target field not found [invalid]"),
 	},
 
-	"nil set": {
+	"nil-set": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -762,7 +762,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"nil set compatible": {
+	"nil-set-compatible": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", string([]byte("set final"))).
@@ -776,7 +776,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		},
 	},
 
-	"nil set non-compatible": {
+	"nil-set-non-compatible": {
 		target: structInit,
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", []byte("set final"))
@@ -784,7 +784,7 @@ var builderAnyTestCases = map[string]BuilderAnyParams{
 		expect: test.Panic("value must be compatible [[]uint8 => string]"),
 	},
 
-	"nil reset": {
+	"nil-reset": {
 		target: new(Struct),
 		setup: func(b reflect.Builder[any]) {
 			b.Set("s", "set first").Set("a", "set first").
@@ -997,50 +997,50 @@ var findTestCases = map[string]FindParams{
 		expect: true,
 	},
 
-	"struct match": {
+	"struct-match": {
 		param:  structInit,
 		deflt:  "default",
 		names:  []string{"s"},
 		expect: "init",
 	},
-	"struct invalid": {
+	"struct-invalid": {
 		param:  structInit,
 		deflt:  "default",
 		names:  []string{"invalid"},
 		expect: "default",
 	},
-	"struct any": {
+	"struct-any": {
 		param:  structInit,
 		deflt:  "default",
 		names:  []string{},
 		expect: "init",
 	},
-	"struct star": {
+	"struct-star": {
 		param:  structInit,
 		deflt:  "default",
 		names:  []string{"invalid", "*"},
 		expect: "init",
 	},
 
-	"ptr match": {
+	"ptr-match": {
 		param:  structPtrInit,
 		deflt:  "default",
 		names:  []string{"s"},
 		expect: "init",
 	},
-	"ptr invalid": {
+	"ptr-invalid": {
 		param:  structPtrInit,
 		deflt:  "default",
 		names:  []string{"invalid"},
 		expect: "default",
 	},
-	"ptr any": {
+	"ptr-any": {
 		param:  structPtrInit,
 		deflt:  "default",
 		names:  []string{},
 		expect: "init",
 	},
-	"ptr star": {
+	"ptr-star": {
 		param:  structPtrInit,
 		deflt:  "default",
 		names:  []string{"invalid", "*"},
@@ -1067,74 +1067,74 @@ type NameParams struct {
 
 var nameTestCases = map[string]NameParams{
 	// Empty names.
-	"empty name with primitive": {
+	"empty-name-with-primitive": {
 		name:  "",
 		param: 42,
 	},
-	"empty name with string": {
+	"empty-name-with-string": {
 		name:   "",
 		param:  "test",
 		expect: "test",
 	},
 
 	// Provided names.
-	"provided name": {
+	"provided-name": {
 		name:   "custom name",
 		param:  struct{}{},
 		expect: "custom-name",
 	},
-	"provided name with spaces": {
+	"provided-name-with-spaces": {
 		name:   "test case name",
 		param:  struct{}{},
 		expect: "test-case-name",
 	},
-	"provided name with multiple spaces": {
+	"provided-name-with-multiple-spaces": {
 		name:   "test  case  name",
 		param:  struct{}{},
 		expect: "test--case--name",
 	},
-	"provided name already hyphenated": {
+	"provided-name-already-hyphenated": {
 		name:   "test-case-name",
 		param:  struct{}{},
 		expect: "test-case-name",
 	},
-	"provided name overrides param": {
+	"provided-name-overrides-param": {
 		name:   "override",
 		param:  struct{ name string }{name: "ignored"},
 		expect: "override",
 	},
 
 	// Parameter-based names.
-	"empty name with private name field": {
+	"empty-name-with-private-name-field": {
 		name:   "",
 		param:  struct{ name string }{name: "test case"},
 		expect: "test-case",
 	},
-	"empty name with exported name field": {
+	"empty-name-with-exported-name-field": {
 		name:   "",
 		param:  struct{ Name string }{Name: "test case"},
 		expect: "test-case",
 	},
-	"empty name without name field": {
+	"empty-name-without-name-field": {
 		name:  "",
 		param: struct{ value string }{value: "test"},
 	},
-	"empty name with empty name field": {
+	"empty-name-with-empty-name-field": {
 		name:  "",
 		param: struct{ name string }{name: ""},
 	},
-	"empty name with nil pointer": {
+	"empty-name-with-nil-pointer": {
 		name:  "",
 		param: (*struct{ name string })(nil),
 	},
 
 	// Special parameter-based cases.
-	"pointer to struct with name field": {
+	"pointer-to-struct-with-name-field": {
 		name:   "",
 		param:  &struct{ name string }{name: "pointer test"},
 		expect: "pointer-test",
 	},
-	"private and public name fields": {
+	"private-and-public-name-fields": {
 		name: "",
 		param: struct {
 			name string

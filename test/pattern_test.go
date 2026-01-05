@@ -36,13 +36,13 @@ type PtrParams struct {
 
 var ptrTestCases = map[string]PtrParams{
 	// Primitive types
-	"bool true":  {value: true},
-	"bool false": {value: false},
+	"bool-true":  {value: true},
+	"bool-false": {value: false},
 
 	// Integer types
 	"int":          {value: 42},
-	"int zero":     {value: 0},
-	"int negative": {value: -123},
+	"int-zero":     {value: 0},
+	"int-negative": {value: -123},
 	"int8":         {value: int8(127)},
 	"int16":        {value: int16(32767)},
 	"int32":        {value: int32(2147483647)},
@@ -59,9 +59,9 @@ var ptrTestCases = map[string]PtrParams{
 
 	// Floating point types
 	"float32":          {value: float32(3.14)},
-	"float32 zero":     {value: float32(0.0)},
+	"float32-zero":     {value: float32(0.0)},
 	"float64":          {value: 3.141592653589793},
-	"float64 negative": {value: -2.718281828},
+	"float64-negative": {value: -2.718281828},
 
 	// Complex types
 	"complex64":  {value: complex64(1 + 2i)},
@@ -69,40 +69,40 @@ var ptrTestCases = map[string]PtrParams{
 
 	// String types
 	"string":         {value: "hello world"},
-	"string empty":   {value: ""},
-	"string unicode": {value: "Hello, 🌍"},
+	"string-empty":   {value: ""},
+	"string-unicode": {value: "Hello, 🌍"},
 
 	// Slice literals
-	"slice int":    {value: []int{1, 2, 3}},
-	"slice string": {value: []string{"a", "b", "c"}},
-	"slice empty":  {value: []int{}},
-	"slice nil":    {value: []int(nil)},
+	"slice-int":    {value: []int{1, 2, 3}},
+	"slice-string": {value: []string{"a", "b", "c"}},
+	"slice-empty":  {value: []int{}},
+	"slice-nil":    {value: []int(nil)},
 
 	// Map literals
-	"map string int": {value: map[string]int{"one": 1, "two": 2}},
-	"map empty":      {value: map[string]int{}},
-	"map nil":        {value: map[string]int(nil)},
+	"map-string-int": {value: map[string]int{"one": 1, "two": 2}},
+	"map-empty":      {value: map[string]int{}},
+	"map-nil":        {value: map[string]int(nil)},
 
 	// Struct literals
 	"struct":           {value: TestStruct{name: "test", id: 42}},
-	"struct zero":      {value: TestStruct{}},
-	"struct anonymous": {value: struct{ X int }{X: 10}},
+	"struct-zero":      {value: TestStruct{}},
+	"struct-anonymous": {value: struct{ X int }{X: 10}},
 
 	// Named types
-	"named slice": {value: TestSlice{"x", "y", "z"}},
-	"named map":   {value: TestMap{"foo": 1, "bar": 2}},
+	"named-slice": {value: TestSlice{"x", "y", "z"}},
+	"named-map":   {value: TestMap{"foo": 1, "bar": 2}},
 
 	// Pointer types
-	"pointer to int":    {value: test.Ptr(42)},
-	"pointer to string": {value: test.Ptr("value")},
-	"pointer to struct": {value: &TestStruct{name: "ptr", id: 99}},
+	"pointer-to-int":    {value: test.Ptr(42)},
+	"pointer-to-string": {value: test.Ptr("value")},
+	"pointer-to-struct": {value: &TestStruct{name: "ptr", id: 99}},
 
 	// Array literals
-	"array int":    {value: [3]int{1, 2, 3}},
-	"array string": {value: [2]string{"hello", "world"}},
+	"array-int":    {value: [3]int{1, 2, 3}},
+	"array-string": {value: [2]string{"hello", "world"}},
 
 	// Interface types
-	"interface any": {value: any("interface value")},
+	"interface-any": {value: any("interface value")},
 }
 
 func TestPtr(t *testing.T) {
@@ -142,11 +142,11 @@ var mustTestCases = map[string]MustParams{
 		arg:    3.14,
 		expect: 3.14,
 	},
-	"bool true": {
+	"bool-true": {
 		arg:    true,
 		expect: true,
 	},
-	"bool false": {
+	"bool-false": {
 		arg:    false,
 		expect: false,
 	},
@@ -170,27 +170,27 @@ var mustTestCases = map[string]MustParams{
 		arg:    testFunc,
 		expect: testFunc,
 	},
-	"named slice": {
+	"named-slice": {
 		arg:    TestSlice{"x", "y", "z"},
 		expect: TestSlice{"x", "y", "z"},
 	},
-	"named map": {
+	"named-map": {
 		arg:    TestMap{"foo": 1, "bar": 2},
 		expect: TestMap{"foo": 1, "bar": 2},
 	},
-	"zero value int": {
+	"zero-value-int": {
 		arg:    0,
 		expect: 0,
 	},
-	"zero value string": {
+	"zero-value-string": {
 		arg:    "",
 		expect: "",
 	},
-	"empty slice": {
+	"empty-slice": {
 		arg:    []string{},
 		expect: []string{},
 	},
-	"empty map": {
+	"empty-map": {
 		arg:    map[string]int{},
 		expect: map[string]int{},
 	},
@@ -199,7 +199,7 @@ var mustTestCases = map[string]MustParams{
 		err:    assert.AnError,
 		expect: nil,
 	},
-	"nil error with value": {
+	"nil-error-with-value": {
 		arg:    "success",
 		err:    nil,
 		expect: "success",
@@ -232,137 +232,137 @@ type CastParams struct {
 }
 
 var castTestCases = map[string]CastParams{
-	"int to int": {
+	"int-to-int": {
 		arg:    42,
 		cast:   func(arg any) any { return test.Cast[int](arg) },
 		expect: 42,
 	},
-	"string to string": {
+	"string-to-string": {
 		arg:    "value",
 		cast:   func(arg any) any { return test.Cast[string](arg) },
 		expect: "value",
 	},
-	"slice to slice string": {
+	"slice-to-slice-string": {
 		arg:    []string{"a", "b", "c"},
 		cast:   func(arg any) any { return test.Cast[[]string](arg) },
 		expect: []string{"a", "b", "c"},
 	},
-	"slice to slice names": {
+	"slice-to-slice-names": {
 		arg:    TestSlice{"x", "y", "z"},
 		cast:   func(arg any) any { return test.Cast[TestSlice](arg) },
 		expect: TestSlice{"x", "y", "z"},
 	},
-	"map to map": {
+	"map-to-map": {
 		arg:    TestMap{"foo": 1, "bar": 2},
 		cast:   func(arg any) any { return test.Cast[TestMap](arg) },
 		expect: TestMap{"foo": 1, "bar": 2},
 	},
-	"struct to struct": {
+	"struct-to-struct": {
 		arg:    TestStruct{name: "example", id: 123},
 		cast:   func(arg any) any { return test.Cast[TestStruct](arg) },
 		expect: TestStruct{name: "example", id: 123},
 	},
-	"pointer to pointer": {
+	"pointer-to-pointer": {
 		arg:    &TestStruct{name: "example", id: 123},
 		cast:   func(arg any) any { return test.Cast[*TestStruct](arg) },
 		expect: &TestStruct{name: "example", id: 123},
 	},
-	"function to function": {
+	"function-to-function": {
 		arg:    testFunc,
 		cast:   func(arg any) any { return test.Cast[TestFunc](arg) },
 		expect: testFunc,
 	},
 
 	// Casts to any.
-	"int to any": {
+	"int-to-any": {
 		arg:    123,
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: 123,
 	},
-	"bool to any": {
+	"bool-to-any": {
 		arg:    true,
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: true,
 	},
-	"string to any": {
+	"string-to-any": {
 		arg:    "hello",
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: "hello",
 	},
-	"slice to any int": {
+	"slice-to-any-int": {
 		arg:    []int{1, 2, 3},
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: []int{1, 2, 3},
 	},
-	"slice to any named": {
+	"slice-to-any-named": {
 		arg:    TestSlice{"a", "b", "c"},
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: TestSlice{"a", "b", "c"},
 	},
-	"map to any": {
+	"map-to-any": {
 		arg:    TestMap{"key": 42, "other": 100},
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: TestMap{"key": 42, "other": 100},
 	},
-	"struct to any": {
+	"struct-to-any": {
 		arg:    TestStruct{name: "test", id: 42},
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: TestStruct{name: "test", id: 42},
 	},
-	"pointer to any": {
+	"pointer-to-any": {
 		arg:    &TestStruct{name: "pointer", id: 99},
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: &TestStruct{name: "pointer", id: 99},
 	},
-	"function to any": {
+	"function-to-any": {
 		arg:    fmt.Sprintf,
 		cast:   func(arg any) any { return test.Cast[any](arg) },
 		expect: nil, // Special case - just test that cast succeeds
 	},
 
 	// Panic cases
-	"nil to any": {
+	"nil-to-any": {
 		setup: test.Panic(fmt.Sprintf("cast failed [<nil>]: %v", nil)),
 		arg:   nil,
 		cast:  func(arg any) any { return test.Cast[any](arg) },
 	},
-	"string to int": {
+	"string-to-int": {
 		setup: test.Panic(fmt.Sprintf("cast failed [%v]: %v",
 			reflect.TypeOf(0), "value")),
 		arg:  "value",
 		cast: func(arg any) any { return test.Cast[int](arg) },
 	},
-	"int to string": {
+	"int-to-string": {
 		setup: test.Panic(fmt.Sprintf("cast failed [%v]: %v",
 			reflect.TypeOf(""), 42)),
 		arg:  42,
 		cast: func(arg any) any { return test.Cast[string](arg) },
 	},
-	"nil to string": {
+	"nil-to-string": {
 		setup: test.Panic(fmt.Sprintf("cast failed [%v]: %v",
 			reflect.TypeOf(""), nil)),
 		arg:  nil,
 		cast: func(arg any) any { return test.Cast[string](arg) },
 	},
-	"float to int": {
+	"float-to-int": {
 		setup: test.Panic(fmt.Sprintf("cast failed [%v]: %v",
 			reflect.TypeOf(0), 3.14)),
 		arg:  3.14,
 		cast: func(arg any) any { return test.Cast[int](arg) },
 	},
-	"string to struct": {
+	"string-to-struct": {
 		setup: test.Panic(fmt.Sprintf("cast failed [%v]: %v",
 			reflect.TypeOf(TestStruct{}), "invalid")),
 		arg:  "invalid",
 		cast: func(arg any) any { return test.Cast[TestStruct](arg) },
 	},
-	"int to map": {
+	"int-to-map": {
 		setup: test.Panic(fmt.Sprintf("cast failed [%v]: %v",
 			reflect.TypeOf(TestMap{}), 42)),
 		arg:  42,
 		cast: func(arg any) any { return test.Cast[TestMap](arg) },
 	},
-	"slice to named slice": {
+	"slice-to-named-slice": {
 		setup: test.Panic(fmt.Sprintf("cast failed [%v]: %v",
 			reflect.TypeOf(TestSlice{}), []string{"too", "many"})),
 		arg:  []string{"too", "many"},
@@ -402,29 +402,29 @@ type RecoverParams struct {
 
 var recoverTestCases = map[string]RecoverParams{
 	// Failure to panic.
-	"no panic with nil": {},
-	"no panic with string": {
+	"no-panic-with-nil": {},
+	"no-panic-with-string": {
 		setup: "no panic",
 	},
-	"no panic with error": {
+	"no-panic-with-error": {
 		setup: assert.AnError,
 	},
-	"no panic with pointer error": {
+	"no-panic-with-pointer-error": {
 		setup: &assert.AnError,
 	},
 
 	// Successful recovery.
-	"panic with string": {
+	"panic-with-string": {
 		panic:  "a panic occurred",
 		setup:  "a panic occurred",
 		expect: test.Success,
 	},
-	"panic with error": {
+	"panic-with-error": {
 		panic:  assert.AnError,
 		setup:  assert.AnError,
 		expect: test.Success,
 	},
-	"panic with same error pointer": {
+	"panic-with-same-error-pointer": {
 		panic:  &assert.AnError,
 		setup:  &assert.AnError,
 		expect: test.Success,

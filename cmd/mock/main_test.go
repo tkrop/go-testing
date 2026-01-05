@@ -7,7 +7,7 @@ import (
 )
 
 var mainTestCases = map[string]test.MainParams{
-	"no mocks": {
+	"no-mocks": {
 		Args:     []string{"mock"},
 		Env:      []string{},
 		ExitCode: 0,
