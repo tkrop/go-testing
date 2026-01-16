@@ -17,23 +17,23 @@ import (
 	"github.com/tkrop/go-testing/test"
 )
 
-type IFace interface {
-	CallA(input string)
-	CallB(input string) string
+type IFace[T any] interface {
+	CallA(input T)
+	CallB(input T) T
 }
 
-func CallA(input string) mock.SetupFunc {
+func CallA[T any](input T) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewMockIFace).EXPECT().
-			CallA(mocks.Equal(input)).Do(mocks.Do(IFace.CallA))
+		return mock.Get(mocks, NewMockIFace[T]).EXPECT().
+			CallA(mocks.Equal(input)).Do(mocks.Do(IFace[T].CallA))
 	}
 }
 
-func CallB(input string, output string) mock.SetupFunc {
+func CallB[T any](input T, output T) mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewMockIFace).EXPECT().
+		return mock.Get(mocks, NewMockIFace[T]).EXPECT().
 			CallB(mocks.Equal(input)).DoAndReturn(
-			mocks.Call(IFace.CallB, func(...any) []any {
+			mocks.Call(IFace[T].CallB, func(...any) []any {
 				return []any{output}
 			}))
 	}
@@ -45,9 +45,9 @@ func CallB(input string, output string) mock.SetupFunc {
 // 	})
 // }
 
-func NoCall() mock.SetupFunc {
+func NoCall[T any]() mock.SetupFunc {
 	return func(mocks *mock.Mocks) any {
-		return mock.Get(mocks, NewMockIFace).EXPECT()
+		return mock.Get(mocks, NewMockIFace[T]).EXPECT()
 	}
 }
 
@@ -77,7 +77,7 @@ var mockTestCases = map[string]mockParams{
 			CallA("ok"),
 		),
 		call: func(_ test.Test, mocks *mock.Mocks) {
-			mock.Get(mocks, NewMockIFace).CallA("ok")
+			mock.Get(mocks, NewMockIFace[string]).CallA("ok")
 		},
 	},
 	"single-mock-with-two-calls": {
@@ -85,8 +85,8 @@ var mockTestCases = map[string]mockParams{
 			CallA("ok"), CallA("okay"),
 		),
 		call: func(_ test.Test, mocks *mock.Mocks) {
-			mock.Get(mocks, NewMockIFace).CallA("ok")
-			mock.Get(mocks, NewMockIFace).CallA("okay")
+			mock.Get(mocks, NewMockIFace[string]).CallA("ok")
+			mock.Get(mocks, NewMockIFace[string]).CallA("okay")
 		},
 	},
 	"single-mock-with-missing-calls": {
@@ -95,26 +95,26 @@ var mockTestCases = map[string]mockParams{
 		),
 		misses: test.MissingCalls(CallA("okay")),
 		call: func(_ test.Test, mocks *mock.Mocks) {
-			mock.Get(mocks, NewMockIFace).CallA("ok")
+			mock.Get(mocks, NewMockIFace[string]).CallA("ok")
 		},
 	},
 	"single-mock-with-unexpected-call": {
-		misses: test.UnexpectedCall(NewMockIFace,
+		misses: test.UnexpectedCall(NewMockIFace[string],
 			"CallA", path.Join(SourceDir, "mocks_test.go:105"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
-			mock.Get(mocks, NewMockIFace).CallA("ok")
+			mock.Get(mocks, NewMockIFace[string]).CallA("ok")
 		},
 	},
 	"single-mock-with-more-than-expected-calls": {
 		setup: mock.Setup(
 			CallA("ok"),
 		),
-		misses: test.ConsumedCall(NewMockIFace,
+		misses: test.ConsumedCall(NewMockIFace[string],
 			"CallA", path.Join(SourceDir, "mocks_test.go:117"),
 			path.Join(SourceDir, "mocks_test.go:28"), "ok"),
 		call: func(_ test.Test, mocks *mock.Mocks) {
-			mock.Get(mocks, NewMockIFace).CallA("ok")
-			mock.Get(mocks, NewMockIFace).CallA("ok")
+			mock.Get(mocks, NewMockIFace[string]).CallA("ok")
+			mock.Get(mocks, NewMockIFace[string]).CallA("ok")
 		},
 	},
 
@@ -124,8 +124,8 @@ var mockTestCases = map[string]mockParams{
 			CallB("okay", "okay"),
 		),
 		call: func(_ test.Test, mocks *mock.Mocks) {
-			mock.Get(mocks, NewMockIFace).CallA("okay")
-			mock.Get(mocks, NewMockIFace).CallB("okay")
+			mock.Get(mocks, NewMockIFace[string]).CallA("okay")
+			mock.Get(mocks, NewMockIFace[string]).CallB("okay")
 		},
 	},
 	"multiple-mocks-with-many-calls": {
@@ -135,8 +135,8 @@ var mockTestCases = map[string]mockParams{
 			CallC("okay"),
 		),
 		call: func(_ test.Test, mocks *mock.Mocks) {
-			mock.Get(mocks, NewMockIFace).CallA("okay")
-			mock.Get(mocks, NewMockIFace).CallB("okay")
+			mock.Get(mocks, NewMockIFace[string]).CallA("okay")
+			mock.Get(mocks, NewMockIFace[string]).CallB("okay")
 			mock.Get(mocks, NewMockXFace).CallC("okay")
 		},
 	},
@@ -258,7 +258,7 @@ var getMockTestCases = map[string]getMockParams{
 		test: getMockTestFunc,
 	},
 	"function-constructor": {
-		expect: NewMockIFace,
+		expect: NewMockIFace[string],
 		test:   getMockTestMock,
 	},
 }
@@ -309,7 +309,7 @@ func MockValidate(
 }
 
 func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
-	iface := mock.Get(mocks, NewMockIFace)
+	iface := mock.Get(mocks, NewMockIFace[string])
 	return perm.NewTest(mocks,
 		perm.TestMap{
 			"a": func(test.Test) { iface.CallA("a") },
@@ -324,7 +324,7 @@ func SetupPermTestABC(mocks *mock.Mocks) *perm.Test {
 }
 
 func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
-	iface := mock.Get(mocks, NewMockIFace)
+	iface := mock.Get(mocks, NewMockIFace[string])
 	return perm.NewTest(mocks,
 		perm.TestMap{
 			"a": func(test.Test) { iface.CallA("a") },
@@ -339,7 +339,7 @@ func SetupPermTestABCD(mocks *mock.Mocks) *perm.Test {
 }
 
 func SetupPermTestABCDEF(mocks *mock.Mocks) *perm.Test {
-	iface := mock.Get(mocks, NewMockIFace)
+	iface := mock.Get(mocks, NewMockIFace[string])
 	return perm.NewTest(mocks,
 		perm.TestMap{
 			"a": func(test.Test) { iface.CallA("a") },
@@ -620,35 +620,35 @@ type PanicParams struct {
 
 var panicTestCases = map[string]PanicParams{
 	"setup": {
-		setup:       mock.Setup(NoCall()),
-		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
+		setup:       mock.Setup(NoCall[string]()),
+		expectError: mock.NewErrNoCall(NewMockIFace[string](nil).EXPECT()),
 	},
 	"chain": {
-		setup:       mock.Chain(NoCall()),
-		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
+		setup:       mock.Chain(NoCall[string]()),
+		expectError: mock.NewErrNoCall(NewMockIFace[string](nil).EXPECT()),
 	},
 	"parallel": {
-		setup:       mock.Parallel(NoCall()),
-		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
+		setup:       mock.Parallel(NoCall[string]()),
+		expectError: mock.NewErrNoCall(NewMockIFace[string](nil).EXPECT()),
 	},
 	"detach": {
-		setup:       mock.Detach(4, NoCall()),
+		setup:       mock.Detach(4, NoCall[string]()),
 		expectError: mock.NewErrDetachMode(4),
 	},
 	"sub": {
-		setup:       mock.Sub(0, 0, NoCall()),
-		expectError: mock.NewErrNoCall(NewMockIFace(nil).EXPECT()),
+		setup:       mock.Sub(0, 0, NoCall[string]()),
+		expectError: mock.NewErrNoCall(NewMockIFace[string](nil).EXPECT()),
 	},
 	"sub-head": {
-		setup:       mock.Sub(0, 0, mock.Detach(mock.Head, NoCall())),
+		setup:       mock.Sub(0, 0, mock.Detach(mock.Head, NoCall[string]())),
 		expectError: mock.NewErrDetachNotAllowed(mock.Head),
 	},
 	"sub-tail": {
-		setup:       mock.Sub(0, 0, mock.Detach(mock.Tail, NoCall())),
+		setup:       mock.Sub(0, 0, mock.Detach(mock.Tail, NoCall[string]())),
 		expectError: mock.NewErrDetachNotAllowed(mock.Tail),
 	},
 	"sub-both": {
-		setup:       mock.Sub(0, 0, mock.Detach(mock.Both, NoCall())),
+		setup:       mock.Sub(0, 0, mock.Detach(mock.Both, NoCall[string]())),
 		expectError: mock.NewErrDetachNotAllowed(mock.Both),
 	},
 }
@@ -978,7 +978,7 @@ func TestFailures(t *testing.T) {
 			param.test(t)
 
 			// Then
-			mock.Get(mocks, NewMockIFace).CallA("a")
+			mock.Get(mocks, NewMockIFace[string]).CallA("a")
 			mocks.Wait()
 		})
 }
