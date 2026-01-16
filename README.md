@@ -233,6 +233,14 @@ With a careful system design, the general pattern provided above can be used
 to create parallel test for a wide range of situations.
 
 
+[testing]: <https://pkg.go.dev/testing>
+[gomock]: <https://go.uber.org/mock>
+[gock]: <https://github.com/h2non/gock>
+[monkey]: <https://github.com/bouk/monkey>
+[gin]: <https://github.com/gin-gonic/gin>
+[chi]: <https://github.com/go-chi/chi>
+
+
 ## Building
 
 This project is using a custom build system called [go-make][go-make], that
@@ -273,11 +281,3 @@ project has more than 25 Stars, I will introduce semantic versions `v1`.
 If you like to contribute, please create an issue and/or pull request with a
 proper description of your proposal or contribution. I will review it and
 provide feedback on it as fast as possible.
-
-
-[testing]: <https://pkg.go.dev/testing>
-[gomock]: <https://go.uber.org/mock>
-[gock]: <https://github.com/h2non/gock>
-[monkey]: <https://github.com/bouk/monkey>
-[gin]: <https://github.com/gin-gonic/gin>
-[chi]: <https://github.com/go-chi/chi>
