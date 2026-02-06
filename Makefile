@@ -18,7 +18,7 @@ TMPDIR ?= /tmp
 # Setup default go-make installation flags.
 INSTALL_FLAGS ?= -mod=readonly -buildvcs=auto
 # Setup go-make version to use desired build and config scripts.
-GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.164
+GOMAKE_DEP ?= github.com/tkrop/go-make@v0.0.166
 # Request targets from go-make show-targets target.
 TARGETS := $(shell command -v $(GOBIN)/go-make >/dev/null || \
 	$(GO) install $(INSTALL_FLAGS) $(GOMAKE_DEP) >&2 && \
