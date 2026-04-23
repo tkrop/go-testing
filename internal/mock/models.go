@@ -276,7 +276,7 @@ func NewFiles(mocks []*Mock, imports ...*Import) []*File {
 		}
 	}
 
-	files := []*File{}
+	files := make([]*File, 0, len(builders))
 	for _, builder := range builders {
 		file := builder.AddImports(imports...).Build()
 		files = append(files, file)

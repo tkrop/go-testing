@@ -33,3 +33,6 @@ MD022:
   lines_above: 2
   # Blank lines below heading
   lines_below: 1
+
+# MD041/first-line-heading - First line does not need to be a top level heading.
+MD041: false
