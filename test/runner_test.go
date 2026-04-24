@@ -126,8 +126,8 @@ func TestSliceRunFiltered(t *testing.T) {
 // tests. Currently, I have no idea hot to integrate the test using the above
 // simplified test pattern that only works on `test.Test` and not `testing.T“.
 func TestRunnerPanic(t *testing.T) {
-	defer test.Recover(t, "testing: test using t.Setenv or t.Chdir"+
-		" can not use t.Parallel")
+	defer test.Recover(t, "testing: test using t.Setenv, t.Chdir, or "+
+		"cryptotest.SetGlobalRandom can not use t.Parallel")
 	t.Setenv("TESTING", "before")
 
 	test.Any[ParamParams](t, []ParamParams{{expect: true}}).

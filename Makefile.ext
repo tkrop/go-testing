@@ -1,0 +1,3 @@
+
+#@ updates the mock tool installing the latest version
+update-mock:: install-mock

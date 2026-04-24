@@ -158,8 +158,8 @@ var parallelTestCases = map[string]ParallelParams{
 	},
 
 	"setenv-in-run-with-parallel": {
-		setup: test.Panic("testing: test using t.Setenv or t.Chdir" +
-			" can not use t.Parallel"),
+		setup: test.Panic("testing: test using t.Setenv, t.Chdir, or " +
+			"cryptotest.SetGlobalRandom can not use t.Parallel"),
 		parallel: true,
 		during: func(t test.Test) {
 			t.Setenv("TESTING", "during")
@@ -179,8 +179,8 @@ var parallelTestCases = map[string]ParallelParams{
 	},
 
 	"setenv-before-run-with-parallel": {
-		setup: test.Panic("testing: test using t.Setenv or t.Chdir" +
-			" can not use t.Parallel"),
+		setup: test.Panic("testing: test using t.Setenv, t.Chdir, or " +
+			"cryptotest.SetGlobalRandom can not use t.Parallel"),
 		parallel: true,
 		before: func(t test.Test) {
 			t.Setenv("TESTING", "before")

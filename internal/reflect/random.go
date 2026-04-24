@@ -104,7 +104,7 @@ func (r *random) newPrimitive(kind reflect.Kind) any {
 	case reflect.Uint64:
 		return uint64(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Uintptr:
-		return uintptr(r.rand.Intn(2<<r.length) + 1)
+		return uintptr(r.rand.Intn(2<<r.length) + 1) // #nosec G115 -- intentional use.
 	case reflect.Float32:
 		return float32(r.rand.Float64())
 	case reflect.Float64:

@@ -31,6 +31,11 @@ enableAllRules = true
 [rule.package-comments]
   disabled = true
 
+# Reports on package names that use core library names.
+# Rule prevents users from intentional creating drop in replacements.
+[rule.package-naming]
+  disabled = true
+
 # Reports on mismatches between directory names and package names.
 # Rule prevents having a clearer hyphen readable directory name.
 [rule.package-directory-mismatch]

@@ -1,5 +1,8 @@
 name: Go Build
 on: [push]
+permissions:
+  contents: read
+
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -7,7 +10,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.25
+        go-version: 1.26
         cache: false
 
     - name: Checkout code
@@ -31,7 +34,7 @@ jobs:
   #   - name: Set up Go
   #     uses: actions/setup-go@v5
   #     with:
-  #       go-version: 1.25
+  #       go-version: 1.26
   #       cache: false
 
   #   - name: Checkout code
@@ -53,7 +56,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.25
+        go-version: 1.26
 
     - name: Checkout code
       uses: actions/checkout@v4

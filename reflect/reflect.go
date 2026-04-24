@@ -1,3 +1,5 @@
+// Package reflect provides run-time reflection to manipulate complex test
+// objects so that they match the expected values.
 package reflect
 
 import (

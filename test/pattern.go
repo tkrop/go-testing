@@ -51,7 +51,7 @@ func First[T any](arg T, _ ...any) T { return arg }
 // test failure if no panic occurred or the panic response does not match the
 // expected value.
 func Recover(t Test, expect any) {
-	// revive:disable-next-line:defer // caller is expected to use defer.
+	//revive:disable-next-line:defer // caller is expected to use defer.
 	if actual := recover(); actual != nil {
 		assert.Equal(t, expect, actual)
 	} else {
@@ -150,7 +150,7 @@ func Main(main func()) func(t Test, param MainParams) {
 			ctx = param.Ctx
 		}
 
-		// #nosec G204 -- secured by calling only the test instance.
+		// #nosec G204,G702 -- secured by calling only the dedicated test.
 		cmd := exec.CommandContext(ctx, os.Args[0],
 			"-test.run="+t.(*Context).t.Name())
 
