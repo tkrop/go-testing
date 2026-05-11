@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tkrop/go-testing/internal/reflect"
 	"github.com/tkrop/go-testing/internal/sync"
 )
 
@@ -58,22 +59,29 @@ type Func func(Test)
 // Run creates an isolated (by default) parallel test context running the given
 // test function with given expectation. If the expectation is not met, a test
 // failure is created in the parent test context.
+//
+// **Note:** even though the test context is created with parallelization, the
+// test is still able to call `t.Parallel()`, since the context is swallowing
+// the panic that is raised when calling `t.Parallel()` multiple times.
 func Run(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, Parallel).Expect(expect).Run(test)
+		New(t, Parallel).Expect(expect).Run("", test)
 	}
 }
 
 // RunSeq creates an isolated, test context for the given test function with
 // given expectation. If the expectation is not met, a test failure is created
 // in the parent test context.
+//
+// **Note:** even though the test context is created with out parallelization,
+// you can still setup tests using `t.Parallel()` manually.
 func RunSeq(expect Expect, test Func) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, !Parallel).Expect(expect).Run(test)
+		New(t, !Parallel).Expect(expect).Run("", test)
 	}
 }
 
@@ -84,7 +92,7 @@ func InRun(expect Expect, test Func) Func {
 	return func(t Test) {
 		t.Helper()
 
-		New(t, !Parallel).Expect(expect).Run(test)
+		New(t, !Parallel).Expect(expect).Run("", test)
 	}
 }
 
@@ -129,7 +137,8 @@ func New(t Test, parallel bool) *Context {
 	}
 }
 
-// Expect sets up a new test outcome.
+// Expect sets up a different expected test outcome, i.e. `test.Success` or
+// `test.Failure`. Can be called multiple times, but the last call wins.
 func (t *Context) Expect(expect Expect) *Context {
 	t.t.Helper()
 
@@ -141,10 +150,12 @@ func (t *Context) Expect(expect Expect) *Context {
 	return t
 }
 
-// Timeout sets up an individual timeout for the test. This does not affect the
-// global test timeout or a pending parent timeout that may abort the test, if
-// the given duration is exceeding the timeout. A negative or zero duration is
-// ignored and will not change the timeout.
+// Timeout sets up an individual timeout for the test. The method does not
+// affect the global test timeout or a pending parent timeout that may abort
+// the test, if the given duration is exceeding the timeout.
+//
+// A negative or zero duration is ignored and will not change the timeout. If
+// this method is called multiple times, the last call wins.
 func (t *Context) Timeout(timeout time.Duration) *Context {
 	t.t.Helper()
 
@@ -160,11 +171,11 @@ func (t *Context) Timeout(timeout time.Duration) *Context {
 
 // StopEarly stops the test by the given duration ahead of the individual or
 // global test deadline, to ensure that a cleanup function has sufficient time
-// to finish before a global deadline exceeds. The method is not able to extend
-// the test deadline. A negative or zero duration is ignored.
+// to finish before the deadline is exceeded. The method is not able to extend
+// the test deadline.
 //
-// Warning: calling this method multiple times will also reduce the deadline
-// step by step.
+// A negative or zero duration is ignored. **Warning:** calling this method
+// multiple times will also reduce the test time step by step.
 func (t *Context) StopEarly(time time.Duration) *Context {
 	t.t.Helper()
 
@@ -473,12 +484,20 @@ func (t *Context) Panic(arg any) {
 	runtime.Goexit()
 }
 
-// Run executes the test function in a safe detached environment and check
-// the failure state after the test function has finished. If the test result
-// is not according to expectation, a failure is created in the parent test
-// context.
-func (t *Context) Run(test Func) Test {
+// Run executes the test function in a safe detached environment and checks
+// the failure state after the test function has finished. If the expectation
+// is not met, a failure is created in the parent test context.
+//
+// If name is non-empty, a named sub-test is created by delegating to the
+// underlying test runner, allowing *Context to be used wherever a named
+// sub-test is created using reflect.Run.
+func (t *Context) Run(name string, call Func) {
 	t.t.Helper()
+
+	if name != "" {
+		reflect.Run(t.t, name, call)
+		return
+	}
 
 	if t.parallel {
 		t.t.Parallel()
@@ -495,7 +514,7 @@ func (t *Context) Run(test Func) Test {
 
 	// Execute test function with channel to signal completion.
 	done := make(chan any, 1)
-	go t.run(test, done)
+	go t.run(call, done)
 
 	// Wait for test to finish or deadline to expire.
 	select {
@@ -504,8 +523,6 @@ func (t *Context) Run(test Func) Test {
 	case <-time.After(wait):
 		t.Fatal("stopped by deadline")
 	}
-
-	return t
 }
 
 // run executes the test function in a safe, detached test environment. The

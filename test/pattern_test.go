@@ -505,6 +505,7 @@ var mainTestCases = map[string]test.MainParams{
 		Args: []string{"interrupt", "1s"},
 		Ctx: test.First(context.WithTimeout(context.Background(),
 			500*time.Millisecond)),
+		Error:    context.DeadlineExceeded,
 		ExitCode: -1,
 	},
 }

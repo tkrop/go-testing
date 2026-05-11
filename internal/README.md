@@ -1,13 +1,16 @@
 # Internal utils
 
-The `internal` utils contain the all helpful generic solutions developed to
-support the functionality of the `testing` framework, but are not supposed to
-be exported and used by others.
+The `internal` packages contain all the helpful generic solutions developed to
+support the functionality of the `go-testing` framework, but are not supposed
+to be exported and used by others.
 
-The `internal` utils consist of the following sub-packages:
+The `internal` packages consist of the following sub-packages:
 
-* [`math`](math) provides generic `Min`/`Max` functions that are used by the
-  [`reflect`](reflect) package.
+* [`iter`](iter) provides iterator wrappers for structures in standard packages
+  that do not provide these yet.
+
+* [`maps`](maps) provides helpful functions for maps that are not supported by
+  the standard map packages yet.
 
 * [`reflect`](reflect) contains a collection of helpful generic functions that
   support reflection. The functions are used by the [`mock`](../mock) and the

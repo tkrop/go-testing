@@ -30,11 +30,42 @@ type SetupFunc func(Test)
 // ParamFunc defines the common parameterized test function signature.
 type ParamFunc[P any] func(t Test, param P)
 
+// BenchmarkFunc defines a two-phase parameterized benchmark function
+// signature. The signature requires a setup function that returns a loop
+// function to be executed in the benchmark loop. The setup phase receives the
+// raw `*testing.B` and parameters for benchmark configuration, and returns
+// a loop function. The benchmark automatically calls `b.ReportAllocs` and
+// `b.ResetTimer` after the setup phase and before entering the loop.
+type BenchmarkFunc[P any] func(b *testing.B, param P) func(*testing.B)
+
 // FilterFunc defines the common test filter function signature.
 type FilterFunc[P any] func(name string, param P) bool
 
 // CleanupFunc defines the common test cleanup function signature.
 type CleanupFunc func()
+
+// All creates a filter function that always returns true and thereby filters
+// all test cases.
+func All[P any]() FilterFunc[P] {
+	return func(_ string, _ P) bool {
+		return true
+	}
+}
+
+// None creates a filter function that always returns false and thereby filters
+// no test cases.
+func None[P any]() FilterFunc[P] {
+	return func(_ string, _ P) bool {
+		return false
+	}
+}
+
+// Not negates the given filter function.
+func Not[P any](filter FilterFunc[P]) FilterFunc[P] {
+	return func(name string, param P) bool {
+		return !filter(name, param)
+	}
+}
 
 // And combines the given filter functions with a logical `and`.
 func And[P any](filters ...FilterFunc[P]) FilterFunc[P] {
@@ -60,11 +91,26 @@ func Or[P any](filters ...FilterFunc[P]) FilterFunc[P] {
 	}
 }
 
-// Not negates the given filter function.
-func Not[P any](filter FilterFunc[P]) FilterFunc[P] {
+// Xor combines the given filter functions with an exclusive or, returning
+// true if exactly one of the filters matches.
+func Xor[P any](filters ...FilterFunc[P]) FilterFunc[P] {
 	return func(name string, param P) bool {
-		return !filter(name, param)
+		count := 0
+		for _, filter := range filters {
+			if filter(name, param) {
+				count++
+			}
+		}
+		return count == 1
 	}
+}
+
+// Implies is a convenience filter implementing logical implication. It is
+// returning true if the condition does not match or all consequences match.
+func Implies[P any](
+	when FilterFunc[P], then ...FilterFunc[P],
+) FilterFunc[P] {
+	return Or(Not(when), And(then...))
 }
 
 // Pattern creates a filter function that matches the test case name against the
@@ -95,8 +141,16 @@ func Arch[P any](arch string) FilterFunc[P] {
 
 // Factory is a generic test factory interface.
 type Factory[P any] interface {
+	// Prefix sets a test and benchmark prefix with given value. This can be
+	// used to structure tests and benchmarks into logical groups add labels
+	// for tools. If called multiple times, only the last prefix is applied.
+	Prefix(prefix string) Factory[P]
 	// Adds a generic filter function that allows to filter test cases based on
-	// the name and the parameter set.
+	// the name and the parameter set. If multiple filters are added, all of
+	// them must accept the test case for it to be executed.
+	//
+	// **Note:** A test case prefix is always applied to the test case name
+	// before the test case parameters and name are passed to the filter.
 	Filter(filter FilterFunc[P]) Factory[P]
 	// Timeout sets up a timeout for the test cases executed by the test runner.
 	// Setting a timeout is useful to prevent the test execution from waiting
@@ -122,6 +176,12 @@ type Factory[P any] interface {
 	// sets are provided as a single parameter set, the test case name is used
 	// as the test name. The test case name is normalized before being used.
 	RunSeq(call ParamFunc[P]) Factory[P]
+	// Benchmark runs all test parameter sets using the two-phase benchmarker
+	// pattern. The function is called for setup and returns the loop function
+	// to be executed in the benchmark loop. The benchmark automatically calls
+	// `b.ReportAllocs` and `b.ResetTimer` after the setup phase and before
+	// entering the loop.
+	Benchmark(call BenchmarkFunc[P]) Factory[P]
 	// Cleanup register a function to be called to cleanup after all tests have
 	// finished to remove the shared resources.
 	Cleanup(call CleanupFunc)
@@ -130,13 +190,15 @@ type Factory[P any] interface {
 // factory is a generic parameterized test factory struct.
 type factory[P any] struct {
 	// The testing context to run the tests in.
-	t *testing.T
+	t Test
 	// A wait group to synchronize the test execution.
 	wg sync.WaitGroup
 	// The test parameter sets to run.
 	params any
-	// A filter to include or exclude test cases.
-	filter []func(string, P) bool
+	// A prefix to prepend to each test case name.
+	prefix string
+	// A filters to include or exclude test cases.
+	filters []func(string, P) bool
 	// A timeout after which the test execution is stopped to prevent waiting
 	// to long in case of deadlocks.
 	timeout time.Duration
@@ -148,7 +210,7 @@ type factory[P any] struct {
 // can be a single test parameter set, a slice of test parameter sets, or a map
 // of named test parameter sets. The test runner is looking into the parameter
 // set to determine a suitable test case name, e.g. by using a `name` parameter.
-func Any[P any](t *testing.T, params any) Factory[P] {
+func Any[P any](t Test, params any) Factory[P] {
 	t.Helper()
 
 	return &factory[P]{
@@ -161,7 +223,7 @@ func Any[P any](t *testing.T, params any) Factory[P] {
 // Param creates a new parallel test runner with given test parameter sets
 // provided as variadic arguments. The test runner is looking into the
 // parameter set to find a suitable test case name.
-func Param[P any](t *testing.T, params ...P) Factory[P] {
+func Param[P any](t Test, params ...P) Factory[P] {
 	t.Helper()
 
 	if len(params) == 1 {
@@ -172,7 +234,7 @@ func Param[P any](t *testing.T, params ...P) Factory[P] {
 
 // Map creates a new parallel test runner with given test parameter sets
 // provided as a test case name to parameter sets mapping.
-func Map[P any](t *testing.T, params ...map[string]P) Factory[P] {
+func Map[P any](t Test, params ...map[string]P) Factory[P] {
 	t.Helper()
 
 	return Any[P](t, maps.Add(maps.Copy(params[0]), params[1:]...))
@@ -181,7 +243,7 @@ func Map[P any](t *testing.T, params ...map[string]P) Factory[P] {
 // Slice creates a new parallel test runner with given test parameter sets
 // provided as a slice. The test runner is looking into the parameter set to
 // find a suitable test case name.
-func Slice[P any](t *testing.T, params ...[]P) Factory[P] {
+func Slice[P any](t Test, params ...[]P) Factory[P] {
 	t.Helper()
 
 	return Any[P](t, slices.Add(params...))
@@ -189,9 +251,17 @@ func Slice[P any](t *testing.T, params ...[]P) Factory[P] {
 
 // Filter adds a generic filter function that allows to filter test cases based
 // on the name and the parameter set.
-func (r *factory[P]) Filter(filter FilterFunc[P]) Factory[P] {
-	r.filter = append(r.filter, filter)
-	return r
+func (f *factory[P]) Filter(filter FilterFunc[P]) Factory[P] {
+	f.filters = append(f.filters, filter)
+	return f
+}
+
+// Prefix sets a test and benchmark prefix with the given value. This can be
+// used to structure tests and benchmarks into logical groups or add labels.
+// If called multiple times, only the last prefix is applied.
+func (f *factory[P]) Prefix(prefix string) Factory[P] {
+	f.prefix = prefix
+	return f
 }
 
 // Timeout can be used to set up a timeout for the test cases executed by the
@@ -199,45 +269,61 @@ func (r *factory[P]) Filter(filter FilterFunc[P]) Factory[P] {
 // waiting too long in case of deadlocks. The timeout is not affecting the
 // global test timeout that may only abort a test earlier. If the given
 // duration is zero or negative, the timeout is ignored.
-func (r *factory[P]) Timeout(timeout time.Duration) Factory[P] {
-	r.timeout = timeout
-	return r
+func (f *factory[P]) Timeout(timeout time.Duration) Factory[P] {
+	f.timeout = timeout
+	return f
 }
 
 // StopEarly can be used to stop the test by the given duration ahead of an
 // individual or global test deadline. This is useful to ensure that resources
 // can be cleaned up before the global deadline is exceeded.
-func (r *factory[P]) StopEarly(early time.Duration) Factory[P] {
-	r.early = early
-	return r
+func (f *factory[P]) StopEarly(early time.Duration) Factory[P] {
+	f.early = early
+	return f
 }
 
 // Run runs the test parameter sets (by default) parallel.
-func (r *factory[P]) Run(call ParamFunc[P]) Factory[P] {
-	return r.run(call, Parallel)
+func (f *factory[P]) Run(call ParamFunc[P]) Factory[P] {
+	return f.dispatch(Parallel, func(name string, param P) {
+		f.test(name, param, call, Parallel)
+	})
 }
 
 // RunSeq runs the test parameter sets in a sequence.
-func (r *factory[P]) RunSeq(call ParamFunc[P]) Factory[P] {
-	return r.run(call, !Parallel)
+func (f *factory[P]) RunSeq(call ParamFunc[P]) Factory[P] {
+	return f.dispatch(!Parallel, func(name string, param P) {
+		f.test(name, param, call, !Parallel)
+	})
+}
+
+// Benchmark runs all parameter sets using the two-phase benchmark pattern.
+// This is only supported for benchmarks and will panic if the test target does
+// not implement the Benchmarker interface.
+//
+// Use `test.Benchmark(b)` to wrap the *testing.B target as a Benchmarker when
+// using the test runner in benchmarks.
+func (f *factory[P]) Benchmark(call BenchmarkFunc[P]) Factory[P] {
+	return f.dispatch(!Parallel, func(name string, param P) {
+		f.bench(name, param, call)
+	})
 }
 
 // Cleanup register a function to be called for cleanup after all tests have
 // been finished - successful and failing.
-func (r *factory[P]) Cleanup(call CleanupFunc) {
-	r.t.Cleanup(func() {
-		r.t.Helper()
-		r.wg.Wait()
+func (f *factory[P]) Cleanup(call CleanupFunc) {
+	f.t.Cleanup(func() {
+		f.t.Helper()
+		f.wg.Wait()
 		call()
 	})
 }
 
 // Parallel ensures that the test runner runs the test parameter sets in
 // parallel.
-func (r *factory[P]) parallel(parallel bool) {
+func (f *factory[P]) parallel(parallel bool) {
 	if parallel {
-		defer r.recover()
-		r.t.Parallel()
+		defer f.recover()
+		f.t.Parallel()
 	}
 }
 
@@ -250,74 +336,119 @@ func (*factory[P]) recover() {
 	}
 }
 
-// Runs the test parameter sets defined by the factory either parallel or in
-// sequence.
-func (r *factory[P]) run(
-	call ParamFunc[P], parallel bool,
+// dispatch iterates over the parameter sets, resolves names, applies filters,
+// and calls the provided function for each accepted `(name, param)` pair. For
+// map and slice cases it also triggers the outer parallel declaration if
+// enabled.
+func (f *factory[P]) dispatch(
+	parallel bool, call func(name string, param P),
 ) Factory[P] {
-	switch params := r.params.(type) {
+	switch params := f.params.(type) {
 	case map[string]P:
-		r.parallel(parallel)
+		f.parallel(parallel)
 		for name, param := range params {
 			name := reflect.Name(name, param)
-			r.exec(name, param, call, parallel)
+			f.filter(name, param, call)
 		}
 
 	case []P:
-		r.parallel(parallel)
+		f.parallel(parallel)
 		for index, param := range params {
-			name := reflect.Name("", param) + "[" + strconv.Itoa(index) + "]"
-			r.exec(name, param, call, parallel)
+			name := reflect.Name("", param) +
+				"[" + strconv.Itoa(index) + "]"
+			f.filter(name, param, call)
 		}
 
 	case P:
 		name := reflect.Name("", params)
-		r.exec(name, params, call, parallel)
+		f.filter(name, params, call)
+
 	default:
-		panic(NewErrInvalidType(r.params))
+		panic(NewErrInvalidType(f.params))
 	}
-	return r
+
+	return f
 }
 
-// Executes the given test parameter set with the provided name after matching
-// against the filters. If one of the applied filters matches the test case it
-// is skipped.
-func (r *factory[P]) exec(
-	name string, param P, call ParamFunc[P], parallel bool,
+// filter filters the parameter set by its `(name, param)` pair before calling
+// the provided function. The function is only called when all registered
+// filters accept the test case.
+//
+// *Note:* The name is prefixed if setup before being passed to the filters.
+func (f *factory[P]) filter(
+	name string, param P, call func(name string, param P),
 ) {
-	for _, filter := range r.filter {
+	if f.prefix != "" {
+		name = f.prefix + name
+	}
+
+	for _, filter := range f.filters {
 		if !filter(name, param) {
 			return
 		}
 	}
 
-	// Execute anonymous non-parallel tests directly.
-	if name == "" && !parallel {
-		r.wrap(param, call, parallel)(r.t)
-		return
-	}
-
-	r.t.Run(name, r.wrap(param, call, parallel))
+	call(name, param)
 }
 
 // wrap creates the wrapper method eventually executing the test.
-func (r *factory[P]) wrap(
+func (f *factory[P]) wrap(
 	param P, call ParamFunc[P], parallel bool,
-) func(*testing.T) {
-	r.wg.Add(1)
+) func(Test) {
+	f.wg.Add(1)
 
-	return func(t *testing.T) {
+	return func(t Test) {
 		t.Helper()
 
 		New(t, parallel).
 			Expect(reflect.Find(param, Success, "expect", "*")).
-			Timeout(reflect.Find(param, r.timeout, "timeout")).
-			StopEarly(reflect.Find(param, r.early, "early")).
-			Run(func(t Test) {
+			Timeout(reflect.Find(param, f.timeout, "timeout")).
+			StopEarly(reflect.Find(param, f.early, "early")).
+			Run("", func(t Test) {
 				t.Helper()
 
-				defer r.wg.Done()
+				defer f.wg.Done()
 				call(t, param)
 			})
 	}
+}
+
+// test executes the given single test parameter set with the given name. If
+// the test is configured to run in parallel, it is executed in a separate
+// goroutine and synchronized with the wait group. The test is wrapped to
+// apply the timeout and early stop configuration.
+func (f *factory[P]) test(
+	name string, param P, call ParamFunc[P], parallel bool,
+) {
+	// Execute anonymous non-parallel tests directly.
+	if name == "" && !parallel {
+		f.wrap(param, call, parallel)(f.t)
+		return
+	}
+
+	New(f.t, !Parallel).Run(name, f.wrap(param, call, parallel))
+}
+
+// bench runs the given single bench parameter set with the given name.
+func (f *factory[P]) bench(
+	name string, param P, call BenchmarkFunc[P],
+) {
+	b, ok := f.t.(Benchmarker)
+	if !ok {
+		panic("not a benchmark target [use test.Benchmark(b)]")
+	}
+	f.wg.Add(1)
+	defer f.wg.Done()
+
+	b.Benchmark(name, func(b *testing.B) {
+		b.Helper()
+
+		call := call(b, param)
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for range b.N {
+			call(b)
+		}
+	})
 }

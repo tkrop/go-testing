@@ -1,5 +1,5 @@
 // Package test contains the main collection of functions and types for setting
-// up the basic isolated test environment. It is part of the public interface
-// and starting to get stable, however, we are still experimenting to optimize
-// the interface and the user experience.
+// up the strongly isolated and parallel running tests. It is the main package
+// of the `go-testing` library and provides the main interface for writing
+// tests.
 package test

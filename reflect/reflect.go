@@ -1,5 +1,6 @@
-// Package reflect provides run-time reflection to manipulate complex test
-// objects so that they match the expected values.
+// Package reflect provides runtime reflection helpers, i.e. finders, builders,
+// and accessors, that allow to read and write complex private test objects so
+// that they can be setup to match the test expectations.
 package reflect
 
 import (
