@@ -33,6 +33,8 @@ func TestRunSeq(t *testing.T) {
 
 	for name, param := range commonTestCases {
 		t.Run(name, test.RunSeq(param.expect, func(t test.Test) {
+			t.Parallel()
+
 			param.CheckName(t)
 			param.ExecTest(t)
 		}))
@@ -76,7 +78,7 @@ func TestContext(t *testing.T) {
 
 			// When
 			test.New(t, !test.Parallel).
-				Expect(test.Success).Run(param.test)
+				Expect(test.Success).Run("", param.test)
 		}))
 	}
 }
@@ -130,7 +132,7 @@ func TestCleanup(t *testing.T) {
 
 			// When
 			test.New(t, test.Parallel).
-				Expect(test.Success).Run(param.test)
+				Expect(test.Success).Run("", param.test)
 
 			// Then
 			defer wg.Done()
@@ -209,7 +211,7 @@ func TestContextParallel(t *testing.T) {
 
 			// When
 			test.New(t, param.parallel).
-				Expect(test.Success).Run(func(t test.Test) {
+				Expect(test.Success).Run("", func(t test.Test) {
 				mock.NewMocks(t).Expect(param.setup)
 				param.during(t)
 			})
@@ -275,7 +277,7 @@ func TestDeadline(t *testing.T) {
 
 			test.New(t, !test.Parallel).Expect(!param.failure).
 				Timeout(param.time).StopEarly(param.early).
-				Run(func(t test.Test) {
+				Run("", func(t test.Test) {
 					// When
 					time.Sleep(param.sleep)
 

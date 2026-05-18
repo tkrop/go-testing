@@ -47,14 +47,25 @@
 
 ## Introduction
 
-Goal of the `testing` framework is to provide simple common patterns for
-writing effective unit, component, and integration tests in [`go`][go].
+Goal of the `go-testing` framework is to provide unified building blocks for
+writing short and effective unit component, and integration tests as well as
+benchmarks in [`go`][go] using simple common patterns.
 
-To accomplish this, the `testing` framework provides a couple of extensions
-for [`go`][go]'s [`testing`][testing] package that support a simple setup of
-*strongly isolated* and *parallel running* unit tests using [`gomock`][gomock]
-and/or [`gock`][gock] that work under various failure scenarios and in the
-presence of spawned [`go`-routines][go-routines].
+To accomplish this, the `go-testing` framework provides a couple of extensions
+for [`go`][go]'s [`testing`][testing] package that support setup of *strongly
+isolated* and *parallel running* unit tests using [`gomock`][gomock] and/or
+[`gock`][gock] that work under various failure scenarios even in the presence
+of spawned [`go`-routines][go-routines].
+
+The core idea of the [`mock`](mock)/[`gock`](gock) packages is to provide a
+short pragmatic domain language for defining mock requests with responses that
+enforce validation, while the [`test`](test) package provides the building
+blocks for efficient test setup and test isolation.
+
+While still on version `0.1.x` the code and the API has proven to be pretty
+stable over the last years. The only reason, why it has not been released as
+`1.0` is that one of the core ideas of this framework, the [extended mock
+generator](cmd/mock), has not progressed as intended for an initial release.
 
 [go]: <https://go.dev/>
 [go-routines]: <https://go.dev/tour/concurrency>
@@ -62,10 +73,10 @@ presence of spawned [`go`-routines][go-routines].
 
 ### Example Usage
 
-The core idea of the [`mock`](mock)/[`gock`](gock) packages is to provide a
-short pragmatic domain language for defining mock requests with responses that
-enforce validation, while the [`test`](test) package provides the building
-blocks for test isolation.
+First you have to define a test/benchmark parameter set. While this can be done
+in many ways, the following setup structure is considered to be the `go-testing`
+framework idiomatic way due to its readability and wide coverage of different
+use cases:
 
 ```go
 type UnitParams struct {
@@ -87,40 +98,89 @@ var unitTestCases = map[string]UnitParams {
         expect: test.ExpectSuccess
     }
 }
+```
 
+Now you can set up a *strongly isolated* and *parallel running* test. While
+there are many ways to define such tests (see package [test](test)), the
+following pattern is considered to be the most `go-testing` framework idiomatic
+way due to its readability and wide coverage of different use cases:
+
+```go
 func TestUnit(t *testing.T) {
+    // Setup the test using a map fo parameterization.
     test.Map(t, unitTestCases).
-        Timeout(50 * time.Millisecond)
+        // Exclude of test cases temporary or permanent.
+        Filter(test.Not(test.Pattern[T]("^test-case-prefix"))).
+        // Include of test cases temporary or permanent.
+        Filter(test.Pattern[T]("^test-case-name$")).
+        // Run the test in parallel.
         Run(func(t test.Test, param UnitParams){
 
-        // Given
-        mocks := mock.NewMock(t).
-            SetArg("common-arg", local.input*)...
-            Expect(param.setup)
+            // Given
+            mocks := mock.NewMock(t).
+                SetArg("common-arg", local.input*)...
+                Expect(param.setup)
 
-        unit := NewUnitService(
-            mock.Get(mocks, NewServiceMock),
-            ...
-        )
+            unit := NewUnitService(
+                mock.Get(mocks, NewServiceMock),
+                ...
+            )
 
-        // When
-        result, err := unit.call(param.input*...)
+            // When
+            result, err := unit.call(param.input*...)
 
-        mocks.Wait()
+            mocks.Wait()
 
-        // Then
-        if param.expectError != nil {
+            // Then
             assert.Equal(t, param.expectError, err)
-        } else {
-            require.NoError(t, err)
-        }
-        assert.Equal(t, param.expect*, result)
-    })
+            assert.Equal(t, param.expect*, result)
+        })
 }
 ```
 
-This opinionated test pattern supports a wide range of test in a standardized
-way. For variations have a closer look at the [test](test) package.
+As an addon, you can also use the same pattern to define benchmarks for a
+system under test based on the before defined test parameter set. The following
+setup structure is considered to be the most `go-testing` framework idiomatic
+way (see also [Test benchmark setup](test#parameterized-benchmark-setup)):
+
+```go
+func BenchmarkUnit(b *testing.B) {
+    test.Map(test.Benchmark(b), unitTestCases).
+        // Exclude of test cases temporary or permanent.
+        Filter(test.Not(test.Pattern[T]("^test-case-prefix"))).
+        // Include of test cases temporary or permanent.
+        Filter(test.Pattern[T]("^test-case-name$")).
+        // Execute benchmark setup and loop phases.
+        Benchmark(func(b *testing.B, param UnitParams) func(b *testing.B) {
+            // Setup
+            unit := NewUnitService(param.input*...)
+
+            // Define processed bytes.
+            b.SetBytes(len(param.input*))
+
+            // Loop
+            return func(b *testing.B) {
+                result, err := unit.call(param.input*...)
+
+                // Prevent optimization.
+                runtime.KeepAlive(result)
+                runtime.KeepAlive(err)
+            }
+        })
+}
+```
+
+**Note:** in a benchmark you need to ensure that you reserve sufficient memory
+for the `unit`-under-test in the setup phase to avoid additional memory allocs
+in the loop. While you also should prevent return values from being optimized
+away in the loop using `runtime.KeepAlive`, you should not do this for
+multi-byte results, since these also creates additional memory allocations due
+the the copy nature of the `runtime.KeepAlive`.
+
+For more test patterns and variations have a closer look at details in the
+[test](test) package or read the [package docs][docs-test].
+
+[docs-test]: <https://pkg.go.dev/github.com/tkrop/go-testing/test>
 
 
 ### Why parameterized test?
@@ -168,7 +228,7 @@ responsibility of the test developer to set up the validation correctly.
 
 ## Framework structure
 
-The `testing` framework consists of the following sub-packages:
+The `go-testing` framework consists of the following sub-packages:
 
 * [`test`](test) provides a small framework to isolate the test execution and
   safely check whether a test fails or succeeds as expected in combination with
@@ -281,3 +341,13 @@ project has more than 25 Stars, I will introduce semantic versions `v1`.
 If you like to contribute, please create an issue and/or pull request with a
 proper description of your proposal or contribution. I will review it and
 provide feedback on it as fast as possible.
+
+
+## Disclaimer
+
+This software is developed with the help of AI following the highest human
+standards. All actions executed by AI are carefully reviewed, counter-checked,
+and corrected with the highest human standards and quality goals in mind. No
+AI generate code is allowed to be merged or released without a careful human
+reviews to prevent systematic degeneration of coding standards and code
+quality.
