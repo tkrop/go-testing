@@ -1,8 +1,8 @@
 # Internal utils
 
 The `internal` packages contain all the helpful generic solutions developed to
-support the functionality of the `go-testing` framework, but are not supposed
-to be exported and used by others.
+support the functionality of the [`go-testing`][go-testing] framework, but are
+not supposed to be exported and used by others.
 
 The `internal` packages consist of the following sub-packages:
 
@@ -23,3 +23,5 @@ The `internal` packages consist of the following sub-packages:
 * [`sync`](sync) provides a lenient wait group implementation for coordinating
   [`mock`](../mock)s in the isolated [`test`](../test)s to gracefully unlock all
   waiters after test failures to finish the test.
+
+[go-testing]: <https://pkg.go.dev/github.com/tkrop/go-testing>

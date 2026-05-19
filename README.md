@@ -5,7 +5,6 @@
 [![Coverage][coverage-badge]][coverage-link]
 [![Quality][quality-badge]][quality-link]
 [![Report][report-badge]][report-link]
-[![FOSSA][fossa-badge]][fossa-link]
 [![License][license-badge]][license-link]
 [![Docs][docs-badge]][docs-link]
 <!--
@@ -28,10 +27,7 @@
 [report-badge]: https://goreportcard.com/badge/github.com/tkrop/go-testing
 [report-link]: https://goreportcard.com/report/github.com/tkrop/go-testing
 
-[fossa-badge]: https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftkrop%2Ftesting.svg?type=shield&issueType=license
-[fossa-link]: https://app.fossa.com/projects/git%2Bgithub.com%2Ftkrop%2Ftesting?ref=badge_shield&issueType=license
-
-[license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
+[license-badge]: https://img.shields.io/badge/License-MIT-green.svg
 [license-link]: https://opensource.org/licenses/MIT
 
 [docs-badge]: https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg
@@ -47,36 +43,41 @@
 
 ## Introduction
 
-Goal of the `go-testing` framework is to provide unified building blocks for
-writing short and effective unit component, and integration tests as well as
-benchmarks in [`go`][go] using simple common patterns.
+Are you tired of endless boiler plate when writing high quality [`go`]-tests?
 
-To accomplish this, the `go-testing` framework provides a couple of extensions
-for [`go`][go]'s [`testing`][testing] package that support setup of *strongly
-isolated* and *parallel running* unit tests using [`gomock`][gomock] and/or
-[`gock`][gock] that work under various failure scenarios even in the presence
-of spawned [`go`-routines][go-routines].
+Then [`go-testing`][go-testing] may be your library of choice. It provides
+unified building blocks for writing short and effective unit component, and
+integration tests in [`go`][go] using simple, common patterns, that allow to
+target a [sensible, high-quality code coverage][unit-testing].
 
-The core idea of the [`mock`](mock)/[`gock`](gock) packages is to provide a
-short pragmatic domain language for defining mock requests with responses that
-enforce validation, while the [`test`](test) package provides the building
-blocks for efficient test setup and test isolation.
+**Now also providing support for micro-benchmarks!**
 
-While still on version `0.1.x` the code and the API has proven to be pretty
-stable over the last years. The only reason, why it has not been released as
-`1.0` is that one of the core ideas of this framework, the [extended mock
-generator](cmd/mock), has not progressed as intended for an initial release.
+To accomplish this, [`go-testing`][go-testing] provides a couple of highly
+sophisticated extensions for [`go`][go]'s [`testing`][testing] package as well
+as [`gomock`][gomock] and [`gock`][gock] (lifting their limititation), that
+foster the setup of *strongly isolated* and *parallel running* tests, perfectly
+working for failure scenarios and even in the presence of spawned
+[`go`-routines][go-routines].
+
+While the [`test`](test) package provides the building blocks for efficient
+test setup and test isolation, the [`mock`](mock) and [`gock`](gock) packages
+provide access to a short pragmatic domain language for defining detailed mock
+requests and responses that allow to enforce validation.
+
+You can find more information in the [`go-testing` documentation][go-testing].
 
 [go]: <https://go.dev/>
 [go-routines]: <https://go.dev/tour/concurrency>
+[go-testing]: <https://pkg.go.dev/github.com/tkrop/go-testing>
+[unit-testing]: <https://ricomariani.medium.com/100-unit-testing-now-its-ante-f0e2384ffedf>
 
 
 ### Example Usage
 
-First you have to define a test/benchmark parameter set. While this can be done
-in many ways, the following setup structure is considered to be the `go-testing`
-framework idiomatic way due to its readability and wide coverage of different
-use cases:
+First you have to define a unified test/benchmark parameter set. While this can
+be done in many different ways, the following setup structure is considered to
+be the [`go-testing`][go-testing] idiomatic way due to its wide coverage of
+different use cases, its flexibility, and its non-the-last readability:
 
 ```go
 type UnitParams struct {
@@ -101,17 +102,18 @@ var unitTestCases = map[string]UnitParams {
 ```
 
 Now you can set up a *strongly isolated* and *parallel running* test. While
-there are many ways to define such tests (see package [test](test)), the
-following pattern is considered to be the most `go-testing` framework idiomatic
-way due to its readability and wide coverage of different use cases:
+there are again many ways to define tests (see package [test](test)), the
+following pattern is considered to be the most [`go-testing`][go-testing]
+idiomatic way again due to its wide coverage of different use cases, its
+flexibility, and its non-the-last readability:
 
 ```go
 func TestUnit(t *testing.T) {
     // Setup the test using a map fo parameterization.
     test.Map(t, unitTestCases).
-        // Exclude of test cases temporary or permanent.
+        // Filter set of test cases temporary or permanent.
         Filter(test.Not(test.Pattern[T]("^test-case-prefix"))).
-        // Include of test cases temporary or permanent.
+        // Focus on set of test cases temporary or permanent.
         Filter(test.Pattern[T]("^test-case-name$")).
         // Run the test in parallel.
         Run(func(t test.Test, param UnitParams){
@@ -140,15 +142,16 @@ func TestUnit(t *testing.T) {
 
 As an addon, you can also use the same pattern to define benchmarks for a
 system under test based on the before defined test parameter set. The following
-setup structure is considered to be the most `go-testing` framework idiomatic
-way (see also [Test benchmark setup](test#parameterized-benchmark-setup)):
+setup structure is considered to be the most [`go-testing`][go-testing]
+framework idiomatic way (see also [Test benchmark
+setup](test#parameterized-benchmark-setup)):
 
 ```go
 func BenchmarkUnit(b *testing.B) {
     test.Map(test.Benchmark(b), unitTestCases).
-        // Exclude of test cases temporary or permanent.
+        // Filter set of test cases temporary or permanent.
         Filter(test.Not(test.Pattern[T]("^test-case-prefix"))).
-        // Include of test cases temporary or permanent.
+        // Focus on set of test cases temporary or permanent.
         Filter(test.Pattern[T]("^test-case-name$")).
         // Execute benchmark setup and loop phases.
         Benchmark(func(b *testing.B, param UnitParams) func(b *testing.B) {
@@ -228,7 +231,8 @@ responsibility of the test developer to set up the validation correctly.
 
 ## Framework structure
 
-The `go-testing` framework consists of the following sub-packages:
+The [`go-testing`][go-testing] framework consists of the following
+sub-packages:
 
 * [`test`](test) provides a small framework to isolate the test execution and
   safely check whether a test fails or succeeds as expected in combination with
@@ -331,9 +335,9 @@ is following the [conventional commit][convent-commit] best practice.
 
 ## Terms of Usage
 
-This software is open source under the MIT license. You can use it without
-restrictions and liabilities. Please give it a star, so that I know. If the
-project has more than 25 Stars, I will introduce semantic versions `v1`.
+This software is open source under the MIT license. You can use, fork, and copy
+it without restrictions and liabilities. Please give the project a star, when
+you consider it worthy.
 
 
 ## Contributing
