@@ -382,8 +382,8 @@ func TestCast(t *testing.T) {
 		if strings.Contains(t.Name(), "function") {
 			assert.NotNil(t, result)
 		} else if strings.Contains(t.Name(), "pointer to any") {
-			expect := param.expect.(*TestStruct)
-			result := result.(*TestStruct)
+			expect := test.Cast[*TestStruct](param.expect)
+			result := test.Cast[*TestStruct](result)
 			assert.Equal(t, expect.name, result.name)
 			assert.Equal(t, expect.id, result.id)
 		} else if param.expect == nil {

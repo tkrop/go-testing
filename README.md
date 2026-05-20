@@ -41,28 +41,37 @@
 [security-link]: https://snyk.io/test/github/tkrop/go-testing
 -->
 
+Go testing extension, that allows a simple setup of strongly isolated unit,
+component, and integration test providing advanced mock support extending
+[gomock][gomock] and [gock][gock].
+
+
 ## Introduction
 
-Are you tired of endless boiler plate when writing high quality [`go`]-tests?
+Are you tired of endless boiler plate code when writing high quality [`go`][go]
+tests with exhaustive mock setups for isolating the systems under test?
 
 Then [`go-testing`][go-testing] may be your library of choice. It provides
 unified building blocks for writing short and effective unit component, and
 integration tests in [`go`][go] using simple, common patterns, that allow to
-target a [sensible, high-quality code coverage][unit-testing].
+target a [sensible, high-quality code coverage][unit-testing] using different
+mock frameworks.
 
-**Now also providing support for micro-benchmarks!**
-
-To accomplish this, [`go-testing`][go-testing] provides a couple of highly
-sophisticated extensions for [`go`][go]'s [`testing`][testing] package as well
-as [`gomock`][gomock] and [`gock`][gock] (lifting their limititation), that
-foster the setup of *strongly isolated* and *parallel running* tests, perfectly
-working for failure scenarios and even in the presence of spawned
-[`go`-routines][go-routines].
+To accomplish this, [`go-testing`][go-testing] provides highly sophisticated
+extensions for [`go`][go]'s [`testing`][testing] package as well as for mock
+packages, e.g. [`gomock`][gomock] and [`gock`][gock], that lift limitation and
+foster a simple, common setup of *strongly isolated* and *parallel running*
+tests - supporting diverse success and failure scenarios, even in the presence
+of spawned [`go`-routines][go-routines], or if the system under test panics.
 
 While the [`test`](test) package provides the building blocks for efficient
 test setup and test isolation, the [`mock`](mock) and [`gock`](gock) packages
 provide access to a short pragmatic domain language for defining detailed mock
-requests and responses that allow to enforce validation.
+requests and responses that allow to enforce validation. Finally, the
+[`reflect`](reflect) package provides access to private properties of the
+system under test.
+
+**Now also providing support for micro-benchmarks!**
 
 You can find more information in the [`go-testing` documentation][go-testing].
 

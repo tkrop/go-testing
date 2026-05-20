@@ -50,8 +50,8 @@ func TestTemplate(t *testing.T) {
 	test.Map(t, templateTestCases).
 		Run(func(t test.Test, param TemplateParams) {
 			// Given
-			imports := clone.Clone(imports).([]*Import)
-			mocks := clone.Clone(param.mocks).([]*Mock)
+			imports := test.Cast[[]*Import](clone.Clone(imports))
+			mocks := test.Cast[[]*Mock](clone.Clone(param.mocks))
 			files := NewFiles(mocks, imports...)
 			require.Len(t, files, 1)
 

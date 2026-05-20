@@ -72,7 +72,7 @@ func (p *TestParams) ExecTest(t test.Test) {
 	}
 
 	wg := sync.NewLenientWaitGroup()
-	t.(*test.Context).WaitGroup(wg)
+	test.Cast[*test.Context](t).WaitGroup(wg)
 	if p.consumed {
 		wg.Add(1)
 	}

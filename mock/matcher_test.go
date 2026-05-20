@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	nameDiff     = "diff"
 	nameDlib     = "dlib"
 	nameSpew     = "spew"
 	nameSpewTime = "spewTime"
@@ -28,13 +27,18 @@ func diff(hunk, content string) string {
 	return "--- Want\n+++ Got\n@@ -" + hunk + " @@\n" + content
 }
 
-// GetDiffConfigAccessor returns a builder to access the matcher config of
+// getDiffConfig gets the DiffConfig from the given mocks. This can be used to
+// access the DiffConfig in a test function.
+func getDiffConfig(mocks *mock.Mocks) *mock.DiffConfig {
+	return test.Cast[*mock.DiffConfig](mocks.GetArg(mock.DefaultDiffConfigName))
+}
+
+// getDiffConfigAccessor returns a builder to access the matcher config of
 // the given mocks.
-func GetDiffConfigAccessor(
+func getDiffConfigAccessor(
 	mocks *mock.Mocks,
 ) reflect.Builder[*mock.DiffConfig] {
-	return reflect.NewAccessor(reflect.NewAccessor(mocks).
-		Get(nameDiff).(*mock.DiffConfig))
+	return reflect.NewAccessor(getDiffConfig(mocks))
 }
 
 type DiffParams struct {
@@ -257,7 +261,7 @@ func TestDiff(t *testing.T) {
 }
 
 type ConfigParams struct {
-	config mock.ConfigFunc
+	update func(mocks *mock.Mocks)
 	access func(mocks *mock.Mocks) any
 	expect any
 }
@@ -265,190 +269,236 @@ type ConfigParams struct {
 var configTestCases = map[string]ConfigParams{
 	// Diff config options.
 	"diff-context": {
-		config: mock.Context(7),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).Context(7)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).Context
+			return test.Cast[*difflib.UnifiedDiff](
+				getDiffConfigAccessor(mocks).Get(nameDlib)).Context
 		},
 		expect: 7,
 	},
 	"diff-from-file": {
-		config: mock.FromFile("expect"),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).FromFile("expect")
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).FromFile
+			return test.Cast[*difflib.UnifiedDiff](
+				getDiffConfigAccessor(mocks).Get(nameDlib)).FromFile
 		},
 		expect: "expect",
 	},
 	"diff-from-date": {
-		config: mock.FromDate("2025-10-27"),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).FromDate("2025-10-27")
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).FromDate
+			return test.Cast[*difflib.UnifiedDiff](
+				getDiffConfigAccessor(mocks).Get(nameDlib)).FromDate
 		},
 		expect: "2025-10-27",
 	},
 	"diff-to-file": {
-		config: mock.ToFile("actual.txt"),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).ToFile("actual.txt")
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).ToFile
+			return test.Cast[*difflib.UnifiedDiff](
+				getDiffConfigAccessor(mocks).Get(nameDlib)).ToFile
 		},
 		expect: "actual.txt",
 	},
 	"diff-to-date": {
-		config: mock.ToDate("2025-10-28"),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).ToDate("2025-10-28")
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameDlib).(*difflib.UnifiedDiff).ToDate
+			return test.Cast[*difflib.UnifiedDiff](
+				getDiffConfigAccessor(mocks).Get(nameDlib)).ToDate
 		},
 		expect: "2025-10-28",
 	},
 
 	// Spew config options.
 	"spew-indent": {
-		config: mock.Indent("\t"),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).Indent("\t")
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).Indent
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpew)).Indent
 		},
 		expect: "\t",
 	},
 	"spew-max-depth": {
-		config: mock.MaxDepth(5),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).MaxDepth(5)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).MaxDepth
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpew)).MaxDepth
 		},
 		expect: 5,
 	},
 	"spew-disable-methods": {
-		config: mock.DisableMethods(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisableMethods(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisableMethods
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpew)).DisableMethods
 		},
 		expect: false,
 	},
 	"spew-disable-pointer-methods": {
-		config: mock.DisablePointerMethods(true),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisablePointerMethods(true)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisablePointerMethods
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpew)).DisablePointerMethods
 		},
 		expect: true,
 	},
 	"spew-disable-pointer-addresses": {
-		config: mock.DisablePointerAddresses(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisablePointerAddresses(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisablePointerAddresses
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpew)).DisablePointerAddresses
 		},
 		expect: false,
 	},
 	"spew-disable-capacities": {
-		config: mock.DisableCapacities(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisableCapacities(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).DisableCapacities
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpew)).DisableCapacities
 		},
 		expect: false,
 	},
 	"spew-continue-on-method": {
-		config: mock.ContinueOnMethod(true),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).ContinueOnMethod(true)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).ContinueOnMethod
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpew)).ContinueOnMethod
 		},
 		expect: true,
 	},
 	"spew-sort-keys": {
-		config: mock.SortKeys(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).SortKeys(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).SortKeys
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpew)).SortKeys
 		},
 		expect: false,
 	},
 	"spew-spew-keys": {
-		config: mock.SpewKeys(true),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).SpewKeys(true)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpew).(*spew.ConfigState).SpewKeys
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpew)).SpewKeys
 		},
 		expect: true,
 	},
 
 	// Spew config options.
 	"spew-time-indent": {
-		config: mock.Indent("\t"),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).Indent("\t")
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).Indent
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpewTime)).Indent
 		},
 		expect: "\t",
 	},
 	"spew-time-max-depth": {
-		config: mock.MaxDepth(5),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).MaxDepth(5)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).MaxDepth
+			return test.Cast[*spew.ConfigState](
+				getDiffConfigAccessor(mocks).Get(nameSpewTime)).MaxDepth
 		},
 		expect: 5,
 	},
 	"spew-time-disable-methods": {
-		config: mock.DisableMethods(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisableMethods(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisableMethods
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpewTime)).DisableMethods
 		},
 		expect: true, // exception: default is true for spewtime.
 	},
 	"spew-time-disable-pointer-methods": {
-		config: mock.DisablePointerMethods(true),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisablePointerMethods(true)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisablePointerMethods
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpewTime)).DisablePointerMethods
 		},
 		expect: true,
 	},
 	"spew-time-disable-pointer-addresses": {
-		config: mock.DisablePointerAddresses(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisablePointerAddresses(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisablePointerAddresses
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpewTime)).DisablePointerAddresses
 		},
 		expect: false,
 	},
 	"spew-time-disable-capacities": {
-		config: mock.DisableCapacities(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).DisableCapacities(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).DisableCapacities
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpewTime)).DisableCapacities
 		},
 		expect: false,
 	},
 	"spew-time-continue-on-method": {
-		config: mock.ContinueOnMethod(true),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).ContinueOnMethod(true)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).ContinueOnMethod
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpewTime)).ContinueOnMethod
 		},
 		expect: true,
 	},
 	"spew-time-sort-keys": {
-		config: mock.SortKeys(false),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).SortKeys(false)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).SortKeys
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpewTime)).SortKeys
 		},
 		expect: false,
 	},
 	"spew-time-spew-keys": {
-		config: mock.SpewKeys(true),
+		update: func(mocks *mock.Mocks) {
+			getDiffConfig(mocks).SpewKeys(true)
+		},
 		access: func(mocks *mock.Mocks) any {
-			return GetDiffConfigAccessor(mocks).
-				Get(nameSpewTime).(*spew.ConfigState).SpewKeys
+			return test.Cast[*spew.ConfigState](getDiffConfigAccessor(mocks).
+				Get(nameSpewTime)).SpewKeys
 		},
 		expect: true,
 	},
@@ -462,20 +512,20 @@ func TestConfig(t *testing.T) {
 			require.NotEqual(t, param.expect, param.access(mocks))
 
 			// When
-			mocks.Config(param.config)
+			param.update(mocks)
 
 			// Then
 			assert.Equal(t, param.expect, param.access(mocks))
 		})
 }
 
-type EqualMatchesParams struct {
+type MatchesParams struct {
 	want   any
 	got    any
 	expect bool
 }
 
-var equalMatchesTestCases = map[string]EqualMatchesParams{
+var matchesTestCases = map[string]MatchesParams{
 	"equal-primitives": {
 		want:   42,
 		got:    42,
@@ -519,11 +569,26 @@ var equalMatchesTestCases = map[string]EqualMatchesParams{
 }
 
 func TestEqualMatches(t *testing.T) {
-	test.Map(t, equalMatchesTestCases).
-		Run(func(t test.Test, param EqualMatchesParams) {
+	test.Map(t, matchesTestCases).
+		Run(func(t test.Test, param MatchesParams) {
 			// Given
 			mocks := mock.NewMocks(t)
 			matcher := mocks.Equal(param.want)
+
+			// When
+			result := matcher.Matches(param.got)
+
+			// Then
+			assert.Equal(t, param.expect, result)
+		})
+}
+
+func TestDiffMatches(t *testing.T) {
+	test.Map(t, matchesTestCases).
+		Run(func(t test.Test, param MatchesParams) {
+			// Given
+			mocks := mock.NewMocks(t)
+			matcher := mocks.Diff(t.Name(), param.want)
 
 			// When
 			result := matcher.Matches(param.got)

@@ -42,8 +42,10 @@ func Execute(writer io.Writer, file *File, err error) mock.SetupFunc {
 				if err != nil {
 					return []any{err}
 				}
+
 				return []any{template.Execute(
-					args[0].(io.Writer), args[1].(*File),
+					test.Cast[io.Writer](args[0]),
+					test.Cast[*File](args[1]),
 				)}
 			}))
 	}
@@ -131,7 +133,7 @@ func TestNewFiles(t *testing.T) {
 	test.Map(t, newFilesTestCases).
 		Run(func(t test.Test, param NewFilesParams) {
 			// Given
-			mocks := clone.Clone(param.mocks).([]*Mock)
+			mocks := test.Cast[[]*Mock](clone.Clone(param.mocks))
 
 			// When
 			files := NewFiles(mocks)
@@ -216,7 +218,7 @@ func TestFile(t *testing.T) {
 	test.Map(t, fileTestCases).
 		Run(func(t test.Test, param FileParams) {
 			// Given
-			fmocks := clone.Clone(param.mocks).([]*Mock)
+			fmocks := test.Cast[[]*Mock](clone.Clone(param.mocks))
 			files := NewFiles(fmocks, ImportsTemplate...)
 			require.Len(t, files, 1)
 			file := files[0]

@@ -286,9 +286,9 @@ func Find[P, T any](param P, deflt T, names ...string) T {
 	case pt.Kind() == dt.Kind():
 		return reflect.ValueOf(param).Interface().(T)
 	case pt.Kind() == reflect.Struct:
-		return NewAccessor[P](param).Find(deflt, names...).(T)
+		return NewAccessor(param).Find(deflt, names...).(T)
 	case pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct:
-		return NewAccessor[P](param).Find(deflt, names...).(T)
+		return NewAccessor(param).Find(deflt, names...).(T)
 	default:
 		return deflt
 	}

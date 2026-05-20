@@ -1,10 +1,39 @@
 # Package testing/test
 
-The goal of this package is to provide a small framework to isolate the test
-execution and safely check whether a test succeeds or fails as expected. In
-combination with the [`mock`](../mock) package it ensures that a test finishes
-reliably and reports its failure even if a system under test is spawning
-go-routines.
+The [`test`][test] package provides a small but sophisticated framework to
+isolate the test execution and safely check whether a test succeeds or fails as
+expected. In combination with the [`mock`](../mock) package it ensures, that a
+test finishes reliably and reports its failure, even if a system under test is
+spawning go-routines or panics.
+
+To accomplish this, the [`test`][test] package supports a lean common test
+[`Factory`][factory] for parameterized test creating the common, isolating test
+[`Context`][context] running in parallel. Besides functions for setting up
+timeouts and cleaning up test resources, the test [`Factory`][factory] also
+provides a [`Filter`][filter] to simplify the selection of test cases for a
+specific test scenario.
+
+The [`Factory`] can be instantiated by global functions with a single test
+parameter set ([`test.Param`][param]), a slice of test parameter sets
+([`test.Slice`][slice]), or a map of test case name to test parameter sets
+([`test.Map`][map] - idiomatic pattern). The tests are started by calling the
+[`Run`][run], [`RunSeq`][run-seq], or [`Benchmark`][bench] methods that with
+the exception of the last accept a simple test function as input, using a
+[`test.Test`][itest] interface compatible with most other extensions, e.g.
+[`gomock`][gomock].
+
+
+[test]: <https://pkg.go.dev/github.com/tkrop/go-testing/test>
+[param]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Param>
+[slice]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Slice>
+[map]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Map>
+[itest]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Test>
+[run]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
+[runseq]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
+[bench]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
+[factory]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
+[context]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Context>
+[filter]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#FilterFunc>
 
 
 ## Example usage
@@ -33,14 +62,8 @@ below examples.
 
 ## Isolated parameterized test setup
 
-The `test` framework supports to run isolated, parameterized, parallel tests
-using a lean test runner. The runner can be instantiated with a single test
-parameter set (`test.Param`), a slice of test parameter sets (`test.Slice`), or
-a map of test case name to test parameter sets (`test.Map` - preferred pattern).
-The test is started by `Run` or `RunSeq` that accepts a simple test function as
-input, using a `test.Test` interface, that is compatible with most tools, e.g.
-[`gomock`][gomock].
-
+The most common usage to run an isolated, parameterized, parallel (or
+sequential) tests using the lean test [`Factory`][factory] as follows:
 
 ```go
 func TestUnit(t *testing.T) {
@@ -67,44 +90,75 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-<!-- TODO: create sub-section with extended explanation on variables -->
-
-This creates and starts a lean test wrapper using a common interface, that
-isolates test execution and intercepts all failures (including panics), to
-either forward or suppress them. The result is controlled by providing a test
-parameter of type `test.Expect` (name `expect`) that supports `test.Failure`
-(false) and `test.Success` (true - default).
-
-Similar a test case name can be provided using type `test.Name` (name `name` -
-default value `unknown-%d`) or as key using a test case name to parameter set
-mapping.
+This creates and starts a lean test [`Context`][context] using the common
+[`Test`][itest] interface, that isolates test execution and intercepts all
+failures (including panics), to either forward or suppress them.
 
 **Note:** See [Parallel tests requirements](..#parallel-tests-requirements)
 for more information on requirements in parallel parameterized tests. If
-parallel parameterized test are undesired, `RunSeq` can be used to enforce a
-sequential test execution.
+parallel parameterized test are undesired, [`RunSeq`][runseq] can be used
+to enforce a sequential test execution.
 
-<!-- TODO: create sub-section with extended explanation on filter functions -->
 
-The setup allows to define a test specific `Timeout` and a grace period to
-`StopEarly` giving the `Cleanup`-functions sufficient time to free resources.
-In addition, it is possible to (de-)select a subset of tests for execution by
-setting up a highly customizable `Filter` function that provides the following
-default implementations:
+### Parameters and expectations
 
-<!-- TODO: create sub-section with extended explanation on filter functions -->
+The test [`Context`] can be controlled by providing a test parameter of type
+[`test.Expect`][expect] (idiomatic parameter name `expect`) that supports
+[`test.Failure`][failure] (false) and [`test.Success`][success]
+(true - default).
 
-* `test.None|All` — convenience filters that filter nothing/all.
-* `test.Not(filter)` — for negating logic operation of filter function.
-* `test.And|Or|Xor(filter...)` — for conducting logical operations on filter
-  functions.
-* `test.Implies` — a convenience filter for a logical implication. It can also
-  be expressed by `Or(Not(filter),And(filter...))`.
-* `test.Pattern(name)` — for selecting test cases by normalized names using a
-  regular expression.
-* `test.OS(name)` — for selecting operating system specific test by system name.
-* `test.Arch(name)` — for selecting processor architecture specific test cases
-  by architecture name.
+Similar a test case name can be provided using a `string` type with parameter
+name `name` (default value `unknown-%d`) or as key using a test case name to
+parameter set mapping.
+
+[expect]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Expect>
+[failure]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Expect>
+[success]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Expect>
+
+
+### Factory setup
+
+The test [`Factory`][factory] setup allows to define a test specific
+[`Timeout`][timeout] and a grace period to [`StopEarly`][stop-early] giving the
+[`Cleanup`][cleanup]-functions sufficient time to free resources. In addition,
+it is possible to (de-)select a subset of tests for a specific test execution
+by setting up a highly customizable [`Filter`][filter] function - see
+[Filter functions](#filter-functions) for more information.
+
+Last the [`Factory`][factory] setup offers a method to systematically
+[`Prefix`][prefix] test case names to structure tests into logic groups and
+label them for statistical tools, e.g. [`benchstat`][benchstat].
+
+[prefix]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
+[benchstat]: <https://pkg.go.dev/golang.org/x/perf/cmd/benchstat>
+
+
+### Filter functions
+
+The [`test`][test] package supports the following default filter functions:
+
+* [`test.All()`][all] — filter that filters all test cases.
+* [`test.None()`][none] — filter that filters no test case at all.
+* [`test.Not(filter)`][not] — filter for a logical `not` on a single wrapped
+  filter.
+* [`test.And(filter...)`][and] — filter for a logical `and` on a variable list
+  of wrapped filters.
+* [`test.Or(filter...)`][or] — filter for a logical `or` on a variable list of
+  wrapped filters.
+* [`Xor(filter...)`][xor] — filter for a logical `xor` (exclusive `or`) on a
+  variable list of wrapped filters.
+* `test.Implies(filter...)` — a convenience filter for a logical implication.
+  It can also be expressed by `Or(Not(filter),And(filter...))`.
+* `test.Pattern(regex)` — filter for selecting test cases by normalized test
+  case names using a regular expression.
+* `test.OS(name)` — filter for selecting operating system specific test cases
+  by system name.
+* `test.Arch(name)` — filter for selecting processor architecture specific test
+  cases by architecture name.
+
+[timeout]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
+[stop-early]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
+[cleanup]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
 
 
 ## Isolated in-test environment setup
@@ -223,18 +277,20 @@ hard to recreate. Do not try it.
 
 Currently, the package supports two _out-of-the-box_ test patterns:
 
-1. `test.Main(func())` - allows to test main methods by calling the main
-   method with arguments in a well controlled test environment.
-2. `test.Recover(Test,any)` - allows to check the panic result in simple test
-   scenarios where `test.Panic(any)` is not applicable.
+1. [`test.Main(func())`](#main-method-test-pattern) - allows to test main
+   methods by calling the main method with arguments in a well controlled test
+   environment.
+2. [`test.Recover(Test,any)`](#recover-test-pattern) - allows to check the
+   panic result in simple test scenarios where [`test.Panic(any)`][panic] is
+   not applicable.
 
 
-### Main method tests pattern
+### Main method test pattern
 
-The `test.Main(func())` pattern executes the `main` method in a separate test
-process to protect the test execution against `os.Exit` calls while allowing to
-capture and check the exit code against the expectation. The following example
-demonstrates how to use the pattern to test a `main` method:
+The [`test.Main(func())`][main] pattern executes the `main` method in a
+separate test process to protect the test execution against `os.Exit` calls
+while allowing to capture and check the exit code against the expectation. The
+following example demonstrates how to use the pattern to test a `main` method:
 
 ```go
 mainTestCases := map[string]test.MainParams{
@@ -267,18 +323,40 @@ the coverage metrics for the test execution, since `go test` is using the
 standard output to collect results. We are investigating how we can separate
 these in the test execution from expected test output.
 
+[main]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Main>
+
+
+### Recover test pattern
+
+The [`test.Recover(Test,any)`][recover] test pattern is a very specific, rare
+pattern that can be applied as follows:
+
+```go
+func TestPanic(t *testing.T) {
+    // Given
+    defer test.Recover(t, "gock not supported by test setup")
+
+    // When
+    gock.NewGock(gomock.NewController(struct{ gomock.TestReporter }{}))
+
+    // Then
+    assert.Fail(t, "did not panic")
+}
+```
+
 
 ## Parameterized benchmark setup
 
-The `test` framework also supports a consistent pattern for setting up
+The [`test`][test] package also supports a consistent pattern for setting up
 parameterized benchmarks with two minor changes:
 
-1. Since `*testing.B` is missing a small number of functions of the `test.Test`
-   interface abstraction, it must be wrapped using `test.Benchmark(b)`.
+1. Since `*testing.B` is missing a small number of functions of the
+   [`test.Test`][itest] interface abstraction, it must be wrapped using
+   [`test.Benchmark`][benchmark].
 2. Since running of benchmarks is slightly different, the benchmark is executed
-   using `Benchmark(BenchmarkFunc[P])` supporting the two-phase parameterized
-   benchmark function. The first phase is used for setup, while the second is
-   used to run the benchmark loop.
+   using [`Benchmark`][bench] supporting the special two-phase parameterized
+   [`BenchmarkFunc`][bench-func] function needed in this case. The first phase
+   is used for setup, while the second is used to run the benchmark loop.
 
 The full parameterized benchmark setup example looks as follows, and can make
 use of the same features as the regular parameterized test setup:
@@ -319,7 +397,7 @@ the the copy nature of the `runtime.KeepAlive`.
 
 If you want to compare and analyse the performance of functions with the same
 signature and same parameter set using [benchstat][benchstat], the following
-`Prefix`-pattern may become very handy for you:
+[`Prefix`][prefix]-pattern may become very handy for you:
 
 ```go
 func benchmarkUnit(
@@ -361,7 +439,8 @@ the following [benchstat][benchstat] command line:
 benchstat -row /test -col /method file.bench
 ```
 
-[benchstat]: <https://pkg.go.dev/golang.org/x/perf/cmd/benchstat>
+[benchmark]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Benchmark>
+[bench-func]: <https://pkg.go.dev/github.com/tkrop/go-testing@/test#BenchmarkFunc>
 
 
 ## Convenience functions

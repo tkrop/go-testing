@@ -64,6 +64,8 @@ func check(t test.Test, value any) {
 	}
 
 	// For composite types, recursively check elements/fields
+	//
+	//nolint:exhaustive // default checks for non-zero value.
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
 		assert.False(t, v.IsZero())
