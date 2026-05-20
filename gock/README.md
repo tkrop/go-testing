@@ -1,11 +1,13 @@
 # Package testing/gock
 
-Goal of this package is to provide a small controller to isolate testing of
-services (gateways) by mocking the network communication using [`gock`][gock].
+The [`gock`][gock] package provides a small controller to isolate testing of
+services (gateways) by mocking the network communication using
+[`gock`][gock-h2non].
 
 **Note:** Since the controller is focused on testing, it does not support the
-same networking and observation features of [`gock`][gock] and requires manual
-transport interception setup. However, the interface is mainly compatible.
+full networking and observation features of [`gock`][gock-h2non] and requires
+manual transport interception setup, however, the interface is mainly
+compatible.
 
 
 ## Example usage
@@ -24,7 +26,7 @@ func TestUnit(t *testing.T) {
     gock.InterceptClient(client)
 
     gock.New("http://foo.com").Get("/bar").
-        {Reply(status)|ReplyError(err)}.BodyString("result")
+        [Reply(status)|ReplyError(err)].BodyString("result")
 
     // When
     ...
@@ -36,17 +38,17 @@ that you can just request the controller via the [`gomock`][gomock] constructor
 `mock.Get(mocks, gock.NewGock)` (see
 [Example](#integration-with-mock-framework))
 
-**Note:** The standard cardinality of mock requests using [`gock`][gock] is
-`1`. So you can skip writing `Times(1)` and only use `Times(n)`, when you need
-to increase the request cardinality.
+**Note:** The standard cardinality of mock requests using [`gock`][gock-h2non]
+is `1`. So you can skip writing `Times(1)` and only use `Times(n)`, when you
+need to increase the request cardinality.
 
 
 ## Migration from Gock
 
-Migration from [`gock`][gock] to this package is straight forward. You just add
-the controller creation at the begin of your test giving it the name `gock` and
-hand it over to all methods creating HTTP request/response mocks. The mock
-creation than happens as usual.
+Migration from [`gock`][gock-h2non] to this package is straight forward. You
+just add the controller creation at the begin of your test giving it the name
+`gock` and hand it over to all methods creating HTTP request/response mocks.
+The mock creation than happens as usual.
 
 ```go
 func TestUnit(t *testing.T) {
@@ -110,10 +112,11 @@ this controller framework. In this case you should use [`gock`][gock] directly.
 
 ## Integration with `mock`-framework
 
-The `Gock`-controller framework supports a simple integration with the
-[`mock`](../mock) framework for [gomock][gomock]: it simply provides
-constructor that accepts the `gomock`-controller. Using constructor, it is
-possible to create the usual setup methods similar as described in the
+The [`Controller`][gock-ctrl] also supports a simple integration with the
+[`mock`](../mock) framework for [gomock][gomock]. It provides a constructor
+([`gock.NewGock`][gock-new]) that is compatible with [`mock.Get`][mock-get].
+Using this constructor, it is possible to create the usual setup methods
+similar as described by the
 [generic mock service call pattern](../mock#generic-mock-service-call-pattern).
 
 ```go
@@ -133,6 +136,10 @@ call setup, and validation, it currently provides no support for call order
 validation as [`gomock`][gomock] supports it.
 
 
+[gock]: <https://pkg.go.dev/github.com/tkrop/go-testing/gock>
+[gock-new]: <https://pkg.go.dev/github.com/tkrop/go-testing/gock#NewGock>
+[gock-ctrl]: <https://pkg.go.dev/github.com/tkrop/go-testing/gock#Controller>
+[gock-h2non]: <https://github.com/h2non/gock>
+[mock-get]: <https://pkg.go.dev/github.com/tkrop/go-testing/mock#Get>
 [gomock]: <https://go.uber.org/mock>
-[gock]: <https://github.com/h2non/gock>
 [resty]: <https://github.com/go-resty/resty>

@@ -10,9 +10,16 @@ import (
 	"github.com/tkrop/go-testing/internal/sync"
 )
 
+const (
+	// DefaultDiffConfigName is the default name for the diff configuration of
+	// the Equal matcher.
+	DefaultDiffConfigName = "#default.diff.config"
+)
+
 // DetachMode defines the mode for detaching mock calls.
 type DetachMode int
 
+// DetachMode constants for detaching mock calls.
 const (
 	// None mode to not detach mode.
 	None DetachMode = 0
@@ -69,9 +76,6 @@ type (
 // SetupFunc common mock setup function signature.
 type SetupFunc func(*Mocks) any
 
-// ConfigFunc common mock handler configuration function signature.
-type ConfigFunc func(*Mocks)
-
 // Mocks common mock handler.
 type Mocks struct {
 	// The mock controller used.
@@ -82,29 +86,17 @@ type Mocks struct {
 	mocks map[reflect.Type]any
 	// A map of mock key value pairs.
 	args map[any]any
-
-	// Internal diff settings.
-	diff *DiffConfig
 }
 
-// NewMocks creates a new mock handler using given test reporter, e.g.
-// [*testing.T], or [test.Test].
-func NewMocks(t gomock.TestReporter, fncalls ...ConfigFunc) *Mocks {
+// NewMocks creates a new mock handler using given [gomock.TestReporter]
+// abstraction, e.g. [*testing.T], or [test.Test].
+func NewMocks(t gomock.TestReporter) *Mocks {
 	return (&Mocks{
 		Ctrl:  gomock.NewController(t),
 		wg:    sync.NewLenientWaitGroup(),
 		mocks: map[reflect.Type]any{},
 		args:  map[any]any{},
-		diff:  NewDiffConfig(),
-	}).Config(fncalls...).syncWith(t)
-}
-
-// Config configures the mock handler with given config functions.
-func (mocks *Mocks) Config(fncalls ...ConfigFunc) *Mocks {
-	for _, fncall := range fncalls {
-		fncall(mocks)
-	}
-	return mocks
+	}).SetArg(DefaultDiffConfigName, NewDiffConfig()).sync(t)
 }
 
 // Expect configures the mock handler to expect the given mock function calls.
@@ -181,15 +173,26 @@ func (mocks *Mocks) SetArgs(args map[any]any) *Mocks {
 	return mocks
 }
 
-// syncWith used to synchronize the wait group of the mock setup with the wait
-// group of the given test reporter. This function is called automatically on
-// mock creation and therefore does not need to be called on the same reporter
-// again.
-func (mocks *Mocks) syncWith(t gomock.TestReporter) *Mocks {
-	if s, ok := t.(sync.Synchronizer); ok {
-		s.WaitGroup(mocks.wg)
+// Diff returns an improved equals matcher showing a detailed diff when there
+// is a mismatch in the expected and actual values.
+func (mocks *Mocks) Diff(name string, want any) *Equal {
+	diff, ok := mocks.GetArg(name).(*DiffConfig)
+	if !ok || diff == nil {
+		diff = NewDiffConfig()
+		mocks.SetArg(name, diff)
 	}
-	return mocks
+
+	return &Equal{
+		config: diff,
+		want:   want,
+		diff:   "",
+	}
+}
+
+// Equal returns an improved equals matcher showing a detailed diff when there
+// is a mismatch in the expected and actual values.
+func (mocks *Mocks) Equal(want any) *Equal {
+	return mocks.Diff(DefaultDiffConfigName, want)
 }
 
 // Wait waits for all mock calls registered via [Call], [Do], [Return],
@@ -306,6 +309,17 @@ func (mocks *Mocks) notify(
 		})
 
 	return notify
+}
+
+// sync is used to synchronize the wait group of the mock setup with the wait
+// group of the given test reporter. This function is called automatically on
+// mock creation and therefore does not need to be called on the same reporter
+// again.
+func (mocks *Mocks) sync(t gomock.TestReporter) *Mocks {
+	if s, ok := t.(sync.Synchronizer); ok {
+		s.WaitGroup(mocks.wg)
+	}
+	return mocks
 }
 
 // TODO: Reconsider approach - complex signature. Test setup look as follows:

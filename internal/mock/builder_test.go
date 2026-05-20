@@ -224,7 +224,7 @@ func TestFileBuilder(t *testing.T) {
 
 			// Given
 			builder := NewFileBuilder(param.target)
-			mocks := clone.Clone(param.mocks).([]*Mock)
+			mocks := test.Cast[[]*Mock](clone.Clone(param.mocks))
 			assert.Equal(t, param.mocks, mocks)
 
 			// When

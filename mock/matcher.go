@@ -22,144 +22,6 @@ const (
 	DefaultSkippingTail = 5
 )
 
-// Context sets the number of context lines to show before and after changes in
-// a diff. The default, 3, means no context lines.
-func Context(context int) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.Context(context)
-	}
-}
-
-// FromFile sets the label to use for the "from" side of the diff. Default is
-// `Want`.
-func FromFile(file string) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.FromFile(file)
-	}
-}
-
-// FromDate sets the label to use for the "from" date of the diff. Default is
-// empty.
-func FromDate(date string) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.FromDate(date)
-	}
-}
-
-// ToFile sets the label to use for the "to" side of the diff. Default is
-// `Got`.
-func ToFile(file string) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.ToFile(file)
-	}
-}
-
-// ToDate specifies the label to use for the "to" date of the diff. Default is
-// empty.
-func ToDate(date string) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.ToDate(date)
-	}
-}
-
-// Indent sets the string to use for each indentation level. The global config
-// instance that all top-level functions use set this to a single space by
-// default. If you would like more indentation, you might set this to a tab
-// with `\t` or perhaps two spaces with `  `.
-func Indent(indent string) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.Indent(indent)
-	}
-}
-
-// MaxDepth sets the maximum number of levels to descend into nested data
-// structures. The default 0 means there is no limit. Circular data structures
-// are properly detected, so it is not necessary to set this value unless you
-// specifically want to limit deeply nested structures.
-func MaxDepth(maxDepth int) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.MaxDepth(maxDepth)
-	}
-}
-
-// DisableMethods sets whether or not error and `Stringer` interfaces are
-// invoked for types that implement them. Default is true, meaning that these
-// methods will not be invoked.
-func DisableMethods(disable bool) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.DisableMethods(disable)
-	}
-}
-
-// DisablePointerMethods sets whether or not to check for and invoke error and
-// `Stringer` interfaces on types which only accept a pointer receiver when the
-// current type is not a pointer.
-//
-// *Note:* This might be an unsafe action since calling one a pointer receiver
-// could technically mutate the value. In practice, types which choose to
-// satisfy an error or `Stringer` interface with a pointer receiver should not
-// mutate their state inside these methods. As a result, this option relies on
-// access to the unsafe package, so it will not have any effect when running in
-// environments without access to the unsafe package such as Google App Engine
-// or with the "safe" build tag specified.
-func DisablePointerMethods(disable bool) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.DisablePointerMethods(disable)
-	}
-}
-
-// DisablePointerAddresses sets whether to disable the printing of pointer
-// addresses. This is useful when diffing data structures in tests.
-func DisablePointerAddresses(disable bool) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.DisablePointerAddresses(disable)
-	}
-}
-
-// DisableCapacities sets whether to disable the printing of capacities for
-// arrays, slices, maps and channels. This is useful when diffing data
-// structures in tests.
-func DisableCapacities(disable bool) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.DisableCapacities(disable)
-	}
-}
-
-// ContinueOnMethod sets whether or not recursion should continue once a custom
-// error or `Stringer` interface is invoked.  The default, false, means it will
-// print the results of invoking the custom error or `Stringer` interface and
-// return immediately instead of continuing to recurse into the internals of
-// the data type.
-//
-// *Note:* This flag does not have any effect if method invocation is disabled
-// via the DisableMethods or DisablePointerMethods options.
-func ContinueOnMethod(enable bool) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.ContinueOnMethod(enable)
-	}
-}
-
-// SortKeys sets whether map keys should be sorted before being printed. Use
-// this to have a more deterministic, diffable output.  Note that only native
-// types (bool, int, uint, floats, uintptr and string) and types that support
-// the error or `Stringer` interfaces (if methods are enabled) are supported,
-// with other types sorted according to the reflect.Value.String() output which
-// guarantees display stability.
-func SortKeys(sort bool) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.SortKeys(sort)
-	}
-}
-
-// SpewKeys sets that, as a last resort attempt, map keys should be spewed to
-// strings and sorted by those strings.  This is only considered if keys are
-// sorted (see `SortKeys`).
-func SpewKeys(spew bool) ConfigFunc {
-	return func(mocks *Mocks) {
-		mocks.diff.SpewKeys(spew)
-	}
-}
-
 // DiffConfig holds configuration settings for matchers.
 type DiffConfig struct {
 	// Size of string representation before skipping part of it in output.
@@ -204,58 +66,74 @@ func NewDiffConfig() *DiffConfig {
 
 // Context sets the number of context lines to show before and after changes in
 // a diff. The default, 3, means no context lines.
-func (c *DiffConfig) Context(context int) {
+func (c *DiffConfig) Context(context int) *DiffConfig {
 	c.dlib.Context = context
+
+	return c
 }
 
 // FromFile sets the label to use for the "from" side of the diff. Default is
 // `Want`.
-func (c *DiffConfig) FromFile(file string) {
+func (c *DiffConfig) FromFile(file string) *DiffConfig {
 	c.dlib.FromFile = file
+
+	return c
 }
 
 // FromDate sets the label to use for the "from" date of the diff. Default is
 // empty.
-func (c *DiffConfig) FromDate(date string) {
+func (c *DiffConfig) FromDate(date string) *DiffConfig {
 	c.dlib.FromDate = date
+
+	return c
 }
 
 // ToFile sets the label to use for the "to" side of the diff. Default is
 // `Got`.
-func (c *DiffConfig) ToFile(file string) {
+func (c *DiffConfig) ToFile(file string) *DiffConfig {
 	c.dlib.ToFile = file
+
+	return c
 }
 
 // ToDate sets the label to use for the "to" date of the diff. Default is
 // empty.
-func (c *DiffConfig) ToDate(date string) {
+func (c *DiffConfig) ToDate(date string) *DiffConfig {
 	c.dlib.ToDate = date
+
+	return c
 }
 
 // Indent sets the string to use for each indentation level. The global config
 // instance that all top-level functions use set this to a single space by
 // default. If you would like more indentation, you might set this to a tab
 // with `\t` or perhaps two spaces with `  `.
-func (c *DiffConfig) Indent(indent string) {
+func (c *DiffConfig) Indent(indent string) *DiffConfig {
 	c.spewTime.Indent = indent
 	c.spew.Indent = indent
+
+	return c
 }
 
 // MaxDepth sets the maximum number of levels to descend into nested data
 // structures. The default 0 means there is no limit. Circular data structures
 // are properly detected, so it is not necessary to set this value unless you
 // specifically want to limit deeply nested structures.
-func (c *DiffConfig) MaxDepth(maxDepth int) {
+func (c *DiffConfig) MaxDepth(maxDepth int) *DiffConfig {
 	c.spewTime.MaxDepth = maxDepth
 	c.spew.MaxDepth = maxDepth
+
+	return c
 }
 
 // DisableMethods sets whether or not error and `Stringer` interfaces are
 // invoked for types that implement them. Default is true, meaning that these
 // methods will not be invoked.
-func (c *DiffConfig) DisableMethods(disable bool) {
+func (c *DiffConfig) DisableMethods(disable bool) *DiffConfig {
 	c.spewTime.DisableMethods = true
 	c.spew.DisableMethods = disable
+
+	return c
 }
 
 // DisablePointerMethods sets whether or not to check for and invoke error and
@@ -269,24 +147,30 @@ func (c *DiffConfig) DisableMethods(disable bool) {
 // access to the unsafe package, so it will not have any effect when running in
 // environments without access to the unsafe package such as Google App Engine
 // or with the "safe" build tag specified.
-func (c *DiffConfig) DisablePointerMethods(disable bool) {
+func (c *DiffConfig) DisablePointerMethods(disable bool) *DiffConfig {
 	c.spewTime.DisablePointerMethods = disable
 	c.spew.DisablePointerMethods = disable
+
+	return c
 }
 
 // DisablePointerAddresses sets whether to disable the printing of pointer
 // addresses. This is useful when diffing data structures in tests.
-func (c *DiffConfig) DisablePointerAddresses(disable bool) {
+func (c *DiffConfig) DisablePointerAddresses(disable bool) *DiffConfig {
 	c.spewTime.DisablePointerAddresses = disable
 	c.spew.DisablePointerAddresses = disable
+
+	return c
 }
 
 // DisableCapacities sets whether to disable the printing of capacities
 // for arrays, slices, maps and channels. This is useful when diffing data
 // structures in tests.
-func (c *DiffConfig) DisableCapacities(disable bool) {
+func (c *DiffConfig) DisableCapacities(disable bool) *DiffConfig {
 	c.spewTime.DisableCapacities = disable
 	c.spew.DisableCapacities = disable
+
+	return c
 }
 
 // ContinueOnMethod sets whether or not recursion should continue once a custom
@@ -297,9 +181,11 @@ func (c *DiffConfig) DisableCapacities(disable bool) {
 //
 // *Note:* This flag does not have any effect if method invocation is disabled
 // via the DisableMethods or DisablePointerMethods options.
-func (c *DiffConfig) ContinueOnMethod(enable bool) {
+func (c *DiffConfig) ContinueOnMethod(enable bool) *DiffConfig {
 	c.spewTime.ContinueOnMethod = enable
 	c.spew.ContinueOnMethod = enable
+
+	return c
 }
 
 // SortKeys sets map keys should be sorted before being printed. Use this to
@@ -308,17 +194,21 @@ func (c *DiffConfig) ContinueOnMethod(enable bool) {
 // error or `Stringer` interfaces (if methods are enabled) are supported, with
 // other types sorted according to the reflect.Value.String() output which
 // guarantees display stability.
-func (c *DiffConfig) SortKeys(sort bool) {
+func (c *DiffConfig) SortKeys(sort bool) *DiffConfig {
 	c.spewTime.SortKeys = sort
 	c.spew.SortKeys = sort
+
+	return c
 }
 
 // SpewKeys sets that, as a last resort attempt, map keys should be spewed
 // to strings and sorted by those strings.  This is only considered if keys are
 // sorted (see `SortKeys`).
-func (c *DiffConfig) SpewKeys(spew bool) {
+func (c *DiffConfig) SpewKeys(spew bool) *DiffConfig {
 	c.spewTime.SpewKeys = spew
 	c.spew.SpewKeys = spew
+
+	return c
 }
 
 // Diff returns a diff of the expected value and the actual value as long as
@@ -376,16 +266,6 @@ type Equal struct {
 	config *DiffConfig
 	want   any
 	diff   string
-}
-
-// Equal returns an improved equals matcher showing a detailed diff when there
-// is a mismatch in the expected and actual values.
-func (mocks *Mocks) Equal(want any) *Equal {
-	return &Equal{
-		config: mocks.diff,
-		want:   want,
-		diff:   "",
-	}
 }
 
 // Matches returns whether the actual value is equal to the expected value.

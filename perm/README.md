@@ -1,7 +1,7 @@
 # Package testing/perm
 
-Goal of this package is to provide a small framework to simplify tests based
-on permutations of a test parameter. This is helpful when a test input must be
+The [`perm`] package provides a small framework to simplify tests based on
+permutations of a test parameter. This is helpful when a test input must be
 checked in all known orders with differing outcomes depending on the order.
 
 This was mainly developed to validate the setup functions of the [mock](../mock)

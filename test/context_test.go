@@ -98,22 +98,22 @@ var cleanupTestCases = map[string]CleanupParams{
 	},
 	"single-cleanup": {
 		test: func(t test.Test) {
-			t.Cleanup(func() { t.(*test.Context).Done() })
+			t.Cleanup(func() { test.Cast[*test.Context](t).Done() })
 		},
 		wait: 1,
 	},
 	"multiple-cleanups": {
 		test: func(t test.Test) {
-			t.Cleanup(func() { t.(*test.Context).Done() })
-			t.Cleanup(func() { t.(*test.Context).Done() })
-			t.Cleanup(func() { t.(*test.Context).Done() })
+			t.Cleanup(func() { test.Cast[*test.Context](t).Done() })
+			t.Cleanup(func() { test.Cast[*test.Context](t).Done() })
+			t.Cleanup(func() { test.Cast[*test.Context](t).Done() })
 		},
 		wait: 3,
 	},
 	"cleanup-with-nil-mixed": {
 		test: func(t test.Test) {
 			t.Cleanup(nil)
-			t.Cleanup(func() { t.(*test.Context).Done() })
+			t.Cleanup(func() { test.Cast[*test.Context](t).Done() })
 			t.Cleanup(nil)
 		},
 		wait: 1,
@@ -127,7 +127,7 @@ func TestCleanup(t *testing.T) {
 			// Given
 			wg := sync.NewWaitGroup()
 			wg.Add(param.wait + 1)
-			t.(*test.Context).WaitGroup(wg)
+			test.Cast[*test.Context](t).WaitGroup(wg)
 			t.Cleanup(func() { wg.Wait() })
 
 			// When

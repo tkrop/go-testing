@@ -41,6 +41,7 @@ func (r *random) Random(obj any) any {
 		return r.newPrimitive(k)
 	}
 
+	//nolint:exhaustive // default returns the original object.
 	switch k {
 	case reflect.Ptr:
 		if v.IsNil() {
@@ -64,6 +65,7 @@ func (r *random) Random(obj any) any {
 
 // isPrimitiveKind checks if a reflect.Kind is a primitive type.
 func isPrimitiveKind(k reflect.Kind) bool {
+	//nolint:exhaustive // default returns false.
 	switch k {
 	case reflect.Bool,
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
@@ -80,6 +82,7 @@ func isPrimitiveKind(k reflect.Kind) bool {
 
 // newPrimitive generates a random value for a given primitive kind.
 func (r *random) newPrimitive(kind reflect.Kind) any {
+	//nolint:exhaustive // default returns nil.
 	switch kind {
 	case reflect.Bool:
 		return r.rand.Intn(r.length) != 0
@@ -154,6 +157,7 @@ func (r *random) randomMap(t reflect.Type) any {
 
 // randomField fills in a field with random data based on its kind.
 func (r *random) randomField(v reflect.Value) {
+	//nolint:exhaustive // default does only act on primitive types.
 	switch v.Kind() {
 	case reflect.Ptr:
 		if v.IsNil() {
