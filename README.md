@@ -1,19 +1,23 @@
 # Testing framework
 
 [![Build][build-badge]][build-link]
+[![Quality][codeql-badge]][codeql-link]
 [![Coverage][coveralls-badge]][coveralls-link]
 [![Coverage][coverage-badge]][coverage-link]
 [![Quality][quality-badge]][quality-link]
 [![Report][report-badge]][report-link]
 [![License][license-badge]][license-link]
+[![Libraries][libs-badge]][libs-link]
 [![Docs][docs-badge]][docs-link]
 <!--
-[![Libraries][libs-badge]][libs-link]
 [![Security][security-badge]][security-link]
 -->
 
 [build-badge]: https://github.com/tkrop/go-testing/actions/workflows/build.yaml/badge.svg
 [build-link]: https://github.com/tkrop/go-testing/actions/workflows/build.yaml
+
+[codeql-badge]: <https://github.com/tkrop/go-testing/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main>
+[codeql-link]: <https://github.com/tkrop/go-testing/actions/workflows/github-code-scanning/codeql>
 
 [coveralls-badge]: https://coveralls.io/repos/github/tkrop/go-testing/badge.svg?branch=main
 [coveralls-link]: https://coveralls.io/github/tkrop/go-testing?branch=main
@@ -30,13 +34,13 @@
 [license-badge]: https://img.shields.io/badge/License-MIT-green.svg
 [license-link]: https://opensource.org/licenses/MIT
 
+[libs-badge]: https://img.shields.io/librariesio/release/github/tkrop/go-testing
+[libs-link]: https://libraries.io/github/tkrop/go-testing
+
 [docs-badge]: https://pkg.go.dev/badge/github.com/tkrop/go-testing.svg
 [docs-link]: https://pkg.go.dev/github.com/tkrop/go-testing
 
 <!--
-[libs-badge]: https://img.shields.io/librariesio/release/github/tkrop/go-testing
-[libs-link]: https://libraries.io/github/tkrop/go-testing
-
 [security-badge]: https://snyk.io/test/github/tkrop/go-testing/main/badge.svg
 [security-link]: https://snyk.io/test/github/tkrop/go-testing
 -->
@@ -347,13 +351,6 @@ is following the [conventional commit][convent-commit] best practice.
 This software is open source under the MIT license. You can use, fork, and copy
 it without restrictions and liabilities. Please give the project a star, when
 you consider it worthy.
-
-
-## Contributing
-
-If you like to contribute, please create an issue and/or pull request with a
-proper description of your proposal or contribution. I will review it and
-provide feedback on it as fast as possible.
 
 
 ## Disclaimer
