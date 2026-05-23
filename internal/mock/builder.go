@@ -2,9 +2,8 @@ package mock
 
 import (
 	"regexp"
+	"slices"
 	"strings"
-
-	"github.com/tkrop/go-testing/internal/slices"
 )
 
 var (
@@ -180,7 +179,7 @@ func (b *FileBuilder) calcUniqAlias(path string) string {
 	alias := ""
 
 	norm := strings.ToLower(baseReplacer.Replace(path))
-	for _, prefix := range slices.Reverse(strings.Split(norm, "/")) {
+	for _, prefix := range slices.Backward(strings.Split(norm, "/")) {
 		if alias != "" {
 			alias = prefix + "_" + alias
 		} else {

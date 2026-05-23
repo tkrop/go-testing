@@ -1,6 +1,7 @@
 package reflect_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,11 @@ type Struct struct {
 	s string
 	a any
 }
+
+type (
+	IntAlias       int
+	StructPtrAlias *Struct
+)
 
 func NewStruct(s string, a any) Struct     { return Struct{s: s, a: a} }
 func NewPtrStruct(s string, a any) *Struct { return &Struct{s: s, a: a} }
@@ -820,6 +826,15 @@ func TestBuilderAny(t *testing.T) {
 func TestNewBuilder(t *testing.T) {
 	t.Parallel()
 
+	t.Run("builder-ptr-alias-panic",
+		test.Run(test.Success, func(t test.Test) {
+			mock.NewMocks(t).Expect(test.Panic(fmt.Sprintf(
+				"cast failed [%T]: %v", StructPtrAlias(nil),
+				NewPtrStruct("", nil))))
+
+			_ = reflect.NewBuilder[StructPtrAlias]()
+		}))
+
 	t.Run("builder-struct", func(t *testing.T) {
 		t.Parallel()
 		// Given
@@ -1049,6 +1064,21 @@ var findTestCases = map[string]FindParams{
 }
 
 func TestFind(t *testing.T) {
+	t.Run("kind-match-with-type-alias-panics",
+		test.Run(test.Success, func(t test.Test) {
+			mock.NewMocks(t).Expect(test.Panic("cast failed [int]: 1"))
+
+			_ = reflect.Find[any](IntAlias(1), 0)
+		}))
+
+	t.Run("kind-match-with-pointer-type-alias-panics",
+		test.Run(test.Success, func(t test.Test) {
+			mock.NewMocks(t).Expect(test.Panic(fmt.Sprintf(
+				"cast failed [%T]: %v", StructPtrAlias(nil), new(Struct))))
+
+			_ = reflect.Find[*Struct, StructPtrAlias](new(Struct), nil)
+		}))
+
 	test.Map(t, findTestCases).
 		Run(func(t test.Test, param FindParams) {
 			// When

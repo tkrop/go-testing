@@ -32,8 +32,8 @@ func Must[T any](arg T, err error) T {
 }
 
 // Cast is a convenience function to cast the given argument to the specified
-// type or panic if the cast fails. The method allows to write concise test
-// setup code granting meaningful type checks.
+// type or panic controlled if the cast fails. The method allows to write
+// concise test setup code granting meaningful type checks.
 func Cast[T any](arg any) T {
 	val, ok := arg.(T)
 	if !ok {
@@ -151,8 +151,7 @@ func Main(main func()) func(t Test, param MainParams) {
 		}
 
 		// #nosec G204,G702 -- secured by calling only the dedicated test.
-		cmd := exec.CommandContext(ctx, os.Args[0],
-			"-test.run="+t.(*Context).t.Name())
+		cmd := exec.CommandContext(ctx, os.Args[0], "-test.run="+t.Name())
 
 		// No stdout to allow propagation of coverage results.
 		cmd.Stdin, cmd.Stderr = os.Stdin, os.Stderr
