@@ -85,12 +85,43 @@ You can find more information in the [`go-testing` documentation][go-testing].
 [unit-testing]: <https://ricomariani.medium.com/100-unit-testing-now-its-ante-f0e2384ffedf>
 
 
-### Example Usage
+### Example usage
 
-First you have to define a unified test/benchmark parameter set. While this can
-be done in many different ways, the following setup structure is considered to
-be the [`go-testing`][go-testing] idiomatic way due to its wide coverage of
-different use cases, its flexibility, and its non-the-last readability:
+A minimal example of a *strongly isolated* and *parallel running* unit-test
+using the [`test`][test] package of [`go-testing`][go-testing] will simply
+create a test function and run it via [`test.Run`][run]:
+
+```go
+func TestUnit(t *testing.T) {
+    t.Parallel()
+
+    t.Run("test-case-name", test.Run(func(t test.Tester) {
+        // Given
+        unit := NewUnitService(...)
+
+        // When
+        result, err := unit.call(param.input*...)
+
+        // Then
+        assert.Equal(t, ..., err)
+        assert.Equal(t, ..., result)
+    }))
+
+    ... // more test cases
+}
+```
+
+**Note:** if you only have a single test case, you can also directly run the
+test function via [`test.Run(...)(t)`][run] in the parent test context.
+
+However, the true power of the framework is unleashed when you define a
+systematic set of unified test cases running in parallel with detailed mock
+setups and strong validation of the system under test.
+
+To accomplish this, you first have to define a unified test parameter set.
+While this can be done in many different ways, the following test setup is
+considered to be the [`go-testing`][go-testing] idiomatic way due to its wide
+coverage of different use cases, its flexibility, and its high readability:
 
 ```go
 type UnitParams struct {
@@ -114,11 +145,11 @@ var unitTestCases = map[string]UnitParams {
 }
 ```
 
-Now you can set up a *strongly isolated* and *parallel running* test. While
+Now you can set up the *strongly isolated* and *parallel running* test. While
 there are again many ways to define tests (see package [test](test)), the
-following pattern is considered to be the most [`go-testing`][go-testing]
-idiomatic way again due to its wide coverage of different use cases, its
-flexibility, and its non-the-last readability:
+following [`test.Factory`][factory] based [`test.Map(t, cases)`][map] pattern
+is considered to be the most idiomatic way again due to its wide coverage of
+different use cases, its flexibility, and its high readability:
 
 ```go
 func TestUnit(t *testing.T) {
@@ -155,9 +186,8 @@ func TestUnit(t *testing.T) {
 
 As an addon, you can also use the same pattern to define benchmarks for a
 system under test based on the before defined test parameter set. The following
-setup structure is considered to be the most [`go-testing`][go-testing]
-framework idiomatic way (see also [Test benchmark
-setup](test#parameterized-benchmark-setup)):
+setup structure is considered to be the most framework idiomatic way (see also
+[Test benchmark setup](test#parameterized-benchmark-setup)):
 
 ```go
 func BenchmarkUnit(b *testing.B) {
@@ -196,6 +226,8 @@ the the copy nature of the `runtime.KeepAlive`.
 For more test patterns and variations have a closer look at details in the
 [test](test) package or read the [package docs][docs-test].
 
+[map]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Map>
+[factory]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
 [docs-test]: <https://pkg.go.dev/github.com/tkrop/go-testing/test>
 
 

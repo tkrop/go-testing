@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/tkrop/go-testing/test"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -199,7 +200,7 @@ func NewMethods(iface *types.Interface) []*Method {
 	methods := make([]*Method, 0, iface.NumMethods())
 	for index := range iface.NumMethods() {
 		method := iface.Method(index)
-		sign := method.Type().Underlying().(*types.Signature)
+		sign := test.Cast[*types.Signature](method.Type().Underlying())
 		methods = append(methods, &Method{
 			Name:     method.Name(),
 			Params:   NewParams(sign.Params()),

@@ -13,15 +13,19 @@ import (
 
 // TODO: check whether test validation is strong enough to detect failures.
 
+// benchParams defines the parameters for testing the benchmark functionality.
 type benchParams struct {
 	value int
 }
 
+// These test cases are testing the benchmark functionality of the test
+// factory.
 var benchTestCases = map[string]benchParams{
 	"case-one": {value: 1},
 	"case-two": {value: 2},
 }
 
+// TestBenchmarkRun is testing the benchmark functionality of the test factory.
 func TestBenchmarkRun(t *testing.T) {
 	// Given
 	var seen sync.Map
@@ -42,11 +46,15 @@ func TestBenchmarkRun(t *testing.T) {
 	assert.Equal(t, int32(len(benchTestCases)), got)
 }
 
+// wrapperParams defines the parameters for testing the benchmark wrapper
+// functionality.
 type wrapperParams struct {
 	call   func(t test.Test) any
 	expect any
 }
 
+// These test cases are testing the benchmark wrapper functionality of the test
+// factory.
 var wrapperTestCases = map[string]wrapperParams{
 	// Parallel must not panic and must be a no-op.
 	"parallel-noop": {
@@ -66,6 +74,8 @@ var wrapperTestCases = map[string]wrapperParams{
 	},
 }
 
+// TestBenchmarkWrapper is testing the benchmark wrapper functionality of the
+// test factory.
 func TestBenchmarkWrapper(t *testing.T) {
 	test.Map(t, wrapperTestCases).
 		Run(func(t test.Test, param wrapperParams) {
@@ -84,12 +94,16 @@ func TestBenchmarkWrapper(t *testing.T) {
 		})
 }
 
+// dispatchParams defines the parameters for testing the benchmark dispatch
+// functionality.
 type dispatchParams struct {
 	setup   mock.SetupFunc
 	factory func(t test.Test) test.Factory[benchParams]
 	expect  int32
 }
 
+// dispatchTestCases are testing the benchmark dispatch functionality of the
+// test factory.
 var dispatchTestCases = map[string]dispatchParams{
 	// Map dispatches all cases.
 	"map-all": {
@@ -147,6 +161,8 @@ var dispatchTestCases = map[string]dispatchParams{
 	},
 }
 
+// TestBenchmarkDispatch is testing the benchmark dispatch functionality of the
+// test factory.
 func TestBenchmarkDispatch(t *testing.T) {
 	test.Map(t, dispatchTestCases).
 		Run(func(t test.Test, param dispatchParams) {

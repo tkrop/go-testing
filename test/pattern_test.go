@@ -30,11 +30,11 @@ type (
 
 var testFunc TestFunc = func(a *any) any { return a }
 
-type PtrParams struct {
+type ptrParams struct {
 	value any
 }
 
-var ptrTestCases = map[string]PtrParams{
+var ptrTestCases = map[string]ptrParams{
 	// Primitive types
 	"bool-true":  {value: true},
 	"bool-false": {value: false},
@@ -106,7 +106,7 @@ var ptrTestCases = map[string]PtrParams{
 }
 
 func TestPtr(t *testing.T) {
-	test.Map(t, ptrTestCases).Run(func(t test.Test, param PtrParams) {
+	test.Map(t, ptrTestCases).Run(func(t test.Test, param ptrParams) {
 		// When
 		result := test.Ptr(param.value)
 
@@ -121,14 +121,14 @@ func TestPtr(t *testing.T) {
 	})
 }
 
-type MustParams struct {
+type mustParams struct {
 	setup  mock.SetupFunc
 	arg    any
 	err    error
 	expect any
 }
 
-var mustTestCases = map[string]MustParams{
+var mustTestCases = map[string]mustParams{
 	"nil": {},
 	"string": {
 		arg:    "value",
@@ -207,7 +207,7 @@ var mustTestCases = map[string]MustParams{
 }
 
 func TestMust(t *testing.T) {
-	test.Map(t, mustTestCases).Run(func(t test.Test, param MustParams) {
+	test.Map(t, mustTestCases).Run(func(t test.Test, param mustParams) {
 		// Given
 		mock.NewMocks(t).Expect(param.setup)
 
@@ -224,14 +224,130 @@ func TestMust(t *testing.T) {
 	})
 }
 
-type CastParams struct {
+type okayParams struct {
+	setup  mock.SetupFunc
+	arg    any
+	ok     bool
+	expect any
+}
+
+var okayTestCases = map[string]okayParams{
+	"nil": {
+		ok: true,
+	},
+	"string": {
+		arg:    "value",
+		ok:     true,
+		expect: "value",
+	},
+	"integer": {
+		arg:    1,
+		ok:     true,
+		expect: 1,
+	},
+	"float": {
+		arg:    3.14,
+		ok:     true,
+		expect: 3.14,
+	},
+	"bool-true": {
+		arg:    true,
+		ok:     true,
+		expect: true,
+	},
+	"bool-false": {
+		arg:    false,
+		ok:     true,
+		expect: false,
+	},
+	"slice": {
+		arg:    []string{"a", "b", "c"},
+		ok:     true,
+		expect: []string{"a", "b", "c"},
+	},
+	"map": {
+		arg:    map[string]int{"key": 42},
+		ok:     true,
+		expect: map[string]int{"key": 42},
+	},
+	"struct": {
+		arg:    TestStruct{name: "test", id: 123},
+		ok:     true,
+		expect: TestStruct{name: "test", id: 123},
+	},
+	"pointer": {
+		arg:    &TestStruct{name: "pointer", id: 456},
+		ok:     true,
+		expect: &TestStruct{name: "pointer", id: 456},
+	},
+	"function": {
+		arg:    testFunc,
+		ok:     true,
+		expect: testFunc,
+	},
+	"named-slice": {
+		arg:    TestSlice{"x", "y", "z"},
+		ok:     true,
+		expect: TestSlice{"x", "y", "z"},
+	},
+	"named-map": {
+		arg:    TestMap{"foo": 1, "bar": 2},
+		ok:     true,
+		expect: TestMap{"foo": 1, "bar": 2},
+	},
+	"zero-value-int": {
+		arg:    0,
+		ok:     true,
+		expect: 0,
+	},
+	"zero-value-string": {
+		arg:    "",
+		ok:     true,
+		expect: "",
+	},
+	"empty-slice": {
+		arg:    []string{},
+		ok:     true,
+		expect: []string{},
+	},
+	"empty-map": {
+		arg:    map[string]int{},
+		ok:     true,
+		expect: map[string]int{},
+	},
+	"not-okay": {
+		setup:  test.Panic("not okay"),
+		ok:     false,
+		expect: nil,
+	},
+}
+
+func TestOkay(t *testing.T) {
+	test.Map(t, okayTestCases).Run(func(t test.Test, param okayParams) {
+		// Given
+		mock.NewMocks(t).Expect(param.setup)
+
+		// When
+		result := test.Okay(param.arg, param.ok)
+
+		// Then
+		if strings.Contains(t.Name(), "function") {
+			// For functions, just verify the result is not nil (functions can't be compared)
+			assert.NotNil(t, result)
+		} else {
+			assert.Equal(t, param.expect, result)
+		}
+	})
+}
+
+type castParams struct {
 	setup  mock.SetupFunc
 	arg    any
 	cast   func(arg any) any
 	expect any
 }
 
-var castTestCases = map[string]CastParams{
+var castTestCases = map[string]castParams{
 	"int-to-int": {
 		arg:    42,
 		cast:   func(arg any) any { return test.Cast[int](arg) },
@@ -371,7 +487,7 @@ var castTestCases = map[string]CastParams{
 }
 
 func TestCast(t *testing.T) {
-	test.Map(t, castTestCases).Run(func(t test.Test, param CastParams) {
+	test.Map(t, castTestCases).Run(func(t test.Test, param castParams) {
 		// Given
 		mock.NewMocks(t).Expect(param.setup)
 
@@ -394,13 +510,13 @@ func TestCast(t *testing.T) {
 	})
 }
 
-type RecoverParams struct {
+type recoverParams struct {
 	setup  any
 	expect test.Expect
 	panic  any
 }
 
-var recoverTestCases = map[string]RecoverParams{
+var recoverTestCases = map[string]recoverParams{
 	// Failure to panic.
 	"no-panic-with-nil": {},
 	"no-panic-with-string": {
@@ -433,7 +549,7 @@ var recoverTestCases = map[string]RecoverParams{
 
 func TestRecover(t *testing.T) {
 	test.Map(t, recoverTestCases).
-		Run(func(t test.Test, param RecoverParams) {
+		Run(func(t test.Test, param recoverParams) {
 			// Given
 			defer test.Recover(t, param.setup)
 
@@ -660,13 +776,13 @@ func (d mapPtrDeepCopyObject) DeepCopyObject() mapPtrDeepCopyObject {
 	return copied
 }
 
-// DeepCopyCasesParams defines parameters for testing DeepCopyTestCases.
-type DeepCopyCasesParams struct {
+// deepCopyTestCasesParams defines parameters for testing DeepCopyTestCases.
+type deepCopyTestCasesParams struct {
 	args   []any
 	expect map[string]test.DeepCopyParams
 }
 
-var deepCopyTestCasesTestCases = map[string]DeepCopyCasesParams{
+var deepCopyTestCasesTestCases = map[string]deepCopyTestCasesParams{
 	"struct-anno": {
 		args: []any{&struct{ Value int }{}},
 		expect: map[string]test.DeepCopyParams{
@@ -835,7 +951,7 @@ var deepCopyTestCasesTestCases = map[string]DeepCopyCasesParams{
 
 func TestDeepCopyTestCases(t *testing.T) {
 	test.Map(t, deepCopyTestCasesTestCases).
-		Run(func(t test.Test, param DeepCopyCasesParams) {
+		Run(func(t test.Test, param deepCopyTestCasesParams) {
 			// When
 			cases := test.DeepCopyTestCases(42, 3, 10, param.args...)
 
@@ -844,12 +960,12 @@ func TestDeepCopyTestCases(t *testing.T) {
 		})
 }
 
-type DeepCopyParams struct {
+type deepCopyParams struct {
 	test.DeepCopyParams
 	setup mock.SetupFunc
 }
 
-var deepCopyTestCases = map[string]DeepCopyParams{
+var deepCopyTestCases = map[string]deepCopyParams{
 	// Invalid value.
 	"invalid-nil": {
 		DeepCopyParams: test.DeepCopyParams{
@@ -1080,7 +1196,7 @@ var deepCopyTestCases = map[string]DeepCopyParams{
 
 func TestDeepCopy(t *testing.T) {
 	test.Map(t, deepCopyTestCases).
-		Run(func(t test.Test, param DeepCopyParams) {
+		Run(func(t test.Test, param deepCopyParams) {
 			// Given
 			mock.NewMocks(t).Expect(param.setup)
 

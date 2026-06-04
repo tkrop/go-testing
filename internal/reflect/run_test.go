@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 			})
 
 			// Then
-			assert.Equal(t, param.expectCall,
-				param.target != nil && param.target.(*runner).called)
+			assert.Equal(t, param.expectCall, param.target != nil &&
+				test.Cast[*runner](param.target).called)
 		})
 }

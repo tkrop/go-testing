@@ -9,6 +9,8 @@ package iter
 import (
 	"iter"
 	"sync"
+
+	"github.com/tkrop/go-testing/test"
 )
 
 // SyncMap returns an iter.Seq2 iterator over the entries of a *sync.Map,
@@ -16,7 +18,7 @@ import (
 func SyncMap[K comparable, V any](source *sync.Map) iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		source.Range(func(k, v any) bool {
-			return yield(k.(K), v.(V))
+			return yield(test.Cast[K](k), test.Cast[V](v))
 		})
 	}
 }

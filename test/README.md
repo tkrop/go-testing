@@ -17,8 +17,8 @@ The [`Factory`] can be instantiated by global functions with a single test
 parameter set ([`test.Param`][param]), a slice of test parameter sets
 ([`test.Slice`][slice]), or a map of test case name to test parameter sets
 ([`test.Map`][map] - idiomatic pattern). The tests are started by calling the
-[`Run`][run], [`RunSeq`][run-seq], or [`Benchmark`][bench] methods that with
-the exception of the last accept a simple test function as input, using a
+[`Run`][factory], [`RunSeq`][factory], or [`Benchmark`][factory] methods that
+with the exception of the last accept a simple test function as input, using a
 [`test.Test`][itest] interface compatible with most other extensions, e.g.
 [`gomock`][gomock].
 
@@ -28,9 +28,6 @@ the exception of the last accept a simple test function as input, using a
 [slice]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Slice>
 [map]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Map>
 [itest]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Test>
-[run]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
-[runseq]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
-[bench]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
 [factory]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
 [context]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Context>
 [filter]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#FilterFunc>
@@ -43,7 +40,7 @@ test environment.
 
 ```go
 func TestUnit(t *testing.T) {
-    test.Run(test.Success, func(t test.Test){
+    test.New(t).Run(func(t test.Test){
         // Given
         mock.NewMocks(t).Expect(
             test.Panic("fail"),
@@ -52,7 +49,7 @@ func TestUnit(t *testing.T) {
         // When
         panic("fail")
     ...
-    })(t)
+    })
 }
 ```
 
@@ -67,7 +64,9 @@ sequential) tests using the lean test [`Factory`][factory] as follows:
 
 ```go
 func TestUnit(t *testing.T) {
-    // Set up the test using various test case definitions.
+    // Set up the test using various test case definitions. No need to set up
+    // parallel execution manually here, since this is done by default in the
+    // by the test factory - when possible.
     test.Param|Slice|Map|Any(t, unitTestCases).
         // Exclude of test cases temporary or permanent.
         Filter(test.Not(test.Pattern[T]("^test-case-prefix"))).
@@ -161,43 +160,27 @@ The [`test`][test] package supports the following default filter functions:
 [cleanup]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Factory>
 
 
-## Isolated in-test environment setup
+## Manual isolated test setup
 
-It is also possible to isolate only a single test step by setting up a small
-test function that is run in isolation.
-
-```go
-func TestUnit(t *testing.T) {
-    test.Param|Slice|Map|Any(t, unitTestCases).
-        ...
-        // Run the test in parallel or sequential.
-        Run|RunSeq(func(t test.Test, param UnitParams){
-            // Given
-
-            // When
-            test.InRun(test.Success|Failure, func(t test.Test) {
-                ...
-            })(t)
-
-            // Then
-        })
-}
-```
-
-
-## Manual isolated test environment setup
-
-If the above pattern is not sufficient, you can create your own customized
-parameterized, parallel, isolated test wrapper using the basic abstraction
-`test.Run|RunSeq(test.Success|Failure, func (t test.Test) {})`:
+You have two options to set up a manual isolated test environment. The first
+option is to create standard test functions for the default test runner using
+the [`test.Run`][run] or [`test.RunSeq`][runseq] as follows:
 
 ```go
 func TestUnit(t *testing.T) {
+    // Need to set up parallel execution manually here.
     t.Parallel()
 
     for name, param := range unitTestCases {
-        t.Run(name, test.Run(param.expect, func(t test.Test) {
-            t.Parallel()
+        t.Run(name, test.Run|test.RunSeq(func(t test.Tester) {
+            // Set up sequential test execution (default is test.Parallel).
+            t.Mode(test.Parallel|test.Sequential)
+            // Set up the test expectation (default is test.Success).
+            t.Expect(test.Success|test.Failure)
+            // Define a test specific timeout (default: none).
+            t.Timeout(50*time.Millisecond)
+            // Define a safety margin for cleaning up (default: none).
+            t.StopEarly(5*time.Millisecond)
 
             // Given
 
@@ -209,24 +192,66 @@ func TestUnit(t *testing.T) {
 }
 ```
 
-Or finally, use even more directly the flexible `test.Context` that is
-providing the features on top of the underlying `test.Test` interface
-abstraction, if you need more control about the test execution:
+To allow for more flexibility the test function is provided with an extended
+[`test.Tester`][tester] interface, that allows for additional test control,
+e.g. setting up the test expectation and execution mode, defining timeouts and
+safety margins for cleaning up.
+
+
+## Manual isolated test context setup
+
+If this pattern is insufficient, and you need more control about the test
+execution, you can also create your own customized, parallel, isolated test
+wrapper based on the common [`test.Context`][context]. It extends the basic
+[`test.Test`][test] interface abstraction and can be utilized as follows:
 
 ```go
 func TestUnit(t *testing.T) {
     t.Parallel()
 
-    test.New(t, test.Success|Failure).
-        // Define a test specific timeout.
+    test.New(t).
+        // Set up sequential test execution (default is test.Parallel).
+        Mode(test.Parallel|test.Sequential).
+        // Set up the test expectation (default is test.Success).
+        Expect(test.Success|test.Failure).
+        // Define a test specific timeout (default: none).
         Timeout(50*time.Millisecond).
-        // Define a safety margin for cleaning up.
+        // Define a safety margin for cleaning up (default: none).
         StopEarly(5*time.Millisecond).
         // Run the test function.
-        Run("test", func(t test.Test){
+        Run("test-name", func(t test.Test){
             // Given
 
             // When
+
+            // Then
+        })
+}
+```
+
+[run]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Run>
+[runseq]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#RunSeq>
+[tester]: <https://pkg.go.dev/github.com/tkrop/go-testing/test#Tester>
+
+
+## Isolated in-test environment setup
+
+Using the [before pattern](#manual-isolated-test-context-setup) it is also
+possible to isolate only a single test step by setting up a small test
+function that is executed in isolation:
+
+```go
+func TestUnit(t *testing.T) {
+    test.Param|Slice|Map|Any(t, unitTestCases).
+        ...
+        // Run the test in parallel or sequential.
+        Run|RunSeq(func(t test.Test, param UnitParams){
+            // Given
+
+            // When
+            test.New(t).Run(func(t test.Test) {
+                ...
+            })
 
             // Then
         })
@@ -237,12 +262,12 @@ func TestUnit(t *testing.T) {
 ## Isolated failure/panic validation
 
 Besides just capturing the failure in the isolated test environment, it is also
-very simple possible to validate the failures/panics using the self installing
-validator that is tightly integrated with the [`mock`](../mock) framework.
+possible to easily validate failures/panics using the self installing validator
+that is tightly integrated with the [`mock`](../mock) framework.
 
 ```go
 func TestUnit(t *testing.T) {
-    test.Run(func(t test.Test){
+    test.New(t).Run(func(t test.Test){
         // Given
         mock.NewMocks(t).Expect(mock.Setup(
             test.Errorf("fail"),

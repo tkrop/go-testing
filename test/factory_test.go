@@ -19,7 +19,7 @@ func TestParamsRun(t *testing.T) {
 	count := atomic.Int32{}
 
 	test.Param(t, commonTestCases.GetSlice()...).
-		Run(func(t test.Test, param TestParams) {
+		Run(func(t test.Test, param testParams) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -37,8 +37,8 @@ func TestParamsRunFiltered(t *testing.T) {
 	assert.NotEmpty(t, expect)
 
 	test.Param(t, commonTestCases.GetSlice()...).
-		Filter(test.Pattern[TestParams](pattern)).
-		Run(func(t test.Test, param TestParams) {
+		Filter(test.Pattern[testParams](pattern)).
+		Run(func(t test.Test, param testParams) {
 			defer count.Add(1)
 			name := param.name
 			assert.Contains(t, name, pattern)
@@ -56,7 +56,7 @@ func TestMapRun(t *testing.T) {
 	count := atomic.Int32{}
 
 	test.Map(t, commonTestCases).
-		Run(func(t test.Test, param TestParams) {
+		Run(func(t test.Test, param testParams) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -74,8 +74,8 @@ func TestMapRunFiltered(t *testing.T) {
 	assert.NotEmpty(t, expect)
 
 	test.Map(t, commonTestCases).
-		Filter(test.Pattern[TestParams](pattern)).
-		Run(func(t test.Test, param TestParams) {
+		Filter(test.Pattern[testParams](pattern)).
+		Run(func(t test.Test, param testParams) {
 			defer count.Add(1)
 			assert.Contains(t, t.Name(), pattern)
 			name := strings.ReplaceAll(t.Name()[19:], "-", " ")
@@ -94,7 +94,7 @@ func TestSliceRun(t *testing.T) {
 	count := atomic.Int32{}
 
 	test.Slice(t, commonTestCases.GetSlice()).
-		Run(func(t test.Test, param TestParams) {
+		Run(func(t test.Test, param testParams) {
 			defer count.Add(1)
 			param.CheckName(t)
 			param.ExecTest(t)
@@ -112,8 +112,8 @@ func TestSliceRunFiltered(t *testing.T) {
 	assert.NotEmpty(t, expect)
 
 	test.Slice(t, commonTestCases.GetSlice()).
-		Filter(test.Pattern[TestParams](pattern)).
-		Run(func(t test.Test, param TestParams) {
+		Filter(test.Pattern[testParams](pattern)).
+		Run(func(t test.Test, param testParams) {
 			defer count.Add(1)
 			name := param.name
 			assert.Contains(t, name, pattern)
@@ -134,8 +134,8 @@ func TestRunnerPanic(t *testing.T) {
 		"cryptotest.SetGlobalRandom can not use t.Parallel")
 	t.Setenv("TESTING", "before")
 
-	test.Any[ParamParams](t, []ParamParams{{expect: true}}).
-		Run(func(t test.Test, param ParamParams) {
+	test.Any[paramParams](t, []paramParams{{expect: true}}).
+		Run(func(t test.Test, param paramParams) {
 			param.CheckName(t)
 		})
 }
@@ -144,24 +144,37 @@ func TestRunnerPanic(t *testing.T) {
 // tests. Currently, I have no idea hot to integrate the test using the above
 // simplified test pattern that only works on `test.Test` and not `testing.T“.
 func TestInvalidTypePanic(t *testing.T) {
-	defer test.Recover(t, test.NewErrInvalidType(ParamParams{}))
+	defer test.Recover(t, test.NewErrInvalidType(paramParams{}))
 
-	test.Any[TestParams](t, ParamParams{expect: false}).
-		Run(func(t test.Test, param TestParams) {
+	test.Any[testParams](t, paramParams{expect: false}).
+		Run(func(t test.Test, param testParams) {
 			param.CheckName(t)
 		})
 }
 
+// These types are used to simplify the test cases for the filter and prefix
+// tests.
 type (
-	Any          = struct{}
-	FactoryAny   = test.Factory[Any]
-	filterParams struct {
-		cases  map[string]Any
-		apply  func(FactoryAny) FactoryAny
-		expect map[string]bool
-	}
+	// Any is a placeholder type used in filter and prefix tests.
+	Any = struct{}
+	// FactoryAny is a type alias for the test factory with Any type, used in
+	// filter and prefix tests.
+	FactoryAny = test.Factory[Any]
 )
 
+// filterParams defines the parameters for testing the filter functionality of
+// the test factory.
+type filterParams struct {
+	cases  map[string]Any
+	apply  func(FactoryAny) FactoryAny
+	expect map[string]bool
+}
+
+// These test cases are testing the filter functionality of the test factory.
+// The filter functionality allows selecting specific test cases based on
+// various criteria, such as name patterns, OS/arch, or custom logic. The test
+// cases cover a wide range of scenarios, including basic filters, combinations
+// of filters, and edge cases.
 var filterCases = map[string]filterParams{
 	// all filter - always includes all cases
 	"all-single-case": {
@@ -752,8 +765,12 @@ var filterCases = map[string]filterParams{
 	},
 }
 
+// TestFilter is testing the filter functionality of the test factory. The
+// filter functionality allows selecting specific test cases based on various
+// criteria, such as name patterns, OS/arch, or custom logic. The test cases
+// cover a wide range of scenarios, including basic filters, combinations of
+// filters, and edge cases.
 func TestFilter(t *testing.T) {
-	t.Parallel()
 	test.Map(t, filterCases).
 		Run(func(t test.Test, param filterParams) {
 			// Given
@@ -773,12 +790,15 @@ func TestFilter(t *testing.T) {
 		})
 }
 
+// prefixParams defines the parameters for testing the prefix functionality of
+// the test factory.
 type prefixParams struct {
 	cases  map[string]Any
 	apply  func(FactoryAny) FactoryAny
 	expect map[string]bool
 }
 
+// These test cases are testing the prefix functionality of the test factory.
 var prefixCases = map[string]prefixParams{
 	"no-prefix": {
 		cases: map[string]Any{
@@ -831,6 +851,7 @@ var prefixCases = map[string]prefixParams{
 	},
 }
 
+// TestPrefix is testing the prefix functionality of the test factory.
 func TestPrefix(t *testing.T) {
 	test.Map(t, prefixCases).
 		Run(func(t test.Test, param prefixParams) {

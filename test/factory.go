@@ -39,7 +39,8 @@ type ParamFunc[P any] func(t Test, param P)
 // `b.ResetTimer` after the setup phase and before entering the loop.
 type BenchmarkFunc[P any] func(b *testing.B, param P) func(*testing.B)
 
-// FilterFunc defines the common test filter function signature.
+// FilterFunc defines the common test filter function signature expecting the
+// test name and parameter set.
 type FilterFunc[P any] func(name string, param P) bool
 
 // CleanupFunc defines the common test cleanup function signature.
@@ -289,16 +290,16 @@ func (f *factory[P]) StopEarly(early time.Duration) Factory[P] {
 
 // Run runs the test parameter sets (by default) parallel.
 func (f *factory[P]) Run(call ParamFunc[P]) Factory[P] {
-	return f.dispatch(Parallel, func(name string, param P) {
+	return f.dispatch(func(name string, param P) {
 		f.test(name, param, call, Parallel)
-	})
+	}, Parallel)
 }
 
 // RunSeq runs the test parameter sets in a sequence.
 func (f *factory[P]) RunSeq(call ParamFunc[P]) Factory[P] {
-	return f.dispatch(!Parallel, func(name string, param P) {
-		f.test(name, param, call, !Parallel)
-	})
+	return f.dispatch(func(name string, param P) {
+		f.test(name, param, call, Sequential)
+	}, Sequential)
 }
 
 // Benchmark runs all parameter sets using the two-phase benchmark pattern.
@@ -308,9 +309,9 @@ func (f *factory[P]) RunSeq(call ParamFunc[P]) Factory[P] {
 // Use `test.Benchmark(b)` to wrap the *testing.B target as a Benchmarker when
 // using the test runner in benchmarks.
 func (f *factory[P]) Benchmark(call BenchmarkFunc[P]) Factory[P] {
-	return f.dispatch(!Parallel, func(name string, param P) {
+	return f.dispatch(func(name string, param P) {
 		f.bench(name, param, call)
-	})
+	}, Sequential)
 }
 
 // Cleanup register a function to be called for cleanup after all tests have
@@ -323,10 +324,10 @@ func (f *factory[P]) Cleanup(call CleanupFunc) {
 	})
 }
 
-// Parallel ensures that the test runner runs the test parameter sets in
-// parallel.
-func (f *factory[P]) parallel(parallel bool) {
-	if parallel {
+// Mode ensures that the test runner runs the test parameter sets in
+// the specified mode.
+func (f *factory[P]) mode(mode Mode) {
+	if mode&Parallel == Parallel {
 		defer f.recover()
 		f.t.Parallel()
 	}
@@ -346,11 +347,11 @@ func (*factory[P]) recover() {
 // map and slice cases it also triggers the outer parallel declaration if
 // enabled.
 func (f *factory[P]) dispatch(
-	parallel bool, call func(name string, param P),
+	call func(name string, param P), mode Mode,
 ) Factory[P] {
 	switch params := f.params.(type) {
 	case map[string]P:
-		f.parallel(parallel)
+		f.mode(mode)
 		for _, key := range f.sorted(params) {
 			param := params[key]
 			name := reflect.Name(key, param)
@@ -358,7 +359,7 @@ func (f *factory[P]) dispatch(
 		}
 
 	case []P:
-		f.parallel(parallel)
+		f.mode(mode)
 		for index, param := range params {
 			name := reflect.Name("", param) +
 				"[" + strconv.Itoa(index) + "]"
@@ -411,18 +412,18 @@ func (f *factory[P]) filter(
 
 // wrap creates the wrapper method eventually executing the test.
 func (f *factory[P]) wrap(
-	param P, call ParamFunc[P], parallel bool,
+	name string, param P, call ParamFunc[P], mode Mode,
 ) func(Test) {
 	f.wg.Add(1)
 
 	return func(t Test) {
 		t.Helper()
 
-		New(t, parallel).
+		New(t).Mode(mode).
 			Expect(reflect.Find(param, Success, "expect", "*")).
 			Timeout(reflect.Find(param, f.timeout, "timeout")).
 			StopEarly(reflect.Find(param, f.early, "early")).
-			Run("", func(t Test) {
+			Run(name, func(t Test) {
 				t.Helper()
 
 				defer f.wg.Done()
@@ -436,15 +437,16 @@ func (f *factory[P]) wrap(
 // goroutine and synchronized with the wait group. The test is wrapped to
 // apply the timeout and early stop configuration.
 func (f *factory[P]) test(
-	name string, param P, call ParamFunc[P], parallel bool,
+	name string, param P, call ParamFunc[P], mode Mode,
 ) {
 	// Execute anonymous non-parallel tests directly.
-	if name == "" && !parallel {
-		f.wrap(param, call, parallel)(f.t)
+	if name == "" && mode&Parallel == Sequential {
+		f.wrap("", param, call, mode)(f.t)
 		return
 	}
 
-	New(f.t, !Parallel).Run(name, f.wrap(param, call, parallel))
+	New(f.t).Mode(Sequential).Run(name,
+		f.wrap("", param, call, mode))
 }
 
 // bench runs the given single bench parameter set with the given name.

@@ -74,6 +74,10 @@ enableAllRules = true
 [rule.flag-parameter]
   disabled = true
 
+# Rule prevents intentional usage of certain variable names.
+[rule.var-naming]
+  disabled = true
+
 # Rule prevents intentional usage of similar private method names.
 [rule.confusing-naming]
   disabled = true
