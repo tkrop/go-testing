@@ -3,15 +3,16 @@ package test
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/tkrop/go-testing/internal/maps"
-	"github.com/tkrop/go-testing/internal/slices"
+	imaps "github.com/tkrop/go-testing/internal/maps"
 	"github.com/tkrop/go-testing/internal/sync"
 	"github.com/tkrop/go-testing/reflect"
 )
@@ -145,13 +146,14 @@ type Factory[P any] interface {
 	// used to structure tests and benchmarks into logical groups add labels
 	// for tools. If called multiple times, only the last prefix is applied.
 	Prefix(prefix string) Factory[P]
-	// Adds a generic filter function that allows to filter test cases based on
+	// Adds generic filter functions that allows to filter test cases based on
 	// the name and the parameter set. If multiple filters are added, all of
-	// them must accept the test case for it to be executed.
+	// them must accept the test case, else the test case is excluded. Thus the
+	// filters are combined by default using a logical `and`.
 	//
 	// **Note:** A test case prefix is always applied to the test case name
 	// before the test case parameters and name are passed to the filter.
-	Filter(filter FilterFunc[P]) Factory[P]
+	Filter(filter ...FilterFunc[P]) Factory[P]
 	// Timeout sets up a timeout for the test cases executed by the test runner.
 	// Setting a timeout is useful to prevent the test execution from waiting
 	// too long in case of deadlocks. The timeout is not affecting the global
@@ -198,7 +200,7 @@ type factory[P any] struct {
 	// A prefix to prepend to each test case name.
 	prefix string
 	// A filters to include or exclude test cases.
-	filters []func(string, P) bool
+	filters []FilterFunc[P]
 	// A timeout after which the test execution is stopped to prevent waiting
 	// to long in case of deadlocks.
 	timeout time.Duration
@@ -234,10 +236,13 @@ func Param[P any](t Test, params ...P) Factory[P] {
 
 // Map creates a new parallel test runner with given test parameter sets
 // provided as a test case name to parameter sets mapping.
+//
+// Note: The test cases are sorted by their lexicographical order to ensure a
+// deterministic, stable test order.
 func Map[P any](t Test, params ...map[string]P) Factory[P] {
 	t.Helper()
 
-	return Any[P](t, maps.Add(maps.Copy(params[0]), params[1:]...))
+	return Any[P](t, imaps.Copy(maps.Clone(params[0]), params[1:]...))
 }
 
 // Slice creates a new parallel test runner with given test parameter sets
@@ -246,13 +251,13 @@ func Map[P any](t Test, params ...map[string]P) Factory[P] {
 func Slice[P any](t Test, params ...[]P) Factory[P] {
 	t.Helper()
 
-	return Any[P](t, slices.Add(params...))
+	return Any[P](t, slices.Concat(params...))
 }
 
 // Filter adds a generic filter function that allows to filter test cases based
 // on the name and the parameter set.
-func (f *factory[P]) Filter(filter FilterFunc[P]) Factory[P] {
-	f.filters = append(f.filters, filter)
+func (f *factory[P]) Filter(filter ...FilterFunc[P]) Factory[P] {
+	f.filters = append(f.filters, filter...)
 	return f
 }
 
@@ -346,8 +351,9 @@ func (f *factory[P]) dispatch(
 	switch params := f.params.(type) {
 	case map[string]P:
 		f.parallel(parallel)
-		for name, param := range params {
-			name := reflect.Name(name, param)
+		for _, key := range f.sorted(params) {
+			param := params[key]
+			name := reflect.Name(key, param)
 			f.filter(name, param, call)
 		}
 
@@ -368,6 +374,18 @@ func (f *factory[P]) dispatch(
 	}
 
 	return f
+}
+
+// sorted sorts the keys of the test case map by the lexicographical order of
+// the test case name including the prefix to ensure a deterministic, stable
+// test order independent of the natural map iteration order.
+func (f *factory[P]) sorted(params map[string]P) []string {
+	return slices.SortedFunc(maps.Keys(params), func(a, b string) int {
+		return strings.Compare(
+			f.prefix+reflect.Name(a, params[a]),
+			f.prefix+reflect.Name(b, params[b]),
+		)
+	})
 }
 
 // filter filters the parameter set by its `(name, param)` pair before calling

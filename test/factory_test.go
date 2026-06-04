@@ -1,6 +1,7 @@
 package test_test
 
 import (
+	"maps"
 	"runtime"
 	"strings"
 	"sync"
@@ -10,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tkrop/go-testing/internal/iter"
-	"github.com/tkrop/go-testing/internal/maps"
 	"github.com/tkrop/go-testing/test"
 )
 

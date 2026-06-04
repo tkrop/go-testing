@@ -3,19 +3,11 @@
 // must be consider as highly instable.
 package slices
 
-// Reverse reverses the given slice.
-func Reverse[T any](slice []T) []T {
-	for i, j := 0, len(slice)-1; i < j; i, j = i+1, j-1 {
-		slice[i], slice[j] = slice[j], slice[i]
-	}
-	return slice
-}
-
 // Permute permutates the given slice as is.
 func Permute[T any](slice []T) [][]T {
 	perms := [][]T{}
 	PermuteDo(slice, func(perm []T) {
-		perms = append(perms, Copy(perm))
+		perms = append(perms, append([]T(nil), perm...))
 	}, 0)
 	return perms
 }
@@ -34,22 +26,4 @@ func PermuteDo[T any](slice []T, do func([]T), i int) {
 	} else {
 		do(slice)
 	}
-}
-
-// Copy makes a shallow copy of the given slice.
-func Copy[T any](slice []T) []T {
-	return append(make([]T, 0, len(slice)), slice...)
-}
-
-// Add appends the given slices into a single slice.
-func Add[T any](slices ...[]T) []T {
-	items := 0
-	for _, slice := range slices {
-		items += len(slice)
-	}
-	result := make([]T, 0, items)
-	for _, slice := range slices {
-		result = append(result, slice...)
-	}
-	return result
 }

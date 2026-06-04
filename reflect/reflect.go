@@ -4,6 +4,7 @@
 package reflect
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -73,25 +74,25 @@ type builder[T any] struct {
 // name.
 func NewBuilder[T any]() Builder[T] {
 	var target T
-	return NewAccessor[T](target)
+	return NewAccessor(target)
 }
 
 // NewGetter creates a generic getter for a target struct type. The getter
 // allows you to access unexported fields of the struct by field name.
 func NewGetter[T any](target T) Getter[T] {
-	return NewAccessor[T](target)
+	return NewAccessor(target)
 }
 
 // NewSetter creates a generic setter for a target struct type. The setter
 // allows you to modify unexported fields of the struct by field name.
 func NewSetter[T any](target T) Setter[T] {
-	return NewAccessor[T](target)
+	return NewAccessor(target)
 }
 
 // NewFinder creates a generic finder for a target struct type. The finder
 // allows you to access unexported fields of the struct by field name.
 func NewFinder[T any](target T) Finder[T] {
-	return NewAccessor[T](target)
+	return NewAccessor(target)
 }
 
 // NewAccessor creates a generic builder/accessor for a given target struct.
@@ -111,7 +112,7 @@ func NewAccessor[T any](target T) Builder[T] {
 	if value.Kind() == reflect.Ptr {
 		// Create a new instance if the pointer is nil.
 		if value.Elem().Kind() == reflect.Invalid {
-			target = reflect.New(value.Type().Elem()).Interface().(T)
+			target = cast[T](reflect.New(value.Type().Elem()).Interface())
 			value = reflect.ValueOf(target)
 		}
 
@@ -211,12 +212,12 @@ func (b *builder[T]) Build() T {
 	if b.wrapped {
 		target := b.targetValueOf()
 		if target.IsValid() {
-			return target.Interface().(T)
+			return cast[T](target.Interface())
 		}
 		var t T
 		return t
 	} else {
-		return b.target.(T)
+		return cast[T](b.target)
 	}
 }
 
@@ -284,11 +285,11 @@ func Find[P, T any](param P, deflt T, names ...string) T {
 	pt, dt := reflect.TypeOf(param), reflect.TypeOf(deflt)
 	switch {
 	case pt.Kind() == dt.Kind():
-		return reflect.ValueOf(param).Interface().(T)
+		return cast[T](reflect.ValueOf(param).Interface())
 	case pt.Kind() == reflect.Struct:
-		return NewAccessor(param).Find(deflt, names...).(T)
+		return cast[T](NewAccessor(param).Find(deflt, names...))
 	case pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct:
-		return NewAccessor(param).Find(deflt, names...).(T)
+		return cast[T](NewAccessor(param).Find(deflt, names...))
 	default:
 		return deflt
 	}
@@ -306,4 +307,14 @@ func Name[P any](name string, param P) string {
 		return strings.ReplaceAll(name, " ", "-")
 	}
 	return ""
+}
+
+// cast is a convenience function to cast the given argument to the specified
+// type or panic controlled if the cast fails.
+func cast[T any](arg any) T {
+	val, ok := arg.(T)
+	if !ok {
+		panic(fmt.Sprintf("cast failed [%T]: %v", val, arg))
+	}
+	return val
 }
