@@ -91,7 +91,7 @@ func (c *Caller) Panic(_ any) {
 // getCaller implements the capturing logic for the callers file and line
 // number for the given call.
 func getCaller(call func(t test.Panicer)) string {
-	t := test.New(&testing.T{}, false).Expect(test.Failure)
+	t := test.New(&testing.T{}).Mode(test.Sequential).Expect(test.Failure)
 	mocks := mock.NewMocks(t)
 	caller := mock.Get(mocks,
 		func(*gomock.Controller) *Caller {

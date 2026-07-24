@@ -18,7 +18,7 @@ var (
 	errOther       = errors.New(otherError)
 )
 
-type MatcherParams struct {
+type matcherParams struct {
 	matcher       func(any) gomock.Matcher
 	base          any
 	match         any
@@ -26,7 +26,7 @@ type MatcherParams struct {
 	expectString  string
 }
 
-var errorMatcherTestCases = map[string]MatcherParams{
+var errorMatcherTestCases = map[string]matcherParams{
 	"success-string-string": {
 		matcher:       test.EqError,
 		base:          anErrorString,
@@ -102,7 +102,7 @@ var errorMatcherTestCases = map[string]MatcherParams{
 
 func TestErrorMatcher(t *testing.T) {
 	test.Map(t, errorMatcherTestCases).
-		Run(func(t test.Test, param MatcherParams) {
+		Run(func(t test.Test, param matcherParams) {
 			// Given
 			matcher := param.matcher(param.base)
 
@@ -115,7 +115,7 @@ func TestErrorMatcher(t *testing.T) {
 		})
 }
 
-var callMatcherTestCases = map[string]MatcherParams{
+var callMatcherTestCases = map[string]matcherParams{
 	"success-call-call": {
 		matcher:       test.EqCall,
 		base:          test.Errorf("%s", "fail"),
@@ -143,9 +143,9 @@ func evalCall(arg any, mocks *mock.Mocks) any {
 
 func TestCallMatcher(t *testing.T) {
 	test.Map(t, callMatcherTestCases).
-		Run(func(t test.Test, param MatcherParams) {
+		Run(func(t test.Test, param matcherParams) {
 			// Given - send mock calls to unchecked test context.
-			mocks := mock.NewMocks(test.New(t, false).Expect(test.Success))
+			mocks := mock.NewMocks(test.New(t).Expect(test.Success))
 			matcher := param.matcher(evalCall(param.base, mocks))
 
 			// When
@@ -157,14 +157,14 @@ func TestCallMatcher(t *testing.T) {
 		})
 }
 
-type ReporterParams struct {
+type reporterParams struct {
 	setup  mock.SetupFunc
 	misses func(test.Test, *mock.Mocks) mock.SetupFunc
 	call   test.Func
 	expect test.Expect
 }
 
-var reporterTestCases = map[string]ReporterParams{
+var reporterTestCases = map[string]reporterParams{
 	"log-called": {
 		setup: test.Log("log message"),
 		call: func(t test.Test) {
@@ -486,12 +486,12 @@ var reporterTestCases = map[string]ReporterParams{
 
 func TestReporter(t *testing.T) {
 	test.Map(t, reporterTestCases).
-		Run(func(t test.Test, param ReporterParams) {
+		Run(func(t test.Test, param reporterParams) {
 			// Given
 			mocks := mock.NewMocks(t)
 
 			// When
-			test.InRun(test.Success, func(tt test.Test) {
+			test.New(t).Run("", func(tt test.Test) {
 				// Given
 				imocks := mock.NewMocks(tt)
 				if param.misses != nil {
@@ -505,6 +505,6 @@ func TestReporter(t *testing.T) {
 
 				// When
 				param.call(tt)
-			})(t)
+			})
 		})
 }

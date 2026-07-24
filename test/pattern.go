@@ -31,6 +31,16 @@ func Must[T any](arg T, err error) T {
 	return arg
 }
 
+// Okay is a convenience method to check whether the second boolean argument
+// is `true` while returning the first argument. If the boolean argument is
+// `false`, the method panics.
+func Okay[T any](arg T, ok bool) T {
+	if !ok {
+		panic("not okay")
+	}
+	return arg
+}
+
 // Cast is a convenience function to cast the given argument to the specified
 // type or panic controlled if the cast fails. The method allows to write
 // concise test setup code granting meaningful type checks.

@@ -14,6 +14,31 @@ import (
 	"github.com/tkrop/go-testing/internal/sync"
 )
 
+// Types and constants for the test context and test runner.
+type (
+	// Expect the expectation whether a test will succeed or fail.
+	Expect bool
+	// Mode defines the test execution mode. Currently mode only supports
+	// either parallel or sequential.
+	Mode int
+)
+
+// Constants to express test expectations.
+const (
+	// Success used to express that a test is supposed to succeed.
+	Success Expect = true
+	// Failure used to express that a test is supposed to fail.
+	Failure Expect = false
+)
+
+// Constants to express test execution modes.
+const (
+	// Sequential is the test execution mode to run tests in sequence.
+	Sequential Mode = 0x0
+	// Parallel is the test execution mode to run tests in parallel.
+	Parallel Mode = 0x1
+)
+
 // Test is a minimal interface for abstracting test methods that are needed to
 // setup an isolated test environment for GoMock and Testify.
 type Test interface { //nolint:interfacebloat // Minimal interface.
@@ -47,6 +72,48 @@ type Test interface { //nolint:interfacebloat // Minimal interface.
 	Cleanup(cleanup func())
 }
 
+type Tester interface {
+	// Embeds the minimal test interface.
+	Test
+	// Embeds the test failure reporter interface.
+	Panicer
+	// Mode sets up the test execution mode, either `Parallel` or `Sequential`.
+	//
+	// **Note:** `Parallel` only affects the current test context before the
+	// test execution is started, i.e. before `Run` is called. After the test
+	// execution is started, calling this method only affects sub-tests.
+	Mode(mode Mode) Tester
+	// Expect sets up a different expected test outcome, i.e. `test.Success` or
+	// `test.Failure`. Can be called multiple times, but the last call wins.
+	Expect(expect Expect) Tester
+	// Timeout sets up an individual timeout for the test. The method does not
+	// affect the global test timeout or a pending parent timeout that may abort
+	// the test, if the given duration is exceeding the timeout.
+	//
+	// A negative or zero duration is ignored and will not change the timeout. If
+	// this method is called multiple times, the last call wins.
+	Timeout(timeout time.Duration) Tester
+	// StopEarly stops the test by the given duration ahead of the individual or
+	// global test deadline, to ensure that a cleanup function has sufficient time
+	// to finish before the deadline is exceeded. The method is not able to extend
+	// the test deadline.
+	//
+	// A negative or zero duration is ignored. **Warning:** calling this method
+	// multiple times will also reduce the test time step by step.
+	StopEarly(time time.Duration) Tester
+	// WaitGroup adds wait group to unlock in case of a failure.
+	//
+	//revive:disable-next-line:waitgroup-by-value // own wrapper interface
+	WaitGroup(wg sync.WaitGroup)
+	// Reporter sets up a test failure reporter. This can be used to validate the
+	// reported failures in a test environment.
+	Reporter(reporter Reporter)
+	// Run executes the test function in a safe detached environment and checks
+	// the failure state after the test function has finished. If the expectation
+	// is not met, a failure is created in the parent test context.
+	Run(name string, call Func)
+}
+
 // Cleanuper defines an interface to add a custom method that is called after
 // the test execution to cleanup the test environment.
 type Cleanuper interface {
@@ -57,42 +124,57 @@ type Cleanuper interface {
 type Func func(Test)
 
 // Run creates an isolated (by default) parallel test context running the given
-// test function with given expectation. If the expectation is not met, a test
+// test function with success expectation. If the expectation is not met, a test
 // failure is created in the parent test context.
 //
-// **Note:** even though the test context is created with parallelization, the
-// test is still able to call `t.Parallel()`, since the context is swallowing
-// the panic that is raised when calling `t.Parallel()` multiple times.
-func Run(expect Expect, test Func) func(*testing.T) {
+// **Note:** You can still call `Expect(Failure)` to change the expected test
+// outcome. You may also call `Parallel()`, since the context is swallowing the
+// panic that is raised when calling `Parallel()` multiple times.
+func Run(test func(Tester)) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, Parallel).Expect(expect).Run("", test)
+		New(t).Run("", func(t Test) {
+			t.Helper()
+
+			test(Cast[Tester](t))
+		})
 	}
 }
 
 // RunSeq creates an isolated, test context for the given test function with
-// given expectation. If the expectation is not met, a test failure is created
-// in the parent test context.
+// default success expectation. If the expectation is not met, a test failure
+// is created in the parent test context.
 //
-// **Note:** even though the test context is created with out parallelization,
-// you can still setup tests using `t.Parallel()` manually.
-func RunSeq(expect Expect, test Func) func(*testing.T) {
+// **Note:** You can still call `Expect(Failure)` to change the expected test
+// outcome. You may also call `Parallel()` to parallelize the test execution.
+// Repeated calls to `Parallel()` are also allowed, since the context is
+// swallowing the raised panic.
+func RunSeq(test func(Tester)) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		New(t, !Parallel).Expect(expect).Run("", test)
+		New(t).Mode(Sequential).Run("", func(t Test) {
+			t.Helper()
+
+			test(Cast[Tester](t))
+		})
 	}
 }
 
-// InRun creates an isolated, (by default) sequential test context for the
-// given test function with given expectation. If the expectation is not met, a
-// test failure is created in the parent test context.
-func InRun(expect Expect, test Func) Func {
+// Wrap wraps a test function into an isolated, sequential test context with
+// given test expectation. If the expectation is not met, the wrapper creates a
+// failure in the parent test context.
+//
+// **Note:** You can call `Parallel()` to parallelize the test execution.
+// If you cast the basic `Test` interface to a `Tester`, you may also call
+// `Expect(Success|Failure)`, `Timeout()`, and `StopEarly()` to change the
+// test behavior and expectations.
+func Wrap(expect Expect, test Func) Func {
 	return func(t Test) {
 		t.Helper()
 
-		New(t, !Parallel).Expect(expect).Run("", test)
+		New(t).Mode(Sequential).Expect(expect).Run("", test)
 	}
 }
 
@@ -109,19 +191,31 @@ type Context struct {
 	reporter Reporter
 	cleanups []func()
 	expect   Expect
-	parallel bool
+	mode     Mode
 }
 
-// New creates a new minimal isolated test context based on the given test
-// context with. The parent test context is used to delegate methods calls
-// to the parent context to propagate test results.
-func New(t Test, parallel bool) *Context {
-	if tx, ok := t.(*Context); ok {
+// New creates a new minimal isolated test context (`Tester`) based on the
+// provided test context, executed in a safe detached, parallel environment
+// expecting a successful test execution. The test context is delegating all
+// method calls to the parent test context, which is used to propagate test
+// results.
+//
+// If the provided test context is already of type `*Context`, the new context
+// is created based on the existing state to simplify consistent nested context
+// creation with same deadline, same wait group, and same expectations.
+//
+// **Note:** even though the test context is created with parallelization and
+// successful execution expectation, this expectation can be changed by calling
+// `Mode(Sequential)` or `Expect(Failure)` to change the behavior. The test
+// function can also simply call `Parallel()`, since the context is silently
+// swallowing the panic raised when calling `Parallel()` multiple times.
+func New(t Test) Tester {
+	if c, ok := t.(*Context); ok {
 		return &Context{
-			t: tx, wg: tx.wg,
-			deadline: tx.deadline,
-			expect:   true,
-			parallel: parallel,
+			t: c, wg: c.wg,
+			deadline: c.deadline,
+			expect:   c.expect,
+			mode:     c.mode,
 		}
 	}
 
@@ -132,22 +226,38 @@ func New(t Test, parallel bool) *Context {
 			deadline, _ := t.Deadline()
 			return deadline
 		}(t),
-		expect:   true,
-		parallel: parallel,
+		expect: true,
+		mode:   Parallel,
 	}
+}
+
+// Mode sets up the test execution mode, either `Parallel` or `Sequential`.
+//
+// **Note:** `Parallel` only affects the current test context before the test
+// execution is started, i.e. before `Run` is called. After the test execution
+// is started, calling this method only affects sub-tests.
+func (c *Context) Mode(mode Mode) Tester {
+	c.t.Helper()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.mode = mode
+
+	return c
 }
 
 // Expect sets up a different expected test outcome, i.e. `test.Success` or
 // `test.Failure`. Can be called multiple times, but the last call wins.
-func (t *Context) Expect(expect Expect) *Context {
-	t.t.Helper()
+func (c *Context) Expect(expect Expect) Tester {
+	c.t.Helper()
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	t.expect = expect
+	c.expect = expect
 
-	return t
+	return c
 }
 
 // Timeout sets up an individual timeout for the test. The method does not
@@ -156,17 +266,17 @@ func (t *Context) Expect(expect Expect) *Context {
 //
 // A negative or zero duration is ignored and will not change the timeout. If
 // this method is called multiple times, the last call wins.
-func (t *Context) Timeout(timeout time.Duration) *Context {
-	t.t.Helper()
+func (c *Context) Timeout(timeout time.Duration) Tester {
+	c.t.Helper()
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	if timeout > 0 {
-		t.deadline = time.Now().Add(timeout)
+		c.deadline = time.Now().Add(timeout)
 	}
 
-	return t
+	return c
 }
 
 // StopEarly stops the test by the given duration ahead of the individual or
@@ -176,209 +286,209 @@ func (t *Context) Timeout(timeout time.Duration) *Context {
 //
 // A negative or zero duration is ignored. **Warning:** calling this method
 // multiple times will also reduce the test time step by step.
-func (t *Context) StopEarly(time time.Duration) *Context {
-	t.t.Helper()
+func (c *Context) StopEarly(time time.Duration) Tester {
+	c.t.Helper()
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if !t.deadline.IsZero() && time > 0 {
-		t.deadline = t.deadline.Add(-time)
+	if !c.deadline.IsZero() && time > 0 {
+		c.deadline = c.deadline.Add(-time)
 	}
 
-	return t
+	return c
 }
 
 // WaitGroup adds wait group to unlock in case of a failure.
 //
 //revive:disable-next-line:waitgroup-by-value // own wrapper interface
-func (t *Context) WaitGroup(wg sync.WaitGroup) {
-	t.t.Helper()
+func (c *Context) WaitGroup(wg sync.WaitGroup) {
+	c.t.Helper()
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	t.wg = wg
+	c.wg = wg
 }
 
 // Done decrements the wait group of the test by one.
-func (t *Context) Done() {
-	t.t.Helper()
+func (c *Context) Done() {
+	c.t.Helper()
 
-	if t.wg != nil {
-		t.wg.Done()
+	if c.wg != nil {
+		c.wg.Done()
 	}
 }
 
 // Reporter sets up a test failure reporter. This can be used to validate the
 // reported failures in a test environment.
-func (t *Context) Reporter(reporter Reporter) {
-	t.t.Helper()
+func (c *Context) Reporter(reporter Reporter) {
+	c.t.Helper()
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	t.reporter = reporter
+	c.reporter = reporter
 }
 
 // Cleanup is a function called to setup test cleanup after execution. This
 // method is allowing `gomock` to register its `finish` method that reports the
 // missing mock calls.
-func (t *Context) Cleanup(cleanup func()) {
-	t.t.Helper()
+func (c *Context) Cleanup(cleanup func()) {
+	c.t.Helper()
 	if cleanup == nil {
 		return
 	}
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	t.cleanups = append(t.cleanups, cleanup)
+	c.cleanups = append(c.cleanups, cleanup)
 }
 
 // Name delegates the request to the parent test context.
-func (t *Context) Name() string {
-	t.t.Helper()
+func (c *Context) Name() string {
+	c.t.Helper()
 
-	return t.t.Name()
+	return c.t.Name()
 }
 
 // Helper delegates request to the parent test context.
-func (t *Context) Helper() {
-	t.t.Helper()
+func (c *Context) Helper() {
+	c.t.Helper()
 }
 
 // Parallel robustly delegates request to the parent context. It can be called
 // multiple times, since it is swallowing the panic that is raised when calling
 // `t.Parallel()` multiple times.
-func (t *Context) Parallel() {
-	t.t.Helper()
+func (c *Context) Parallel() {
+	c.t.Helper()
 
 	defer func() {
 		if err := recover(); err != nil &&
 			err != "testing: t.Parallel called multiple times" {
-			t.Panic(err)
+			c.Panic(err)
 		}
 	}()
 
-	t.t.Parallel()
+	c.t.Parallel()
 }
 
 // TempDir delegates the request to the parent test context.
-func (t *Context) TempDir() string {
-	t.t.Helper()
-	return t.t.TempDir()
+func (c *Context) TempDir() string {
+	c.t.Helper()
+	return c.t.TempDir()
 }
 
 // Setenv delegates request to the parent context, if it is of type
 // `*testing.T`. Else it is swallowing the request silently.
-func (t *Context) Setenv(key, value string) {
-	t.t.Helper()
+func (c *Context) Setenv(key, value string) {
+	c.t.Helper()
 
-	t.t.Setenv(key, value)
+	c.t.Setenv(key, value)
 }
 
 // Deadline delegates request to the parent context. It returns the deadline of
 // the test and a flag indicating whether the deadline is set.
-func (t *Context) Deadline() (time.Time, bool) {
-	t.t.Helper()
+func (c *Context) Deadline() (time.Time, bool) {
+	c.t.Helper()
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if !t.deadline.IsZero() {
-		return t.deadline, true
+	if !c.deadline.IsZero() {
+		return c.deadline, true
 	}
-	return t.t.Deadline()
+	return c.t.Deadline()
 }
 
 // Skip delegates request to the parent context. It is a helper method to skip
 // the test.
-func (t *Context) Skip(args ...any) {
-	t.t.Helper()
+func (c *Context) Skip(args ...any) {
+	c.t.Helper()
 
-	t.t.Skip(args...)
+	c.t.Skip(args...)
 }
 
 // Skipf delegates request to the parent context. It is a helper method to skip
 // the test with a formatted message.
-func (t *Context) Skipf(format string, args ...any) {
-	t.t.Helper()
+func (c *Context) Skipf(format string, args ...any) {
+	c.t.Helper()
 
-	t.t.Skipf(format, args...)
+	c.t.Skipf(format, args...)
 }
 
 // SkipNow delegates request to the parent context. It is a helper method to skip
 // the test immediately.
-func (t *Context) SkipNow() {
-	t.t.Helper()
+func (c *Context) SkipNow() {
+	c.t.Helper()
 
-	t.t.SkipNow()
+	c.t.SkipNow()
 }
 
 // Skipped delegates request to the parent context. It reports whether the test
 // has been skipped.
-func (t *Context) Skipped() bool {
-	t.t.Helper()
+func (c *Context) Skipped() bool {
+	c.t.Helper()
 
-	return t.t.Skipped()
+	return c.t.Skipped()
 }
 
 // Log delegates request to the parent context. It provides a logging function
 // for the test.
-func (t *Context) Log(args ...any) {
-	t.t.Helper()
+func (c *Context) Log(args ...any) {
+	c.t.Helper()
 
-	t.t.Log(args...)
-	if t.reporter != nil {
-		t.reporter.Log(args...)
+	c.t.Log(args...)
+	if c.reporter != nil {
+		c.reporter.Log(args...)
 	}
 }
 
 // Logf delegates request to the parent context. It provides a logging function
 // for the test.
-func (t *Context) Logf(format string, args ...any) {
-	t.t.Helper()
+func (c *Context) Logf(format string, args ...any) {
+	c.t.Helper()
 
-	t.t.Logf(format, args...)
-	if t.reporter != nil {
-		t.reporter.Logf(format, args...)
+	c.t.Logf(format, args...)
+	if c.reporter != nil {
+		c.reporter.Logf(format, args...)
 	}
 }
 
 // Error handles failure messages where the test is supposed to continue. On
 // an expected success, the failure is also delegated to the parent test
 // context. Else it delegates the request to the test reporter if available.
-func (t *Context) Error(args ...any) {
-	t.t.Helper()
+func (c *Context) Error(args ...any) {
+	c.t.Helper()
 
-	t.failed.Store(true)
+	c.failed.Store(true)
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if t.expect == Success {
-		t.t.Error(args...)
-	} else if t.reporter != nil {
-		t.reporter.Error(args...)
+	if c.expect == Success {
+		c.t.Error(args...)
+	} else if c.reporter != nil {
+		c.reporter.Error(args...)
 	}
 }
 
 // Errorf handles failure messages where the test is supposed to continue. On
 // an expected success, the failure is also delegated to the parent test
 // context. Else it delegates the request to the test reporter if available.
-func (t *Context) Errorf(format string, args ...any) {
-	t.t.Helper()
+func (c *Context) Errorf(format string, args ...any) {
+	c.t.Helper()
 
-	t.failed.Store(true)
+	c.failed.Store(true)
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if t.expect == Success {
-		t.t.Errorf(format, args...)
-	} else if t.reporter != nil {
-		t.reporter.Errorf(format, args...)
+	if c.expect == Success {
+		c.t.Errorf(format, args...)
+	} else if c.reporter != nil {
+		c.reporter.Errorf(format, args...)
 	}
 }
 
@@ -386,16 +496,16 @@ func (t *Context) Errorf(format string, args ...any) {
 // execution. On an expected success, the failure handling is also delegated
 // to the parent test context. Else it delegates the request to the test
 // reporter if available.
-func (t *Context) Fatal(args ...any) {
-	t.t.Helper()
+func (c *Context) Fatal(args ...any) {
+	c.t.Helper()
 
-	t.lockOrExit()
-	defer t.unlock()
+	c.lockOrExit()
+	defer c.unlock()
 
-	if t.expect == Success {
-		t.t.Fatal(args...)
-	} else if t.reporter != nil {
-		t.reporter.Fatal(args...)
+	if c.expect == Success {
+		c.t.Fatal(args...)
+	} else if c.reporter != nil {
+		c.reporter.Fatal(args...)
 	}
 	runtime.Goexit()
 }
@@ -404,16 +514,16 @@ func (t *Context) Fatal(args ...any) {
 // execution. On an expected success, the failure handling is also delegated
 // to the parent test context. Else it delegates the request to the test
 // reporter if available.
-func (t *Context) Fatalf(format string, args ...any) {
-	t.t.Helper()
+func (c *Context) Fatalf(format string, args ...any) {
+	c.t.Helper()
 
-	t.lockOrExit()
-	defer t.unlock()
+	c.lockOrExit()
+	defer c.unlock()
 
-	if t.expect == Success {
-		t.t.Fatalf(format, args...)
-	} else if t.reporter != nil {
-		t.reporter.Fatalf(format, args...)
+	if c.expect == Success {
+		c.t.Fatalf(format, args...)
+	} else if c.reporter != nil {
+		c.reporter.Fatalf(format, args...)
 	}
 	runtime.Goexit()
 }
@@ -421,16 +531,16 @@ func (t *Context) Fatalf(format string, args ...any) {
 // Fail handles a failure message that immediate aborts of the test execution.
 // On an expected success, the failure handling is also delegated to the parent
 // test context. Else it delegates the request to the test reporter if available.
-func (t *Context) Fail() {
-	t.t.Helper()
+func (c *Context) Fail() {
+	c.t.Helper()
 
-	t.lockOrExit()
-	defer t.unlock()
+	c.lockOrExit()
+	defer c.unlock()
 
-	if t.expect == Success {
-		t.t.Fail()
-	} else if t.reporter != nil {
-		t.reporter.Fail()
+	if c.expect == Success {
+		c.t.Fail()
+	} else if c.reporter != nil {
+		c.reporter.Fail()
 	}
 	runtime.Goexit()
 }
@@ -439,25 +549,25 @@ func (t *Context) Fail() {
 // test execution immediately. On an expected success, it the failure handling
 // is also delegated to the parent test context. Else it delegates the request
 // to the test reporter if available.
-func (t *Context) FailNow() {
-	t.t.Helper()
+func (c *Context) FailNow() {
+	c.t.Helper()
 
-	t.lockOrExit()
-	defer t.unlock()
+	c.lockOrExit()
+	defer c.unlock()
 
-	if t.expect == Success {
-		t.t.FailNow()
-	} else if t.reporter != nil {
-		t.reporter.FailNow()
+	if c.expect == Success {
+		c.t.FailNow()
+	} else if c.reporter != nil {
+		c.reporter.FailNow()
 	}
 	runtime.Goexit()
 }
 
 // Failed reports whether the test has failed.
-func (t *Context) Failed() bool {
-	t.t.Helper()
+func (c *Context) Failed() bool {
+	c.t.Helper()
 
-	return t.failed.Load()
+	return c.failed.Load()
 }
 
 // regexPanic is a regular expression to extract the actual important panic
@@ -467,17 +577,17 @@ var regexPanic = regexp.MustCompile(`(?m)\nruntime\/debug\.Stack\(\)` +
 
 // Panic handles failure notifications of panics that also abort the test
 // execution immediately.
-func (t *Context) Panic(arg any) {
-	t.t.Helper()
+func (c *Context) Panic(arg any) {
+	c.t.Helper()
 
-	t.lockOrExit()
-	defer t.unlock()
+	c.lockOrExit()
+	defer c.unlock()
 
-	if t.expect == Success {
+	if c.expect == Success {
 		stack := regexPanic.Split(string(debug.Stack()), -1)
-		t.t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[1])
-	} else if t.reporter != nil {
-		if reporter, ok := t.reporter.(Panicer); ok {
+		c.t.Fatalf("panic: %v\n%s\n%s", arg, stack[0], stack[1])
+	} else if c.reporter != nil {
+		if reporter, ok := c.reporter.(Panicer); ok {
 			reporter.Panic(arg)
 		}
 	}
@@ -491,37 +601,37 @@ func (t *Context) Panic(arg any) {
 // If name is non-empty, a named sub-test is created by delegating to the
 // underlying test runner, allowing *Context to be used wherever a named
 // sub-test is created using reflect.Run.
-func (t *Context) Run(name string, call Func) {
-	t.t.Helper()
+func (c *Context) Run(name string, call Func) {
+	c.t.Helper()
 
 	if name != "" {
-		reflect.Run(t.t, name, call)
+		reflect.Run(c.t, name, call)
 		return
 	}
 
-	if t.parallel {
-		t.t.Parallel()
+	if c.mode == Parallel {
+		c.t.Parallel()
 	}
 
 	// Register cleanup handlers.
-	t.register()
+	c.register()
 
 	// Setup shorter deadline for detached test function.
 	wait := time.Duration(math.MaxInt64)
-	if deadline, ok := t.Deadline(); ok {
+	if deadline, ok := c.Deadline(); ok {
 		wait = time.Until(deadline)
 	}
 
 	// Execute test function with channel to signal completion.
 	done := make(chan any, 1)
-	go t.run(call, done)
+	go c.run(call, done)
 
 	// Wait for test to finish or deadline to expire.
 	select {
 	case <-done:
 		// Panic is already handled by the reporter.
 	case <-time.After(wait):
-		t.Fatal("stopped by deadline")
+		c.Fatal("stopped by deadline")
 	}
 }
 
@@ -530,84 +640,84 @@ func (t *Context) Run(name string, call Func) {
 // the waiting test context.
 //
 // The function is supposed to be called in a goroutine.
-func (t *Context) run(test Func, done chan any) {
-	t.t.Helper()
+func (c *Context) run(test Func, done chan any) {
+	c.t.Helper()
 
 	defer func() {
-		t.t.Helper()
+		c.t.Helper()
 
 		// Unlock the waiting test context.
 		defer func() { done <- nil }()
 
 		// Intercept and report panic as a failure.
 		if arg := recover(); arg != nil {
-			t.Panic(arg)
+			c.Panic(arg)
 		}
 	}()
 
-	test(t)
+	test(c)
 }
 
 // register registers the clean up handlers with the parent test context.
-func (t *Context) register() {
-	t.t.Helper()
+func (c *Context) register() {
+	c.t.Helper()
 
 	// Register cleanup handlers with the parent test context.
-	if c, ok := t.t.(Cleanuper); ok {
-		c.Cleanup(func() {
-			t.t.Helper()
+	if cu, ok := c.t.(Cleanuper); ok {
+		cu.Cleanup(func() {
+			c.t.Helper()
 
-			for i := len(t.cleanups) - 1; i >= 0; i-- {
-				t.cleanups[i]()
+			for i := len(c.cleanups) - 1; i >= 0; i-- {
+				c.cleanups[i]()
 			}
 		})
 	}
 
 	// Register handler to unlocked the waiting test context.
-	t.Cleanup(func() {
-		t.t.Helper()
-		t.finish()
+	c.Cleanup(func() {
+		c.t.Helper()
+		c.finish()
 	})
 }
 
 // finish evaluates the final result of the test function in relation to the
 // provided expectation.
-func (t *Context) finish() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+func (c *Context) finish() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if t.t.Skipped() {
+	if c.t.Skipped() {
 		return
 	}
 
-	switch t.expect {
+	switch c.expect {
 	case Success:
-		if t.failed.Load() {
-			t.t.Errorf("Expected test to succeed but it failed: %s", t.Name())
+		if c.failed.Load() {
+			c.t.Errorf("Expected test to succeed but it failed: %s", c.Name())
 		}
 	case Failure:
-		if !t.failed.Load() {
-			t.t.Errorf("Expected test to fail but it succeeded: %s", t.Name())
+		if !c.failed.Load() {
+			c.t.Errorf("Expected test to fail but it succeeded: %s", c.Name())
 		}
 	}
 }
 
 // lockOrExit either locks the test mutex or aborts a test in case of a pending
 // test failure to ensure that only the first failure is reported.
-func (t *Context) lockOrExit() {
-	t.t.Helper()
+func (c *Context) lockOrExit() {
+	c.t.Helper()
 
-	if t.expect == Failure && t.failed.Swap(true) {
+	if c.expect == Failure && c.failed.Swap(true) {
 		runtime.Goexit()
 	}
-	t.mu.Lock()
+	c.mu.Lock()
 }
 
 // unlock unlocks the wait group of the test by consuming the wait group
 // counter completely.
-func (t *Context) unlock() {
-	if t.wg != nil {
-		t.wg.Add(math.MinInt)
+func (c *Context) unlock() {
+	if c.wg != nil {
+		c.wg.Add(math.MinInt)
 	}
-	t.mu.Unlock()
+	c.mu.Unlock()
 }

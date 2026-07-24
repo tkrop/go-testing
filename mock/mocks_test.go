@@ -149,7 +149,7 @@ func TestMocks(t *testing.T) {
 			mocks := mock.NewMocks(t)
 
 			// When
-			test.InRun(test.Success, func(tt test.Test) {
+			test.New(t).Run("", func(tt test.Test) {
 				// Given
 				imocks := mock.NewMocks(tt)
 				if param.misses != nil {
@@ -163,7 +163,7 @@ func TestMocks(t *testing.T) {
 
 				// When
 				param.call(tt, imocks)
-			})(t)
+			})
 		})
 }
 
