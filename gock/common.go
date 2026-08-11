@@ -20,10 +20,15 @@ type TransportSetter interface {
 // annonymous function.
 type RoundTripper func(req *http.Request) (*http.Response, error)
 
+// RoundTrip implementation to delegate to an anonymous function.
+func (r RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return r(req)
+}
+
 // NewErrorRoundTripper static function to create new net/http.RoundTripper that
 // can be used to test with default http errors while using simple anonymous
 // functions.
-func NewErrorRoundTripper(err error) RoundTripper {
+func NewErrorRoundTripper(err error) http.RoundTripper {
 	return RoundTripper(func(_ *http.Request) (*http.Response, error) {
 		return nil, err
 	})
