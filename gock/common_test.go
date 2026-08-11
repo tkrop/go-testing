@@ -57,7 +57,7 @@ func TestNewErrorRoundTripper(t *testing.T) {
 			roundTripper := gock.NewErrorRoundTripper(param.err)
 
 			// When
-			response, err := roundTripper(
+			response, err := roundTripper.RoundTrip(
 				&http.Request{Method: http.MethodGet})
 
 			// Then
