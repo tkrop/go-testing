@@ -58,7 +58,7 @@ func TestController(t *testing.T) {
 
 			// Then
 			if param.expectError != nil {
-				assert.Equal(t, NewRoundTripperError(
+				assert.Equal(t, gock.NewRoundTripperError(
 					http.MethodGet, param.url, param.expectError), err)
 			} else {
 				assert.NoError(t, err)

@@ -1,38 +1,67 @@
 package gock_test
 
 import (
+	"errors"
 	"net/http"
-	"net/url"
+	"testing"
 
-	"github.com/h2non/gock"
+	h2gock "github.com/h2non/gock"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+
+	"github.com/tkrop/go-testing/gock"
+	"github.com/tkrop/go-testing/test"
 )
 
 // NewFooMatcher creates a special foo matcher.
-func NewFooMatcher() *gock.MockMatcher {
-	matcher := gock.NewEmptyMatcher()
-	matcher.Add(func(req *http.Request, _ *gock.Request) (bool, error) {
+func NewFooMatcher() *h2gock.MockMatcher {
+	matcher := h2gock.NewEmptyMatcher()
+	matcher.Add(func(req *http.Request, _ *h2gock.Request) (bool, error) {
 		if req.URL.Scheme == "https" {
 			return true, assert.AnError
 		}
 		return true, nil
 	})
-	matcher.Add(func(req *http.Request, _ *gock.Request) (bool, error) {
+	matcher.Add(func(req *http.Request, _ *h2gock.Request) (bool, error) {
 		return req.URL.Host == "foo.com", nil
 	})
-	matcher.Add(func(req *http.Request, _ *gock.Request) (bool, error) {
+	matcher.Add(func(req *http.Request, _ *h2gock.Request) (bool, error) {
 		return req.URL.Path == "/baz" || req.URL.Path == "/bar", nil
 	})
 	return matcher
 }
 
-// NewRoundTripperError creates the same round trip error usually returned in
-// case of a transport error. This method is used for validating tests that are
-// replacing the transport against the error `RoundTripper` via
-// `NewErrorRoundTripper`.
-func NewRoundTripperError(method string, _url string, err error) error {
-	op := cases.Title(language.Und).String(method)
-	return &url.Error{Op: op, URL: _url, Err: err}
+type ErrorRoundTripperParams struct {
+	err    error
+	expect error
+}
+
+var errorRoundTripperTestCases = map[string]ErrorRoundTripperParams{
+	"with-error": {
+		err:    assert.AnError,
+		expect: assert.AnError,
+	},
+	"with-custom-error": {
+		err:    errors.New("custom error"),
+		expect: errors.New("custom error"),
+	},
+	"with-nil-error": {
+		err:    nil,
+		expect: nil,
+	},
+}
+
+func TestNewErrorRoundTripper(t *testing.T) {
+	test.Map(t, errorRoundTripperTestCases).
+		Run(func(t test.Test, param ErrorRoundTripperParams) {
+			// Given
+			roundTripper := gock.NewErrorRoundTripper(param.err)
+
+			// When
+			response, err := roundTripper(
+				&http.Request{Method: http.MethodGet})
+
+			// Then
+			assert.Nil(t, response)
+			assert.Equal(t, param.expect, err)
+		})
 }

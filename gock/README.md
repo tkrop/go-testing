@@ -12,6 +12,54 @@ compatible.
 
 ## Example usage
 
+The most convenient way of applying the `gock` framework is using it together
+with the [`mock`](../mock) framework as follows:
+
+```go
+func SetupClientGock(
+    t test.Test, setup mock.SetupFunc, err error,
+) Client {
+    t.Helper()
+
+    mocks := mock.NewMocks(t).Expect(setup)
+
+    client := github.NewClient()
+
+    // Intercept the client transport with the gock controller.
+    http := test.Cast[*http.Client](reflect.NewAccessor(client).Get("client"))
+    if err == nil {
+        http.Transport = mock.Get(mocks, gock.NewGock)
+    } else {
+        http.Transport = NewErrorRoundTripper(err)
+    }
+
+    return client
+}
+```
+
+This now allows to register mock HTTP request/response cycles using a simple
+helper function that is compatible with the [`mock`](../mock) framework as
+follows:
+
+```go
+func GockCall(
+    url, path string, input..., status int, output..., error,
+) mock.SetupFunc {
+    return func(mocks *Mocks) any {
+        mock.Get(mocks, gock.NewGock).New(url).Get(path).Times(1).
+            {Reply(status)|ReplyError(err)}...
+        return nil
+    }
+}
+```
+
+**Note:** The `return nil` is required to satisfy the `mock.SetupFunc`
+function, and to account for the shortcoming that the integration currently
+does not support ordering `gock.Response`.
+
+
+## Standalone usage
+
 Just create a new controller on each test, connect it to your HTTP clients or
 client wrappers, and then use it to create HTTP mock request/response cycles
 as usual.
@@ -60,7 +108,7 @@ func TestUnit(t *testing.T) {
     gock.New("http://foo.com").Get("/bar").
         {Reply(status)|ReplyError(err)}.BodyString("result")
 
-    // WHen
+    // When
     ...
 }
 ```
@@ -115,9 +163,37 @@ this controller framework. In this case you should use [`gock`][gock] directly.
 The [`Controller`][gock-ctrl] also supports a simple integration with the
 [`mock`](../mock) framework for [gomock][gomock]. It provides a constructor
 ([`gock.NewGock`][gock-new]) that is compatible with [`mock.Get`][mock-get].
-Using this constructor, it is possible to create the usual setup methods
-similar as described by the
-[generic mock service call pattern](../mock#generic-mock-service-call-pattern).
+The controller is automatically registered in the mock controller and can be
+retrieved using the `mock.Get` method.
+
+The following example shows how to set up a client redirecting the transport
+layer to the `gock` controller setting up the `mock` framework:
+
+```go
+func SetupClientGock(
+    t test.Test, setup mock.SetupFunc, err error,
+) Client {
+    t.Helper()
+
+    mocks := mock.NewMocks(t).Expect(setup)
+
+    client := github.NewClient()
+
+    // Intercept the client transport with the gock controller.
+    http := test.Cast[*http.Client](reflect.NewAccessor(client).Get("client"))
+    if err == nil {
+        http.Transport = mock.Get(mocks, gock.NewGock)
+    } else {
+        http.Transport = gock.NewErrorRoundTripper(err)
+    }
+
+    return client
+}
+```
+
+Using this constructor, it is possible to create standard setup methods
+similar as described in the [generic mock service call
+pattern](../mock#generic-mock-service-call-pattern).
 
 ```go
 func GockCall(
@@ -132,8 +208,9 @@ func GockCall(
 ```
 
 **Note:** While this already nicely integrates the mock controller creation,
-call setup, and validation, it currently provides no support for call order
-validation as [`gomock`][gomock] supports it.
+call setup, and call validation, it currently provides no support for call
+order validation as [`gomock`][gomock] supports it. As a consequence, the
+call functions must not return the [`gock.Response`][gock] for further use.
 
 
 [gock]: <https://pkg.go.dev/github.com/tkrop/go-testing/gock>
