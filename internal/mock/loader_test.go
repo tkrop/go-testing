@@ -1,7 +1,6 @@
 package mock_test
 
 import (
-	"fmt"
 	"path/filepath"
 	"regexp/syntax"
 	"testing"
@@ -217,9 +216,15 @@ var loaderLoadTestCases = map[string]LoaderLoadParams{
 		source: targetTest.With(&Type{
 			File: filepath.Join(dirUp, dirMock, dirSubTest, fileIFace),
 		}),
-		expectError: NewErrLoading(pathTest, fmt.Errorf(
-			"err: chdir %s: no such file or directory: stderr: ",
-			dirUnknown)),
+		expectError: expectedErrLoading(
+			pathTest, dirUnknown, "no such file or directory"),
+		expectLen: 0,
+	},
+	"working-directory-is-file": {
+		loader: NewLoader("loader_test.go"),
+		source: targetTest,
+		expectError: expectedErrLoading(
+			pathTest, "loader_test.go", "not a directory"),
 		expectLen: 0,
 	},
 }
@@ -317,9 +322,8 @@ var loaderIFacesTestCases = map[string]LoaderIFacesParams{
 		source: targetTest.With(&Type{
 			File: filepath.Join(dirUp, dirMock, dirSubTest, fileIFace),
 		}),
-		expectError: NewErrLoading(pathTest, fmt.Errorf(
-			"err: chdir %s: no such file or directory: stderr: ",
-			dirUnknown)),
+		expectError: expectedErrLoading(
+			pathTest, dirUnknown, "no such file or directory"),
 	},
 }
 

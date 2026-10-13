@@ -1,7 +1,6 @@
 package mock_test
 
 import (
-	"fmt"
 	"path/filepath"
 	"regexp/syntax"
 	"testing"
@@ -501,9 +500,8 @@ var parseTestCases = map[string]ParseParams{
 			"--source-file=" + filepath.Join(dirUp, dirMock, dirSubTest, fileIFace),
 		},
 		expectError: []error{
-			NewErrArgFailure(0, ".", NewErrLoading("", fmt.Errorf(
-				"err: chdir %s: no such file or directory: stderr: ",
-				dirUnknown))),
+			NewErrArgFailure(0, ".", expectedErrLoading(
+				"", dirUnknown, "no such file or directory")),
 		},
 	},
 }

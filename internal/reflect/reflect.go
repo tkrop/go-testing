@@ -84,8 +84,8 @@ var (
 	New = reflect.New
 	// Zero alias for `reflect.Zero`.
 	Zero = reflect.Zero
-	// Ptr alias for `reflect.Ptr`.
-	Ptr = reflect.Ptr
+	// Ptr alias for `reflect.Pointer`.
+	Ptr = reflect.Pointer
 	// PointerTo alias for `reflect.PointerTo`.
 	PointerTo = reflect.PointerTo
 )

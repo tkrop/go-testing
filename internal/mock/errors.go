@@ -51,9 +51,9 @@ func NewErrMatcherInvalid(source *Type, err error) error {
 
 var ErrLoading = errors.New("loading")
 
-func NewErrLoading(path string, err error) error {
-	return fmt.Errorf("%w [path: %s] => %w",
-		ErrLoading, path, err)
+func NewErrLoading(path, config string, err error) error {
+	return fmt.Errorf("%w [path: %s, config: %q] => %w",
+		ErrLoading, path, config, err)
 }
 
 var ErrArgInvalid = errors.New("argument invalid")

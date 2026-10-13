@@ -189,7 +189,7 @@ func (loader *CachedLoader) byPath(path string) *PkgResponse {
 func (loader *CachedLoader) load(path string) *PkgResponse {
 	pkgs, err := packages.Load(loader.Config, path)
 	if err != nil {
-		err = NewErrLoading(path, err)
+		err = NewErrLoading(path, loader.Config.Dir, err)
 	} else {
 		err = NewErrPackageParsing(path, pkgs)
 	}

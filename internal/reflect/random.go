@@ -43,7 +43,7 @@ func (r *random) Random(obj any) any {
 
 	//nolint:exhaustive // default returns the original object.
 	switch k {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if v.IsNil() {
 			v = reflect.New(v.Type().Elem())
 			obj = v.Interface()
@@ -159,7 +159,7 @@ func (r *random) randomMap(t reflect.Type) any {
 func (r *random) randomField(v reflect.Value) {
 	//nolint:exhaustive // default does only act on primitive types.
 	switch v.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if v.IsNil() {
 			r.setField(v, reflect.New(v.Type().Elem()))
 		}
