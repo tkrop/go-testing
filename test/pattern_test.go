@@ -114,7 +114,7 @@ func TestPtr(t *testing.T) {
 		assert.Equal(t, &param.value, result)
 
 		rvalue := reflect.ValueOf(result)
-		assert.Equal(t, reflect.Ptr, rvalue.Kind())
+		assert.Equal(t, reflect.Pointer, rvalue.Kind())
 
 		value := rvalue.Elem().Interface()
 		assert.Equal(t, param.value, value)

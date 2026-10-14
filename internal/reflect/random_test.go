@@ -81,7 +81,7 @@ func check(t test.Test, value any) {
 	case reflect.Struct:
 		// For structs, check all fields (both exported and unexported)
 		checkStruct(v, t)
-	case reflect.Ptr:
+	case reflect.Pointer:
 		assert.False(t, v.IsZero())
 		check(t, v.Elem().Interface())
 	default:

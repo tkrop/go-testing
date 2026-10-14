@@ -2,7 +2,9 @@ package mock_test
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 
@@ -358,3 +360,14 @@ var (
 		Variadic: true,
 	}}
 )
+
+func expectedErrLoading(path, config, cause string) error {
+	goRoot, err := exec.Command("go", "env", "GOROOT").Output()
+	if err != nil {
+		panic(err)
+	}
+
+	loadErr := fmt.Errorf("err: fork/exec %s: %s: stderr: ",
+		filepath.Join(strings.TrimSpace(string(goRoot)), "bin", "go"), cause)
+	return NewErrLoading(path, config, loadErr)
+}

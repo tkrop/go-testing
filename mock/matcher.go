@@ -227,7 +227,7 @@ func (c *DiffConfig) Diff(want, got any) string {
 	}
 
 	ekind := etype.Kind()
-	if ekind == reflect.Ptr {
+	if ekind == reflect.Pointer {
 		ekind = etype.Elem().Kind()
 	}
 	if ekind != reflect.Struct && ekind != reflect.Map &&

@@ -109,7 +109,7 @@ func NewFinder[T any](target T) Finder[T] {
 func NewAccessor[T any](target T) Builder[T] {
 	value := reflect.ValueOf(target)
 
-	if value.Kind() == reflect.Ptr {
+	if value.Kind() == reflect.Pointer {
 		// Create a new instance if the pointer is nil.
 		if value.Elem().Kind() == reflect.Invalid {
 			target = cast[T](reflect.New(value.Type().Elem()).Interface())
@@ -288,7 +288,7 @@ func Find[P, T any](param P, deflt T, names ...string) T {
 		return cast[T](reflect.ValueOf(param).Interface())
 	case pt.Kind() == reflect.Struct:
 		return cast[T](NewAccessor(param).Find(deflt, names...))
-	case pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct:
+	case pt.Kind() == reflect.Pointer && pt.Elem().Kind() == reflect.Struct:
 		return cast[T](NewAccessor(param).Find(deflt, names...))
 	default:
 		return deflt

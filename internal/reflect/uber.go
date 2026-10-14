@@ -38,7 +38,7 @@ func isGeneratedMock(x any) bool {
 	if typ == nil {
 		return false
 	}
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 	if typ.Kind() != reflect.Struct {
