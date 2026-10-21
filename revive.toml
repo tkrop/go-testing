@@ -98,6 +98,10 @@ enableAllRules = true
 [rule.identical-ifelseif-branches]
   disabled = true
 
+# Rule contradicts the common receiver check.
+[rule.marshal-receiver]
+  disabled = true
+
 
 # Enables a more experienced cyclomatic complexity (we enabled a log of rules
 # to counter-act the complexity trap).
