@@ -18,7 +18,7 @@ TMPDIR ?= /tmp
 # Setup default go-make installation flags.
 INSTALL_FLAGS ?= -mod=readonly -buildvcs=auto
 # Setup go-make version to use desired build and config scripts.
-GOMAKE_DEP ?= github.com/tkrop/go-make@v0.4.23
+GOMAKE_DEP ?= github.com/tkrop/go-make@v0.4.25
 # Request targets from go-make show-targets target.
 TARGETS := $(shell command -v $(GOBIN)/go-make >/dev/null || \
 	$(GO) install $(INSTALL_FLAGS) $(GOMAKE_DEP) >&2 && \
@@ -28,7 +28,7 @@ TARGETS := $(shell command -v $(GOBIN)/go-make >/dev/null || \
 # Declare all targets phony to make them available for auto-completion.
 .PHONY:: $(TARGETS)
 
-# Delegate all targets to go-make in a single stubbing call.
-$(eval $(MAKECMDGOALS)::;@:)
+# Silently delegate all targets to go-make in a single stubbing call.
+.SILENT: $(eval $(MAKECMDGOALS)::;)
 $(firstword $(MAKECMDGOALS) all)::
 	@+$(GOBIN)/go-make $(MAKECMDGOALS);
