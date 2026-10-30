@@ -94,15 +94,18 @@ type MainParams struct {
 	// duration.
 	Ctx context.Context //nolint:containedctx // only in test parameters.
 
-	// Setup is an optional function called before starting the test. It can
-	// perform necessary setup and register teardown with `t.Cleanup`, which
-	// runs after the test case:
+	// Setup is an optional function called before starting a test, e.g. to
+	// create a servers and register its teardown using `t.Cleanup`:
 	//
-	//     Setup: func(t Test) {
-	//         resource := openResource()
-	//         t.Cleanup(func() { resource.Close() })
+	//     Setup: func(t Test, param MainParams) {
+	//         server := StartServer(param)
+	//         t.Cleanup(func() { server.Stop() })
 	//     },
-	Setup func(t Test)
+	//
+	// Note: the setup function allows to modify the test parameters before
+	// the test starts to communicate dynamic server names and addresses to
+	// the test.
+	Setup func(t Test, param MainParams)
 
 	// Args are the command line arguments to provide to the test process. The
 	// first argument is usually the program name, typically `os.Args[0]`. If
@@ -176,7 +179,7 @@ func Main(main func()) func(t Test, param MainParams) {
 
 		// Call the setup function if provided.
 		if param.Setup != nil {
-			param.Setup(t)
+			param.Setup(t, param)
 		}
 
 		// #nosec G204,G702 -- secured by calling only the dedicated test.

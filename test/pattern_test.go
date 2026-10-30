@@ -606,6 +606,15 @@ var mainTestCases = map[string]test.MainParams{
 		Args:     []string{"exit-0"},
 		ExitCode: 0,
 	},
+	"setup": {
+		Setup: func(t test.Test, param test.MainParams) {
+			assert.Equal(t, []string{"setup"}, param.Args)
+			param.Env[0] = fmt.Sprintf("exit=%d", param.ExitCode)
+		},
+		Env:      []string{"exit=0", "panic=false"},
+		Args:     []string{"setup"},
+		ExitCode: 1,
+	},
 	"sleep": {
 		Args:     []string{"sleep", "100ms"},
 		ExitCode: 0,
@@ -628,18 +637,6 @@ var mainTestCases = map[string]test.MainParams{
 
 func TestMain(t *testing.T) {
 	test.Map(t, mainTestCases).Run(test.Main(main))
-}
-
-func TestMainSetup(t *testing.T) {
-	setupCalled := false
-	test.Param(t, test.MainParams{
-		Setup: func(test.Test) {
-			setupCalled = true
-		},
-		Args:     []string{"setup"},
-		ExitCode: 0,
-	}).Run(test.Main(main))
-	assert.True(t, setupCalled)
 }
 
 func TestMainUnexpected(t *testing.T) {
