@@ -336,7 +336,20 @@ context with timeout can be provided to interrupt the test process in time,
 e.g. as follows:
 
 ```go
-    Ctx: test.First(context.WithTimeout(context.Bachground(), time.Second))
+    Ctx: test.First(context.WithTimeout(context.Background(), time.Second))
+```
+
+You can also provide a setup function in the test parameters to perform setup
+before the test starts. The function receives the test instance, so it can
+register teardown with `t.Cleanup`; the cleanup runs after that test case:
+
+```go
+Setup: func(t test.Test) {
+    resource := openResource()
+    t.Cleanup(func() {
+        resource.Close()
+    })
+},
 ```
 
 **Note:** the general approach can be used to test any code calling `os.Exit`,

@@ -94,6 +94,16 @@ type MainParams struct {
 	// duration.
 	Ctx context.Context //nolint:containedctx // only in test parameters.
 
+	// Setup is an optional function called before starting the test. It can
+	// perform necessary setup and register teardown with `t.Cleanup`, which
+	// runs after the test case:
+	//
+	//     Setup: func(t Test) {
+	//         resource := openResource()
+	//         t.Cleanup(func() { resource.Close() })
+	//     },
+	Setup func(t Test)
+
 	// Args are the command line arguments to provide to the test process. The
 	// first argument is usually the program name, typically `os.Args[0]`. If
 	// not provided, the `main`-method is called with no arguments at all.
@@ -140,6 +150,10 @@ const GoTestingRunVar = "GO_TESTING_RUN"
 // This e.g. can be done as follows using `test.First` to ignore the cancelFunc:
 //
 //	Ctx: test.First(context.WithTimeout(context.Background(), time.Second))
+//
+// You can also provide a setup function in the test parameters to perform any
+// necessary setup before the test runs. The setup function receives the test
+// instance as an argument.
 func Main(main func()) func(t Test, param MainParams) {
 	return func(t Test, param MainParams) {
 		// Switch to execute main function in test process.
@@ -158,6 +172,11 @@ func Main(main func()) func(t Test, param MainParams) {
 		ctx := context.Background()
 		if param.Ctx != nil {
 			ctx = param.Ctx
+		}
+
+		// Call the setup function if provided.
+		if param.Setup != nil {
+			param.Setup(t)
 		}
 
 		// #nosec G204,G702 -- secured by calling only the dedicated test.

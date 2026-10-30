@@ -630,6 +630,18 @@ func TestMain(t *testing.T) {
 	test.Map(t, mainTestCases).Run(test.Main(main))
 }
 
+func TestMainSetup(t *testing.T) {
+	setupCalled := false
+	test.Param(t, test.MainParams{
+		Setup: func(test.Test) {
+			setupCalled = true
+		},
+		Args:     []string{"setup"},
+		ExitCode: 0,
+	}).Run(test.Main(main))
+	assert.True(t, setupCalled)
+}
+
 func TestMainUnexpected(t *testing.T) {
 	t.Setenv(test.GoTestingRunVar, "other")
 	test.Param(t, test.MainParams{}).RunSeq(test.Main(main))
