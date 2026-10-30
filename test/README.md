@@ -339,18 +339,21 @@ e.g. as follows:
     Ctx: test.First(context.WithTimeout(context.Background(), time.Second))
 ```
 
-You can also provide a setup function in the test parameters to perform setup
-before the test starts. The function receives the test instance, so it can
-register teardown with `t.Cleanup`; the cleanup runs after that test case:
+You can also provide a setup function in the test parameters that is called
+before test execution, e.g. to create a server and register its teardown
+using `t.Cleanup`.
 
 ```go
-Setup: func(t test.Test) {
-    resource := openResource()
+Setup: func(t test.Test, param test.MainParams) {
+    server := StartServer(param)
     t.Cleanup(func() {
-        resource.Close()
+        server.Stop()
     })
 },
 ```
+
+The setup function allows to modify the test parameters before the test starts
+to communicate dynamic server names and addresses to the test.
 
 **Note:** the general approach can be used to test any code calling `os.Exit`,
 however, it is focused on testing the `main` methods with and without parsing
